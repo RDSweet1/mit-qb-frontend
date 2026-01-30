@@ -8,8 +8,8 @@ export const msalConfig: Configuration = {
     redirectUri: process.env.NEXT_PUBLIC_REDIRECT_URI || 'http://localhost:3000',
   },
   cache: {
-    cacheLocation: 'sessionStorage',
-    storeAuthStateInCookie: false,
+    cacheLocation: 'localStorage', // Changed from sessionStorage for persistent login
+    storeAuthStateInCookie: true, // Enable for better compatibility
   },
 };
 
