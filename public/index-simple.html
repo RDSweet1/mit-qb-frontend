@@ -78,16 +78,28 @@
                 const result = await msalInstance.loginPopup(loginRequest);
                 console.log('✅ Login successful!', result.account.username);
 
-                btnText.textContent = '✅ Success! Redirecting...';
+                btnText.textContent = '✅ Login Successful!';
 
-                // Store auth in localStorage for the main app to use
+                // Store auth in localStorage
                 localStorage.setItem('msal.account', JSON.stringify(result.account));
                 localStorage.setItem('msal.authenticated', 'true');
 
-                // Redirect to main dashboard
+                // Show success message instead of redirecting to broken page
                 setTimeout(() => {
-                    window.location.href = '/mit-qb-frontend/';
-                }, 1000);
+                    document.body.innerHTML = `
+                        <div style="max-width: 600px; margin: 100px auto; text-align: center; font-family: system-ui; padding: 40px;">
+                            <div style="width: 100px; height: 100px; background: #10b981; border-radius: 50%; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center;">
+                                <svg width="60" height="60" fill="white" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                            </div>
+                            <h1 style="color: #1f2937; margin-bottom: 16px;">Welcome, ${result.account.name}!</h1>
+                            <p style="color: #6b7280; font-size: 18px; margin-bottom: 30px;">You have successfully logged in to the MIT Consulting QuickBooks Timesheet System.</p>
+                            <div style="background: #f3f4f6; padding: 24px; border-radius: 12px; margin-bottom: 30px;">
+                                <p style="color: #374151; margin: 0;"><strong>Email:</strong> ${result.account.username}</p>
+                            </div>
+                            <p style="color: #9ca3af; font-size: 14px;">The dashboard is being developed. You are successfully authenticated!</p>
+                        </div>
+                    `;
+                }, 500);
 
             } catch (error) {
                 console.error('❌ Login failed:', error);
