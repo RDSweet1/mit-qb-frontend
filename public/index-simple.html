@@ -80,9 +80,13 @@
 
                 btnText.textContent = '✅ Success! Redirecting...';
 
-                // Redirect to dashboard
+                // Store auth in localStorage for the main app to use
+                localStorage.setItem('msal.account', JSON.stringify(result.account));
+                localStorage.setItem('msal.authenticated', 'true');
+
+                // Redirect to main dashboard
                 setTimeout(() => {
-                    window.location.href = '/time-entries-enhanced';
+                    window.location.href = '/mit-qb-frontend/';
                 }, 1000);
 
             } catch (error) {
