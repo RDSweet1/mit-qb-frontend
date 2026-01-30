@@ -15,7 +15,7 @@ export const msalConfig: Configuration = {
 
 // Scopes for API access
 export const loginRequest: PopupRequest = {
-  scopes: ['User.Read', 'email', 'profile', 'openid'],
+  scopes: ['User.Read', 'email', 'profile', 'openid', 'Mail.Send', 'Mail.ReadWrite'],
 };
 
 // Additional scopes for Microsoft Graph API (for sending emails)
