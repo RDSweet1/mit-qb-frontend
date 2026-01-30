@@ -36,8 +36,6 @@ jobs:
       - name: Use working simple login page as default
         run: |
           cp public/index-simple.html out/index-simple.html
-          # Update redirect URI in the simple page to not include /index-simple.html
-          sed -i 's|/mit-qb-frontend/index-simple.html|/mit-qb-frontend/|g' out/index-simple.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
