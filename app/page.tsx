@@ -116,14 +116,14 @@ export default function Home() {
 
         {/* Navigation Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Link href="/time-entries" className="group">
+          <Link href="/time-entries-enhanced" className="group">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
                 <Clock className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Time Entries</h3>
               <p className="text-sm text-gray-600">
-                View and sync time entries from QuickBooks Workforce
+                View time entries with filters and generate weekly reports
               </p>
             </div>
           </Link>
