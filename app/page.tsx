@@ -13,13 +13,37 @@ export default function Home() {
   const isAuthenticated = accounts.length > 0;
   const user = accounts[0];
 
+  // DEBUG: Log on mount and when accounts change
+  useEffect(() => {
+    console.log('🔍 DEBUG: Home component mounted/updated');
+    console.log('🔍 DEBUG: Is authenticated:', isAuthenticated);
+    console.log('🔍 DEBUG: Accounts:', accounts);
+    console.log('🔍 DEBUG: User:', user);
+  }, [isAuthenticated, accounts, user]);
+
   const handleLogin = async () => {
+    console.log('🔍 DEBUG: handleLogin called - button clicked!');
+    console.log('🔍 DEBUG: MSAL instance:', instance);
+    console.log('🔍 DEBUG: Current accounts:', accounts);
+    console.log('🔍 DEBUG: Login request:', loginRequest);
+
     setLoading(true);
     try {
-      await instance.loginPopup(loginRequest);
-    } catch (error) {
-      console.error('Login failed:', error);
+      console.log('🔍 DEBUG: Calling loginPopup...');
+      const result = await instance.loginPopup(loginRequest);
+      console.log('✅ DEBUG: Login successful!', result);
+    } catch (error: any) {
+      console.error('❌ DEBUG: Login failed with error:', error);
+      console.error('❌ DEBUG: Error name:', error?.name);
+      console.error('❌ DEBUG: Error message:', error?.message);
+      console.error('❌ DEBUG: Error code:', error?.errorCode);
+      console.error('❌ DEBUG: Error description:', error?.errorMessage);
+      console.error('❌ DEBUG: Full error object:', JSON.stringify(error, null, 2));
+
+      // Show alert to user
+      alert(`Login Error:\n${error?.message || error}\n\nCheck console (F12) for details.`);
     } finally {
+      console.log('🔍 DEBUG: Login attempt finished, setting loading to false');
       setLoading(false);
     }
   };
