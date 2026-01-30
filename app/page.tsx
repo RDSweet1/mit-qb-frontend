@@ -15,10 +15,11 @@ export default function Home() {
 
   // DEBUG: Log on mount and when accounts change
   useEffect(() => {
-    console.log('🔍 DEBUG: Home component mounted/updated');
-    console.log('🔍 DEBUG: Is authenticated:', isAuthenticated);
-    console.log('🔍 DEBUG: Accounts:', accounts);
-    console.log('🔍 DEBUG: User:', user);
+    console.log('🔍 DEBUG v2: Home component mounted/updated');
+    console.log('🔍 DEBUG v2: Is authenticated:', isAuthenticated);
+    console.log('🔍 DEBUG v2: Accounts:', accounts);
+    console.log('🔍 DEBUG v2: User:', user);
+    console.log('🔍 DEBUG v2: Build timestamp:', new Date().toISOString());
   }, [isAuthenticated, accounts, user]);
 
   const handleLogin = async () => {
