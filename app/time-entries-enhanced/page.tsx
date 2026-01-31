@@ -212,6 +212,46 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
+  // Handle lock/unlock toggle
+  const handleLockToggle = (entry: TimeEntry) => {
+    setSelectedEntry(entry);
+    setIsLockingAction(entry.is_locked === false); // If currently unlocked, we're locking
+    setUnlockDialogOpen(true);
+  };
+
+  // Confirm unlock/lock action
+  const confirmLockToggle = async () => {
+    if (!selectedEntry || !user) return;
+
+    try {
+      const functionName = isLockingAction ? 'lock_time_entry' : 'unlock_time_entry';
+
+      const { data, error } = await supabase.rpc(functionName, {
+        entry_id: selectedEntry.id,
+        user_email: user.username
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setEntries(entries.map(e =>
+        e.id === selectedEntry.id
+          ? {
+              ...e,
+              is_locked: isLockingAction,
+              unlocked_by: isLockingAction ? null : user.username,
+              unlocked_at: isLockingAction ? null : new Date().toISOString()
+            }
+          : e
+      ));
+
+      setUnlockDialogOpen(false);
+      setSelectedEntry(null);
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    }
+  };
+
   // Get unique employees from entries
   const uniqueEmployees = useMemo(() => {
     const employees = new Set(entries.map(e => e.employee_name));
@@ -484,6 +524,16 @@ export default function TimeEntriesEnhancedPage() {
           </div>
         ) : (
           <>
+            {/* Unlocked Entries Warning */}
+            {entries.some(e => !e.is_locked) && (
+              <div className="mb-4 bg-orange-50 border-l-4 border-orange-500 p-3 rounded-r-md">
+                <p className="text-sm text-orange-800">
+                  <strong>{entries.filter(e => !e.is_locked).length} entries</strong> are unlocked and editable.
+                  Changes will not sync to QuickBooks.
+                </p>
+              </div>
+            )}
+
             {/* Summary Bar */}
             <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <div className="flex items-center justify-between">
@@ -562,6 +612,12 @@ export default function TimeEntriesEnhancedPage() {
                               }`}>
                                 {entry.billable_status}
                               </span>
+                              <LockIcon
+                                isLocked={entry.is_locked}
+                                unlockedBy={entry.unlocked_by}
+                                unlockedAt={entry.unlocked_at}
+                                onToggle={() => handleLockToggle(entry)}
+                              />
                             </div>
 
                             {entry.description && (
@@ -595,6 +651,17 @@ export default function TimeEntriesEnhancedPage() {
         )}
       </main>
     </div>
+
+    <UnlockWarningDialog
+      isOpen={unlockDialogOpen}
+      isLocking={isLockingAction}
+      entryDetails={selectedEntry}
+      onConfirm={confirmLockToggle}
+      onCancel={() => {
+        setUnlockDialogOpen(false);
+        setSelectedEntry(null);
+      }}
+    />
     </ProtectedPage>
   );
 }
