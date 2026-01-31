@@ -7,6 +7,9 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } f
 import { createClient } from '@supabase/supabase-js';
 import { useMsal } from '@azure/msal-react';
 import { ProtectedPage } from '@/components/ProtectedPage';
+import { LockIcon } from '@/components/time-entries/LockIcon';
+import { UnlockWarningDialog } from '@/components/time-entries/UnlockWarningDialog';
+import { EditWarningBanner } from '@/components/time-entries/EditWarningBanner';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -29,6 +32,10 @@ interface TimeEntry {
   description: string;
   notes: string | null;
   billable_status: string;
+  approval_status: string;
+  is_locked: boolean;
+  unlocked_by: string | null;
+  unlocked_at: string | null;
 }
 
 interface Customer {
@@ -60,6 +67,11 @@ export default function TimeEntriesEnhancedPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'datetime' | 'employee' | 'costcode'>('datetime');
+
+  // Lock/Unlock state
+  const [unlockDialogOpen, setUnlockDialogOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
+  const [isLockingAction, setIsLockingAction] = useState(false);
 
   // Load customers
   const loadCustomers = async () => {
