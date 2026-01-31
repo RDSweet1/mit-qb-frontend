@@ -111,26 +111,62 @@ export default function TimeEntriesEnhancedPage() {
   // Sync from QuickBooks
   const syncFromQuickBooks = async () => {
     try {
+      console.log('🔄 QB Sync: Starting sync...');
+      console.log('📅 Date Range:', { startDate, endDate });
+
       setSyncing(true);
       setError(null);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/qb-time-sync`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ startDate, endDate })
-        }
-      );
+      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/qb-time-sync`;
+      console.log('🌐 QB Sync: Calling Edge Function:', url);
 
-      if (!response.ok) throw new Error('Sync failed');
+      const requestBody = { startDate, endDate, billableOnly: false };
+      console.log('📦 Request Body:', requestBody);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('📡 QB Sync: Response Status:', response.status);
+
+      // Parse response body
+      const responseData = await response.json();
+      console.log('📄 QB Sync: Response Data:', responseData);
+
+      if (!response.ok) {
+        const errorMessage = responseData.error || 'Sync failed';
+        console.error('❌ QB Sync: Error:', errorMessage);
+
+        // Show detailed error in UI
+        if (responseData.error && responseData.error.includes('invalid_client')) {
+          setError('QuickBooks authentication failed. Client credentials may be incorrect. Check Edge Function logs in Supabase.');
+        } else if (responseData.error && responseData.error.includes('Token refresh failed')) {
+          setError(`Token refresh failed: ${responseData.error}`);
+        } else {
+          setError(`Sync failed: ${errorMessage}`);
+        }
+        return;
+      }
+
+      console.log('✅ QB Sync: Success!', {
+        synced: responseData.synced,
+        total: responseData.total,
+        customers: responseData.customers
+      });
+
+      // Show success message
+      setError(`✅ Success! Synced ${responseData.synced} time entries from ${responseData.customers} customers.`);
 
       await loadTimeEntries();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sync with QuickBooks');
+      console.error('❌ QB Sync: Fatal error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sync with QuickBooks';
+      setError(`Fatal error: ${errorMessage}`);
     } finally {
       setSyncing(false);
     }
@@ -401,8 +437,17 @@ export default function TimeEntriesEnhancedPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">{error}</p>
+          <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-6 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="text-red-600 mt-1">⚠️</div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-red-900 mb-2">Sync Error</h3>
+                <p className="text-red-800 whitespace-pre-wrap font-mono text-sm">{error}</p>
+                <p className="text-red-600 text-xs mt-3">
+                  Check browser console (F12) for detailed debug logs.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
