@@ -61,9 +61,9 @@ export default function TimeEntriesEnhancedPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Filters
-  const [datePreset, setDatePreset] = useState<DatePreset>('this_week');
-  const [startDate, setStartDate] = useState(format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+  const [datePreset, setDatePreset] = useState<DatePreset>('last_month');
+  const [startDate, setStartDate] = useState(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'datetime' | 'employee' | 'costcode'>('datetime');
