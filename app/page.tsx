@@ -5,13 +5,23 @@ import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
 import { LogIn, Clock, FileText, DollarSign, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { DashboardStats } from '@/components/dashboard/DashboardStats';
+import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 
 export default function Home() {
-  const { instance, accounts } = useMsal();
+  const { instance, accounts, inProgress } = useMsal();
   const [loading, setLoading] = useState(false);
+  const [isMsalReady, setIsMsalReady] = useState(false);
 
   const isAuthenticated = accounts.length > 0;
   const user = accounts[0];
+
+  // Check if MSAL is ready before using it
+  useEffect(() => {
+    if (instance && inProgress === 'none') {
+      setIsMsalReady(true);
+    }
+  }, [instance, inProgress]);
 
   // DEBUG: Log on mount and when accounts change
   useEffect(() => {
@@ -52,6 +62,18 @@ export default function Home() {
   const handleLogout = () => {
     instance.logoutPopup();
   };
+
+  // Show loading screen while MSAL initializes
+  if (!isMsalReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -191,24 +213,12 @@ export default function Home() {
         </div>
 
         {/* Quick Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">QuickBooks Status</p>
-            <p className="text-2xl font-bold text-green-600">Connected</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Last Sync</p>
-            <p className="text-2xl font-bold text-gray-900">--</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Pending Reports</p>
-            <p className="text-2xl font-bold text-gray-900">--</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">This Month</p>
-            <p className="text-2xl font-bold text-gray-900">-- hrs</p>
-          </div>
+        <div className="mt-8">
+          <DashboardStats />
         </div>
+
+        {/* Analytics Charts */}
+        <AnalyticsCharts />
       </main>
     </div>
   );

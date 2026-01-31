@@ -33,10 +33,6 @@ jobs:
           NEXT_PUBLIC_AZURE_TENANT_ID: ${{ secrets.NEXT_PUBLIC_AZURE_TENANT_ID }}
           NEXT_PUBLIC_REDIRECT_URI: ${{ secrets.NEXT_PUBLIC_REDIRECT_URI }}
 
-      - name: Use working simple login page as default
-        run: |
-          cp public/index-simple.html out/index-simple.html
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
