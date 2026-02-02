@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
@@ -67,6 +67,7 @@ export default function TimeEntriesEnhancedPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'datetime' | 'employee' | 'costcode'>('datetime');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc'); // desc = newest first
 
   // Lock/Unlock state
   const [unlockDialogOpen, setUnlockDialogOpen] = useState(false);
@@ -266,24 +267,30 @@ export default function TimeEntriesEnhancedPage() {
   // Sort and group entries
   const sortedEntries = useMemo(() => {
     const sorted = [...entries].sort((a, b) => {
+      let comparison = 0;
+
       switch (sortBy) {
         case 'datetime':
           const dateCompare = a.txn_date.localeCompare(b.txn_date);
-          if (dateCompare !== 0) return dateCompare;
-          if (a.start_time && b.start_time) {
-            return a.start_time.localeCompare(b.start_time);
+          if (dateCompare !== 0) {
+            comparison = dateCompare;
+          } else if (a.start_time && b.start_time) {
+            comparison = a.start_time.localeCompare(b.start_time);
           }
-          return 0;
+          break;
         case 'employee':
-          return a.employee_name.localeCompare(b.employee_name);
+          comparison = a.employee_name.localeCompare(b.employee_name);
+          break;
         case 'costcode':
-          return (a.cost_code || '').localeCompare(b.cost_code || '');
-        default:
-          return 0;
+          comparison = (a.cost_code || '').localeCompare(b.cost_code || '');
+          break;
       }
+
+      // Apply sort direction
+      return sortDirection === 'asc' ? comparison : -comparison;
     });
     return sorted;
-  }, [entries, sortBy]);
+  }, [entries, sortBy, sortDirection]);
 
   // Group by customer
   const groupedByCustomer = useMemo(() => {
@@ -510,6 +517,24 @@ export default function TimeEntriesEnhancedPage() {
                     {option.label}
                   </button>
                 ))}
+                {/* Sort Direction Toggle */}
+                <button
+                  onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                  className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors flex items-center gap-1"
+                  title={sortDirection === 'asc' ? 'Oldest to Newest' : 'Newest to Oldest'}
+                >
+                  {sortDirection === 'asc' ? (
+                    <>
+                      <ArrowUp className="w-4 h-4" />
+                      <span className="hidden sm:inline">Old→New</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDown className="w-4 h-4" />
+                      <span className="hidden sm:inline">New→Old</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
