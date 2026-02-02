@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
 import { useMsal } from '@azure/msal-react';
 import { ProtectedPage } from '@/components/ProtectedPage';
@@ -43,7 +43,7 @@ interface Customer {
   display_name: string;
 }
 
-type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
+type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'all_time' | 'custom';
 
 export default function TimeEntriesEnhancedPage() {
   const { instance, accounts } = useMsal();
@@ -60,10 +60,10 @@ export default function TimeEntriesEnhancedPage() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [datePreset, setDatePreset] = useState<DatePreset>('last_month');
-  const [startDate, setStartDate] = useState(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
+  // Filters - Default to last 12 months to show all recent data
+  const [datePreset, setDatePreset] = useState<DatePreset>('custom');
+  const [startDate, setStartDate] = useState(format(subMonths(new Date(), 12), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'datetime' | 'employee' | 'costcode'>('datetime');
@@ -209,6 +209,11 @@ export default function TimeEntriesEnhancedPage() {
         setStartDate(format(startOfMonth(lastMonth), 'yyyy-MM-dd'));
         setEndDate(format(endOfMonth(lastMonth), 'yyyy-MM-dd'));
         break;
+      case 'all_time':
+        // Show all data - set a very wide date range
+        setStartDate('2020-01-01');
+        setEndDate(format(new Date(), 'yyyy-MM-dd'));
+        break;
     }
   };
 
@@ -301,11 +306,26 @@ export default function TimeEntriesEnhancedPage() {
     return (totalMinutes / 60).toFixed(1);
   };
 
+  // Parse date string in local timezone (avoids UTC conversion issues)
+  const parseLocalDate = (dateString: string) => {
+    // Parse YYYY-MM-DD as local date, not UTC
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   // Format time range
   const formatTimeRange = (entry: TimeEntry) => {
     if (entry.start_time && entry.end_time) {
-      const start = format(new Date(`2000-01-01T${entry.start_time}`), 'h:mm a');
-      const end = format(new Date(`2000-01-01T${entry.end_time}`), 'h:mm a');
+      // Handle both full timestamps and time-only strings
+      const startDate = entry.start_time?.includes('T')
+        ? new Date(entry.start_time)
+        : new Date(`2000-01-01T${entry.start_time}`);
+      const endDate = entry.end_time?.includes('T')
+        ? new Date(entry.end_time)
+        : new Date(`2000-01-01T${entry.end_time}`);
+
+      const start = format(startDate, 'h:mm a');
+      const end = format(endDate, 'h:mm a');
       return `${start} - ${end}`;
     }
     return 'Lump sum entry';
@@ -388,6 +408,16 @@ export default function TimeEntriesEnhancedPage() {
                   {preset.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                 </button>
               ))}
+              <button
+                onClick={() => handleDatePresetChange('all_time')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  datePreset === 'all_time'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                }`}
+              >
+                📊 Show All Data
+              </button>
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
@@ -584,7 +614,7 @@ export default function TimeEntriesEnhancedPage() {
                           <div className="flex-shrink-0 w-48">
                             <div className="flex items-center gap-2 text-gray-900 font-medium">
                               <Calendar className="w-4 h-4 text-gray-400" />
-                              {format(new Date(entry.txn_date), 'EEE MMM dd, yyyy')}
+                              {format(parseLocalDate(entry.txn_date), 'EEE MMM dd, yyyy')}
                             </div>
                             <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                               <Clock className="w-4 h-4 text-gray-400" />
