@@ -121,6 +121,127 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
+  // Generate CSV Report
+  const generateReport = () => {
+    try {
+      // Prepare CSV data
+      const headers = [
+        'Date',
+        'Employee',
+        'Customer',
+        'Cost Code',
+        'Start Time',
+        'End Time',
+        'Hours',
+        'Billable',
+        'Status',
+        'Notes'
+      ];
+
+      const rows = sortedEntries.map(entry => {
+        const date = format(parseLocalDate(entry.txn_date), 'MM/dd/yyyy');
+        const startTime = entry.start_time ? format(new Date(entry.start_time), 'h:mm a') : 'N/A';
+        const endTime = entry.end_time ? format(new Date(entry.end_time), 'h:mm a') : 'N/A';
+        const hours = `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`;
+
+        return [
+          date,
+          entry.employee_name,
+          entry.qb_customer_id,
+          entry.cost_code,
+          startTime,
+          endTime,
+          hours,
+          entry.billable_status,
+          entry.approval_status,
+          (entry.notes || '').replace(/"/g, '""') // Escape quotes for CSV
+        ];
+      });
+
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute('href', url);
+      link.setAttribute('download', `time_entries_${startDate}_to_${endDate}.csv`);
+      link.style.visibility = 'hidden';
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('✅ Report generated successfully');
+    } catch (err) {
+      console.error('❌ Report generation failed:', err);
+      setError('Failed to generate report: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
+  // Email Report
+  const emailReport = async () => {
+    try {
+      setError(null);
+
+      // Prepare report data
+      const reportData = {
+        startDate,
+        endDate,
+        entries: sortedEntries.map(entry => ({
+          date: entry.txn_date,
+          employee: entry.employee_name,
+          customer: entry.qb_customer_id,
+          costCode: entry.cost_code,
+          hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
+          billable: entry.billable_status,
+          notes: entry.notes
+        })),
+        summary: {
+          totalEntries: entries.length,
+          totalHours: calculateTotalHours(entries)
+        }
+      };
+
+      // Call email edge function
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email_time_report`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            report: reportData,
+            recipient: user?.username || 'user@example.com'
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Email failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        setError('✅ Report emailed successfully!');
+      } else {
+        throw new Error(result.error || 'Email sending failed');
+      }
+
+    } catch (err) {
+      console.error('❌ Email report failed:', err);
+      setError('Failed to email report: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    }
+  };
+
   // Sync from QuickBooks
   const syncFromQuickBooks = async () => {
     try {
@@ -597,11 +718,21 @@ export default function TimeEntriesEnhancedPage() {
                   <p className="text-sm text-gray-600">Total Hours: <span className="font-semibold text-gray-900">{calculateTotalHours(entries)} hrs</span></p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                  <button
+                    onClick={generateReport}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={entries.length === 0}
+                    title={entries.length === 0 ? 'No entries to report' : 'Download CSV report'}
+                  >
                     <FileText className="w-4 h-4" />
                     Generate Report
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  <button
+                    onClick={emailReport}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={entries.length === 0}
+                    title={entries.length === 0 ? 'No entries to email' : 'Email report'}
+                  >
                     <Mail className="w-4 h-4" />
                     Email Report
                   </button>
