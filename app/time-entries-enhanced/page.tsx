@@ -693,15 +693,29 @@ export default function TimeEntriesEnhancedPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
-          <div className="mb-6 bg-red-50 border-2 border-red-300 rounded-lg p-6 shadow-lg">
+          <div className={`mb-6 border-2 rounded-lg p-6 shadow-lg ${
+            error.startsWith('✅')
+              ? 'bg-green-50 border-green-300'
+              : 'bg-red-50 border-red-300'
+          }`}>
             <div className="flex items-start gap-3">
-              <div className="text-red-600 mt-1">⚠️</div>
+              <div className={`mt-1 ${error.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                {error.startsWith('✅') ? '✅' : '⚠️'}
+              </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-red-900 mb-2">Sync Error</h3>
-                <p className="text-red-800 whitespace-pre-wrap font-mono text-sm">{error}</p>
-                <p className="text-red-600 text-xs mt-3">
-                  Check browser console (F12) for detailed debug logs.
-                </p>
+                <h3 className={`text-lg font-bold mb-2 ${
+                  error.startsWith('✅') ? 'text-green-900' : 'text-red-900'
+                }`}>
+                  {error.startsWith('✅') ? 'Success' : 'Sync Error'}
+                </h3>
+                <p className={`whitespace-pre-wrap font-mono text-sm ${
+                  error.startsWith('✅') ? 'text-green-800' : 'text-red-800'
+                }`}>{error}</p>
+                {!error.startsWith('✅') && (
+                  <p className="text-red-600 text-xs mt-3">
+                    Check browser console (F12) for detailed debug logs.
+                  </p>
+                )}
               </div>
             </div>
           </div>
