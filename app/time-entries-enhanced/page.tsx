@@ -200,7 +200,7 @@ export default function TimeEntriesEnhancedPage() {
           costCode: entry.cost_code,
           hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
           billable: entry.billable_status,
-          notes: entry.notes
+          description: entry.description
         })),
         summary: {
           totalEntries: entries.length,
