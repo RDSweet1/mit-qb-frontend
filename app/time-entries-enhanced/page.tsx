@@ -41,6 +41,7 @@ interface TimeEntry {
 interface Customer {
   qb_customer_id: string;
   display_name: string;
+  email: string | null;
 }
 
 type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'all_time' | 'custom';
@@ -79,7 +80,7 @@ export default function TimeEntriesEnhancedPage() {
     try {
       const { data, error } = await supabase
         .from('customers')
-        .select('qb_customer_id, display_name')
+        .select('qb_customer_id, display_name, email')
         .eq('is_active', true)
         .order('display_name');
 
@@ -1001,7 +1002,7 @@ export default function TimeEntriesEnhancedPage() {
     <UnlockWarningDialog
       isOpen={unlockDialogOpen}
       isLocking={isLockingAction}
-      entryDetails={selectedEntry}
+      entryDetails={selectedEntry || undefined}
       onConfirm={confirmLockToggle}
       onCancel={() => {
         setUnlockDialogOpen(false);

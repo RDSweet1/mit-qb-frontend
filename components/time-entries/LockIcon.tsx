@@ -1,6 +1,6 @@
 'use client'
 
-import { Lock, LockOpen } from 'lucide-react'
+import { Lock, Unlock } from 'lucide-react'
 import { useState } from 'react'
 
 interface LockIconProps {
@@ -49,7 +49,7 @@ export function LockIcon({
         {isLocked ? (
           <Lock className="w-5 h-5" />
         ) : (
-          <LockOpen className="w-5 h-5" />
+          <Unlock className="w-5 h-5" />
         )}
       </button>
 

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Lock, LockOpen, RefreshCw } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
+import { Lock, Unlock, RefreshCw } from 'lucide-react'
+import { supabase } from '@/lib/supabaseClient'
 
 interface UnlockedEntry {
   id: number
@@ -20,7 +20,6 @@ export function UnlockAuditLog() {
   const [entries, setEntries] = useState<UnlockedEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [lockingId, setLockingId] = useState<number | null>(null)
-  const supabase = createClient()
 
   const loadEntries = async () => {
     setLoading(true)
@@ -99,7 +98,7 @@ export function UnlockAuditLog() {
   if (entries.length === 0) {
     return (
       <div className="text-center py-12">
-        <LockOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <Unlock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
         <p className="text-gray-500">No unlocked entries found</p>
         <p className="text-sm text-gray-400 mt-1">All time entries are locked and protected</p>
       </div>
@@ -191,7 +190,7 @@ export function UnlockAuditLog() {
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
-                        <LockOpen className="w-3 h-3" />
+                        <Unlock className="w-3 h-3" />
                         Unlocked
                       </span>
                     )}

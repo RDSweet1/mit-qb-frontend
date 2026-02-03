@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Lock, LockOpen } from 'lucide-react'
+import { AlertTriangle, Lock, Unlock } from 'lucide-react'
 
 interface UnlockWarningDialogProps {
   isOpen: boolean
@@ -141,7 +141,7 @@ export function UnlockWarningDialog({
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <LockOpen className="w-4 h-4" />
+                <Unlock className="w-4 h-4" />
                 Yes, Unlock It
               </span>
             )}

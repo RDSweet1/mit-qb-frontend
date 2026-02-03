@@ -81,7 +81,7 @@ Write-Host ""
 Write-Host "STEP 5: Test Unlock" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Actions:" -ForegroundColor White
-Write-Host "1. Click any LOCK icon (🔒)" -ForegroundColor Gray
+Write-Host "1. Click any LOCK icon" -ForegroundColor Gray
 Write-Host "2. Warning dialog should appear" -ForegroundColor Gray
 Write-Host "3. Read the warning message" -ForegroundColor Gray
 Write-Host "4. Click 'Yes, Unlock It'" -ForegroundColor Gray
