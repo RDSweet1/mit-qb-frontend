@@ -184,8 +184,8 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
-  // Email Report
-  const emailReport = async () => {
+  // Email Report - Generic function
+  const sendEmailReport = async (recipient: string, recipientType: string) => {
     try {
       setError(null);
 
@@ -219,7 +219,7 @@ export default function TimeEntriesEnhancedPage() {
           },
           body: JSON.stringify({
             report: reportData,
-            recipient: user?.username || 'user@example.com'
+            recipient: recipient
           })
         }
       );
@@ -231,7 +231,7 @@ export default function TimeEntriesEnhancedPage() {
       const result = await response.json();
 
       if (result.success) {
-        setError('✅ Report emailed successfully!');
+        setError(`✅ Report emailed successfully to ${recipientType}!`);
       } else {
         throw new Error(result.error || 'Email sending failed');
       }
@@ -240,6 +240,34 @@ export default function TimeEntriesEnhancedPage() {
       console.error('❌ Email report failed:', err);
       setError('Failed to email report: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
+  };
+
+  // Email to David (for testing)
+  const emailToMe = () => sendEmailReport('david@mitigationconsulting.com', 'David');
+
+  // Email to Bookkeeper (Sharon Kisner)
+  const emailToBookkeeper = () => sendEmailReport('sharon@mitigationconsulting.com', 'Bookkeeper');
+
+  // Email to Insured (Customer)
+  const emailToInsured = async () => {
+    // Get selected customer's email
+    if (selectedCustomer === 'all') {
+      setError('⚠️ Please select a specific customer to email the report to them.');
+      return;
+    }
+
+    const customer = customers.find(c => c.qb_customer_id === selectedCustomer);
+    if (!customer) {
+      setError('❌ Customer not found');
+      return;
+    }
+
+    if (!customer.email) {
+      setError('❌ Customer email not found. Please add customer email in QuickBooks.');
+      return;
+    }
+
+    sendEmailReport(customer.email, `Customer (${customer.display_name})`);
   };
 
   // Sync from QuickBooks
@@ -717,7 +745,8 @@ export default function TimeEntriesEnhancedPage() {
                   <p className="text-sm text-gray-600">Total Entries: <span className="font-semibold text-gray-900">{entries.length}</span></p>
                   <p className="text-sm text-gray-600">Total Hours: <span className="font-semibold text-gray-900">{calculateTotalHours(entries)} hrs</span></p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-3">
+                  {/* Generate Report Button */}
                   <button
                     onClick={generateReport}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -727,15 +756,65 @@ export default function TimeEntriesEnhancedPage() {
                     <FileText className="w-4 h-4" />
                     Generate Report
                   </button>
-                  <button
-                    onClick={emailReport}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={entries.length === 0}
-                    title={entries.length === 0 ? 'No entries to email' : 'Email report'}
-                  >
-                    <Mail className="w-4 h-4" />
-                    Email Report
-                  </button>
+
+                  {/* Email Buttons Row */}
+                  <div className="flex gap-2">
+                    {/* Email to Me */}
+                    <div className="flex flex-col">
+                      <button
+                        onClick={emailToMe}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-t-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={entries.length === 0}
+                        title="Email report to David for testing"
+                      >
+                        <Mail className="w-4 h-4" />
+                        Email to Me
+                      </button>
+                      <span className="px-2 py-1 bg-blue-50 text-xs text-blue-700 border border-blue-200 rounded-b-lg text-center">
+                        david@mitigationconsulting.com
+                      </span>
+                    </div>
+
+                    {/* Email to Bookkeeper */}
+                    <div className="flex flex-col">
+                      <button
+                        onClick={emailToBookkeeper}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-t-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={entries.length === 0}
+                        title="Email report to Sharon Kisner (Bookkeeper)"
+                      >
+                        <Mail className="w-4 h-4" />
+                        Email to Bookkeeper
+                      </button>
+                      <span className="px-2 py-1 bg-purple-50 text-xs text-purple-700 border border-purple-200 rounded-b-lg text-center">
+                        sharon@mitigationconsulting.com
+                      </span>
+                    </div>
+
+                    {/* Email to Insured (Customer) */}
+                    <div className="flex flex-col">
+                      <button
+                        onClick={emailToInsured}
+                        disabled={entries.length === 0 || selectedCustomer === 'all'}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-t-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
+                        title={
+                          entries.length === 0
+                            ? 'No entries to email'
+                            : selectedCustomer === 'all'
+                            ? 'Select a specific customer first'
+                            : 'Email report to customer'
+                        }
+                      >
+                        <Mail className="w-4 h-4" />
+                        Email to Insured
+                      </button>
+                      <span className="px-2 py-1 bg-orange-50 text-xs text-orange-700 border border-orange-200 rounded-b-lg text-center">
+                        {selectedCustomer === 'all'
+                          ? 'Select customer first'
+                          : customers.find(c => c.qb_customer_id === selectedCustomer)?.email || 'No email set'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
