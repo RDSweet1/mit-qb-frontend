@@ -60,10 +60,10 @@ export default function TimeEntriesEnhancedPage() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters - Default to last 12 months to show all recent data
-  const [datePreset, setDatePreset] = useState<DatePreset>('custom');
-  const [startDate, setStartDate] = useState(format(subMonths(new Date(), 12), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  // Filters - Default to last month for focused timesheet view
+  const [datePreset, setDatePreset] = useState<DatePreset>('last_month');
+  const [startDate, setStartDate] = useState(format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'));
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
   const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'datetime' | 'employee' | 'costcode'>('datetime');
