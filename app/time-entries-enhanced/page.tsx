@@ -609,31 +609,33 @@ export default function TimeEntriesEnhancedPage() {
               </div>
             </div>
 
-            {/* Grouped Entries */}
-            {Array.from(groupedByCustomer.entries()).map(([customerId, customerEntries]) => {
-              const customerName = customers.find(c => c.qb_customer_id === customerId)?.display_name || customerId;
+            {/* Conditional Display: Grouped by Customer or Flat List */}
+            {selectedCustomer === 'all' ? (
+              /* Grouped View - Show all customers with headers */
+              Array.from(groupedByCustomer.entries()).map(([customerId, customerEntries]) => {
+                const customerName = customers.find(c => c.qb_customer_id === customerId)?.display_name || customerId;
 
-              return (
-                <div key={customerId} className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  {/* Customer Header */}
-                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Building2 className="w-6 h-6 text-white" />
-                        <div>
-                          <h2 className="text-xl font-bold text-white">{customerName}</h2>
-                          <p className="text-blue-100 text-sm">
-                            {customerEntries.length} entries • {calculateTotalHours(customerEntries)} hours
-                          </p>
+                return (
+                  <div key={customerId} className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Customer Header */}
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Building2 className="w-6 h-6 text-white" />
+                          <div>
+                            <h2 className="text-xl font-bold text-white">{customerName}</h2>
+                            <p className="text-blue-100 text-sm">
+                              {customerEntries.length} entries • {calculateTotalHours(customerEntries)} hours
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Time Entries */}
-                  <div className="divide-y divide-gray-200">
-                    {customerEntries.map((entry, idx) => (
-                      <div key={entry.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    {/* Time Entries */}
+                    <div className="divide-y divide-gray-200">
+                      {customerEntries.map((entry, idx) => (
+                        <div key={entry.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                         <div className="flex items-start gap-4">
                           {/* Date & Time */}
                           <div className="flex-shrink-0 w-48">
@@ -692,16 +694,81 @@ export default function TimeEntriesEnhancedPage() {
                     ))}
                   </div>
 
-                  {/* Customer Total */}
-                  <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Total for {customerName}</span>
-                      <span className="text-lg font-bold text-gray-900">{calculateTotalHours(customerEntries)} hours</span>
+                    {/* Customer Total */}
+                    <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Total for {customerName}</span>
+                        <span className="text-lg font-bold text-gray-900">{calculateTotalHours(customerEntries)} hours</span>
+                      </div>
                     </div>
                   </div>
+                );
+              })
+            ) : (
+              /* Flat List View - Single customer selected, show entries by date */
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="divide-y divide-gray-200">
+                  {sortedEntries.map((entry) => (
+                    <div key={entry.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start gap-4">
+                        {/* Date & Time */}
+                        <div className="flex-shrink-0 w-48">
+                          <div className="flex items-center gap-2 text-gray-900 font-medium">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            {format(parseLocalDate(entry.txn_date), 'EEE MMM dd, yyyy')}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            {formatTimeRange(entry)}
+                          </div>
+                          <div className="text-sm font-semibold text-blue-600 mt-1">
+                            {formatDuration(entry.hours, entry.minutes)}
+                          </div>
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <span className="font-medium text-gray-900">{entry.employee_name}</span>
+                            </div>
+                            <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded">
+                              {entry.service_item_name || entry.cost_code}
+                            </span>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                              entry.billable_status === 'Billable'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {entry.billable_status}
+                            </span>
+                            <LockIcon
+                              isLocked={entry.is_locked}
+                              unlockedBy={entry.unlocked_by}
+                              unlockedAt={entry.unlocked_at}
+                              onToggle={() => handleLockToggle(entry)}
+                            />
+                          </div>
+
+                          {entry.description && (
+                            <div className="text-sm text-gray-700 mb-1">
+                              <span className="font-medium">Description:</span> {entry.description}
+                            </div>
+                          )}
+
+                          {entry.notes && (
+                            <div className="text-sm text-gray-600 italic">
+                              <span className="font-medium">Notes:</span> {entry.notes}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
+              </div>
+            )}
           </>
         )}
       </main>
