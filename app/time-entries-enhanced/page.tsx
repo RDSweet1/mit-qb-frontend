@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
@@ -74,6 +74,11 @@ export default function TimeEntriesEnhancedPage() {
   const [unlockDialogOpen, setUnlockDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [isLockingAction, setIsLockingAction] = useState(false);
+
+  // Approval state
+  const [selectedEntries, setSelectedEntries] = useState<Set<number>>(new Set());
+  const [approvalStatusFilter, setApprovalStatusFilter] = useState<string>('all');
+  const [approvingEntries, setApprovingEntries] = useState(false);
 
   // Load customers
   const loadCustomers = async () => {
@@ -271,6 +276,185 @@ export default function TimeEntriesEnhancedPage() {
     sendEmailReport(customer.email, `Customer (${customer.display_name})`);
   };
 
+  // Approval Functions
+  const toggleEntrySelection = (entryId: number) => {
+    const newSelection = new Set(selectedEntries);
+    if (newSelection.has(entryId)) {
+      newSelection.delete(entryId);
+    } else {
+      newSelection.add(entryId);
+    }
+    setSelectedEntries(newSelection);
+  };
+
+  const selectAllEntries = () => {
+    const filteredEntries = getFilteredAndSortedEntries();
+    const allIds = new Set(filteredEntries.map(e => e.id));
+    setSelectedEntries(allIds);
+  };
+
+  const deselectAllEntries = () => {
+    setSelectedEntries(new Set());
+  };
+
+  const approveSelectedEntries = async () => {
+    if (selectedEntries.size === 0) {
+      setError('⚠️ No entries selected');
+      return;
+    }
+
+    try {
+      setApprovingEntries(true);
+      setError(null);
+
+      const entryIds = Array.from(selectedEntries);
+      const userEmail = user?.username || 'unknown';
+
+      // Update entries to approved status
+      const { error: updateError } = await supabase
+        .from('time_entries')
+        .update({
+          approval_status: 'approved',
+          approved_by: userEmail,
+          approved_at: new Date().toISOString()
+        })
+        .in('id', entryIds);
+
+      if (updateError) throw updateError;
+
+      // Log approval action
+      const auditLogs = entryIds.map(id => ({
+        time_entry_id: id,
+        action: 'approved',
+        performed_by: userEmail,
+        performed_at: new Date().toISOString(),
+        details: { method: 'bulk_approve' }
+      }));
+
+      await supabase.from('approval_audit_log').insert(auditLogs);
+
+      // Auto-send emails after approval
+      await sendApprovedEntriesToCustomer(entryIds);
+
+      setError(`✅ Approved ${entryIds.length} entries and sent to customer!`);
+      setSelectedEntries(new Set());
+      await loadTimeEntries(); // Reload to show updated status
+
+    } catch (err) {
+      console.error('Approval failed:', err);
+      setError(`❌ Failed to approve entries: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setApprovingEntries(false);
+    }
+  };
+
+  const approveAllEntries = async () => {
+    const filteredEntries = getFilteredAndSortedEntries();
+    const pendingEntries = filteredEntries.filter(e => e.approval_status === 'pending');
+
+    if (pendingEntries.length === 0) {
+      setError('⚠️ No pending entries to approve');
+      return;
+    }
+
+    const allIds = new Set(pendingEntries.map(e => e.id));
+    setSelectedEntries(allIds);
+    await approveSelectedEntries();
+  };
+
+  const sendApprovedEntriesToCustomer = async (entryIds: number[]) => {
+    try {
+      // Get the entries
+      const { data: entriesToSend, error: fetchError } = await supabase
+        .from('time_entries')
+        .select('*')
+        .in('id', entryIds);
+
+      if (fetchError) throw fetchError;
+      if (!entriesToSend || entriesToSend.length === 0) return;
+
+      // Group by customer
+      const byCustomer = new Map<string, typeof entriesToSend>();
+      entriesToSend.forEach(entry => {
+        const custId = entry.qb_customer_id;
+        if (!byCustomer.has(custId)) {
+          byCustomer.set(custId, []);
+        }
+        byCustomer.get(custId)!.push(entry);
+      });
+
+      // Send one email per customer
+      for (const [customerId, customerEntries] of byCustomer) {
+        const customer = customers.find(c => c.qb_customer_id === customerId);
+        if (!customer?.email) {
+          console.warn(`No email for customer ${customerId}, skipping`);
+          continue;
+        }
+
+        // Prepare report data
+        const reportData = {
+          startDate,
+          endDate,
+          entries: customerEntries.map(entry => ({
+            date: entry.txn_date,
+            employee: entry.employee_name,
+            customer: entry.qb_customer_id,
+            costCode: entry.cost_code,
+            hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
+            billable: entry.billable_status,
+            description: entry.description
+          })),
+          summary: {
+            totalEntries: customerEntries.length,
+            totalHours: calculateTotalHours(customerEntries)
+          }
+        };
+
+        // Send email
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email_time_report`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              report: reportData,
+              recipient: customer.email
+            })
+          }
+        );
+
+        if (response.ok) {
+          // Update entries as sent
+          await supabase
+            .from('time_entries')
+            .update({
+              approval_status: 'sent',
+              sent_at: new Date().toISOString(),
+              sent_to: customer.email
+            })
+            .in('id', customerEntries.map(e => e.id));
+
+          // Log send action
+          await supabase.from('approval_audit_log').insert(
+            customerEntries.map(e => ({
+              time_entry_id: e.id,
+              action: 'sent',
+              performed_by: user?.username || 'system',
+              performed_at: new Date().toISOString(),
+              details: { recipient: customer.email }
+            }))
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Failed to send emails:', err);
+      throw err;
+    }
+  };
+
   // Sync from QuickBooks
   const syncFromQuickBooks = async () => {
     try {
@@ -413,6 +597,18 @@ export default function TimeEntriesEnhancedPage() {
     const employees = new Set(entries.map(e => e.employee_name));
     return Array.from(employees).sort();
   }, [entries]);
+
+  // Helper function to get filtered and sorted entries
+  const getFilteredAndSortedEntries = () => {
+    let filtered = sortedEntries;
+
+    // Apply approval status filter
+    if (approvalStatusFilter !== 'all') {
+      filtered = filtered.filter(e => e.approval_status === approvalStatusFilter);
+    }
+
+    return filtered;
+  };
 
   // Sort and group entries
   const sortedEntries = useMemo(() => {
@@ -605,7 +801,7 @@ export default function TimeEntriesEnhancedPage() {
           </div>
 
           {/* Filters Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             {/* Customer Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -641,6 +837,25 @@ export default function TimeEntriesEnhancedPage() {
                     {employee}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Approval Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Approval Status
+              </label>
+              <select
+                value={approvalStatusFilter}
+                onChange={(e) => setApprovalStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">⏳ Pending</option>
+                <option value="approved">✅ Approved</option>
+                <option value="sent">📧 Sent</option>
+                <option value="delivered">📬 Delivered</option>
+                <option value="read">📖 Read</option>
               </select>
             </div>
 
@@ -761,6 +976,38 @@ export default function TimeEntriesEnhancedPage() {
                   <p className="text-sm text-gray-600">Total Hours: <span className="font-semibold text-gray-900">{calculateTotalHours(entries)} hrs</span></p>
                 </div>
                 <div className="flex flex-col gap-3">
+                  {/* Approval Buttons Row */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={approveSelectedEntries}
+                      disabled={selectedEntries.size === 0 || approvingEntries}
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={selectedEntries.size === 0 ? 'Select entries to approve' : `Approve ${selectedEntries.size} selected entries`}
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Approve Selected ({selectedEntries.size})
+                    </button>
+                    <button
+                      onClick={approveAllEntries}
+                      disabled={approvingEntries || entries.filter(e => e.approval_status === 'pending').length === 0}
+                      className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Approve all pending entries for current filter"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Approve All Pending
+                    </button>
+                    {selectedEntries.size > 0 && (
+                      <button
+                        onClick={deselectAllEntries}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                        title="Clear selection"
+                      >
+                        <X className="w-4 h-4" />
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
                   {/* Generate Report Button */}
                   <button
                     onClick={generateReport}
@@ -862,6 +1109,17 @@ export default function TimeEntriesEnhancedPage() {
                       {customerEntries.map((entry, idx) => (
                         <div key={entry.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                         <div className="flex items-start gap-4">
+                          {/* Checkbox */}
+                          <div className="flex-shrink-0 pt-1">
+                            <input
+                              type="checkbox"
+                              checked={selectedEntries.has(entry.id)}
+                              onChange={() => toggleEntrySelection(entry.id)}
+                              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                              title="Select for approval"
+                            />
+                          </div>
+
                           {/* Date & Time */}
                           <div className="flex-shrink-0 w-48">
                             <div className="flex items-center gap-2 text-gray-900 font-medium">
@@ -893,6 +1151,22 @@ export default function TimeEntriesEnhancedPage() {
                                   : 'bg-gray-100 text-gray-700'
                               }`}>
                                 {entry.billable_status}
+                              </span>
+                              {/* Approval Status Badge */}
+                              <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                                entry.approval_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                entry.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                                entry.approval_status === 'sent' ? 'bg-blue-100 text-blue-700' :
+                                entry.approval_status === 'delivered' ? 'bg-indigo-100 text-indigo-700' :
+                                entry.approval_status === 'read' ? 'bg-purple-100 text-purple-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {entry.approval_status === 'pending' && '⏳ Pending'}
+                                {entry.approval_status === 'approved' && '✅ Approved'}
+                                {entry.approval_status === 'sent' && '📧 Sent'}
+                                {entry.approval_status === 'delivered' && '📬 Delivered'}
+                                {entry.approval_status === 'read' && '📖 Read'}
+                                {!entry.approval_status && 'No Status'}
                               </span>
                               <LockIcon
                                 isLocked={entry.is_locked}
@@ -936,6 +1210,17 @@ export default function TimeEntriesEnhancedPage() {
                   {sortedEntries.map((entry) => (
                     <div key={entry.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-start gap-4">
+                        {/* Checkbox */}
+                        <div className="flex-shrink-0 pt-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedEntries.has(entry.id)}
+                            onChange={() => toggleEntrySelection(entry.id)}
+                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            title="Select for approval"
+                          />
+                        </div>
+
                         {/* Date & Time */}
                         <div className="flex-shrink-0 w-48">
                           <div className="flex items-center gap-2 text-gray-900 font-medium">
@@ -967,6 +1252,22 @@ export default function TimeEntriesEnhancedPage() {
                                 : 'bg-gray-100 text-gray-700'
                             }`}>
                               {entry.billable_status}
+                            </span>
+                            {/* Approval Status Badge */}
+                            <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                              entry.approval_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                              entry.approval_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                              entry.approval_status === 'sent' ? 'bg-blue-100 text-blue-700' :
+                              entry.approval_status === 'delivered' ? 'bg-indigo-100 text-indigo-700' :
+                              entry.approval_status === 'read' ? 'bg-purple-100 text-purple-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {entry.approval_status === 'pending' && '⏳ Pending'}
+                              {entry.approval_status === 'approved' && '✅ Approved'}
+                              {entry.approval_status === 'sent' && '📧 Sent'}
+                              {entry.approval_status === 'delivered' && '📬 Delivered'}
+                              {entry.approval_status === 'read' && '📖 Read'}
+                              {!entry.approval_status && 'No Status'}
                             </span>
                             <LockIcon
                               isLocked={entry.is_locked}
