@@ -421,7 +421,10 @@ export default function TimeEntriesEnhancedPage() {
             },
             body: JSON.stringify({
               report: reportData,
-              recipient: customer.email
+              recipient: customer.email,
+              entryIds: customerEntries.map(e => e.id),
+              customerId: customerId,
+              sentBy: user?.username || 'system'
             })
           }
         );
