@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X, History } from 'lucide-react';
 import Link from 'next/link';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
@@ -10,6 +10,7 @@ import { ProtectedPage } from '@/components/ProtectedPage';
 import { LockIcon } from '@/components/time-entries/LockIcon';
 import { UnlockWarningDialog } from '@/components/time-entries/UnlockWarningDialog';
 import { EditWarningBanner } from '@/components/time-entries/EditWarningBanner';
+import { TrackingHistoryDialog } from '@/components/time-entries/TrackingHistoryDialog';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -79,6 +80,10 @@ export default function TimeEntriesEnhancedPage() {
   const [selectedEntries, setSelectedEntries] = useState<Set<number>>(new Set());
   const [approvalStatusFilter, setApprovalStatusFilter] = useState<string>('all');
   const [approvingEntries, setApprovingEntries] = useState(false);
+
+  // History dialog state
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyEntry, setHistoryEntry] = useState<TimeEntry | null>(null);
 
   // Load customers
   const loadCustomers = async () => {
@@ -1177,6 +1182,18 @@ export default function TimeEntriesEnhancedPage() {
                                 unlockedAt={entry.unlocked_at}
                                 onToggle={() => handleLockToggle(entry)}
                               />
+                              {/* History Button */}
+                              <button
+                                onClick={() => {
+                                  setHistoryEntry(entry);
+                                  setHistoryDialogOpen(true);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                                title="View tracking history"
+                              >
+                                <History className="w-3 h-3" />
+                                History
+                              </button>
                             </div>
 
                             {entry.description && (
@@ -1278,6 +1295,18 @@ export default function TimeEntriesEnhancedPage() {
                               unlockedAt={entry.unlocked_at}
                               onToggle={() => handleLockToggle(entry)}
                             />
+                            {/* History Button */}
+                            <button
+                              onClick={() => {
+                                setHistoryEntry(entry);
+                                setHistoryDialogOpen(true);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                              title="View tracking history"
+                            >
+                              <History className="w-3 h-3" />
+                              History
+                            </button>
                           </div>
 
                           {entry.description && (
@@ -1311,6 +1340,21 @@ export default function TimeEntriesEnhancedPage() {
       onCancel={() => {
         setUnlockDialogOpen(false);
         setSelectedEntry(null);
+      }}
+    />
+
+    <TrackingHistoryDialog
+      isOpen={historyDialogOpen}
+      entryId={historyEntry?.id || null}
+      entryDetails={historyEntry ? {
+        employee_name: historyEntry.employee_name,
+        txn_date: historyEntry.txn_date,
+        hours: historyEntry.hours,
+        minutes: historyEntry.minutes
+      } : undefined}
+      onClose={() => {
+        setHistoryDialogOpen(false);
+        setHistoryEntry(null);
       }}
     />
     </ProtectedPage>
