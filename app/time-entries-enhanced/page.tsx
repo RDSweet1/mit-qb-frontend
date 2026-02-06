@@ -99,6 +99,9 @@ export default function TimeEntriesEnhancedPage() {
   const [enhanceDialogOpen, setEnhanceDialogOpen] = useState(false);
   const [enhancingEntry, setEnhancingEntry] = useState<TimeEntry | null>(null);
 
+  // Service item descriptions keyed by cost code
+  const [serviceItemDescriptions, setServiceItemDescriptions] = useState<Record<string, string>>({});
+
   // Load customers
   const loadCustomers = async () => {
     try {
@@ -112,6 +115,29 @@ export default function TimeEntriesEnhancedPage() {
       setCustomers(data || []);
     } catch (err) {
       console.error('Error loading customers:', err);
+    }
+  };
+
+  // Load service items (for cost code descriptions)
+  const loadServiceItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('service_items')
+        .select('code, name, description');
+
+      if (error) throw error;
+      const descMap: Record<string, string> = {};
+      (data || []).forEach((item: any) => {
+        if (item.code) {
+          descMap[item.code] = item.description || item.name || '';
+        }
+        if (item.name) {
+          descMap[item.name] = item.description || item.name || '';
+        }
+      });
+      setServiceItemDescriptions(descMap);
+    } catch (err) {
+      console.error('Error loading service items:', err);
     }
   };
 
@@ -757,6 +783,7 @@ export default function TimeEntriesEnhancedPage() {
   // Initialize
   useEffect(() => {
     loadCustomers();
+    loadServiceItems();
   }, []);
 
   useEffect(() => {
@@ -1273,12 +1300,14 @@ export default function TimeEntriesEnhancedPage() {
                               )}
                             </div>
 
-                            {entry.description && (
+                            {/* Cost Code Description (read-only, from service_items) */}
+                            {(serviceItemDescriptions[entry.cost_code] || serviceItemDescriptions[entry.service_item_name]) && (
                               <div className="text-sm text-gray-700 mb-1">
-                                <span className="font-medium">Description:</span> {entry.description}
+                                <span className="font-medium">Cost Code Description:</span> {serviceItemDescriptions[entry.cost_code] || serviceItemDescriptions[entry.service_item_name]}
                               </div>
                             )}
 
+                            {/* Technician Notes (editable when unlocked) */}
                             <InlineNotesEditor
                               entryId={entry.id}
                               currentNotes={entry.notes}
@@ -1408,12 +1437,14 @@ export default function TimeEntriesEnhancedPage() {
                             )}
                           </div>
 
-                          {entry.description && (
+                          {/* Cost Code Description (read-only, from service_items) */}
+                          {(serviceItemDescriptions[entry.cost_code] || serviceItemDescriptions[entry.service_item_name]) && (
                             <div className="text-sm text-gray-700 mb-1">
-                              <span className="font-medium">Description:</span> {entry.description}
+                              <span className="font-medium">Cost Code Description:</span> {serviceItemDescriptions[entry.cost_code] || serviceItemDescriptions[entry.service_item_name]}
                             </div>
                           )}
 
+                          {/* Technician Notes (editable when unlocked) */}
                           <InlineNotesEditor
                             entryId={entry.id}
                             currentNotes={entry.notes}
