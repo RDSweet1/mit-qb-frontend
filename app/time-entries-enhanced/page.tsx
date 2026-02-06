@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X, History } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
@@ -11,6 +11,8 @@ import { LockIcon } from '@/components/time-entries/LockIcon';
 import { UnlockWarningDialog } from '@/components/time-entries/UnlockWarningDialog';
 import { EditWarningBanner } from '@/components/time-entries/EditWarningBanner';
 import { TrackingHistoryDialog } from '@/components/time-entries/TrackingHistoryDialog';
+import { InlineNotesEditor } from '@/components/time-entries/InlineNotesEditor';
+import { EnhanceNotesDialog } from '@/components/time-entries/EnhanceNotesDialog';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -37,6 +39,10 @@ interface TimeEntry {
   is_locked: boolean;
   unlocked_by: string | null;
   unlocked_at: string | null;
+  manually_edited: boolean;
+  edit_count: number;
+  updated_at: string | null;
+  updated_by: string | null;
 }
 
 interface Customer {
@@ -84,6 +90,13 @@ export default function TimeEntriesEnhancedPage() {
   // History dialog state
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyEntry, setHistoryEntry] = useState<TimeEntry | null>(null);
+
+  // Notes editing state
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  // AI enhance dialog state
+  const [enhanceDialogOpen, setEnhanceDialogOpen] = useState(false);
+  const [enhancingEntry, setEnhancingEntry] = useState<TimeEntry | null>(null);
 
   // Load customers
   const loadCustomers = async () => {
@@ -460,6 +473,49 @@ export default function TimeEntriesEnhancedPage() {
     } catch (err) {
       console.error('Failed to send emails:', err);
       throw err;
+    }
+  };
+
+  // Save edited notes
+  const saveNotes = async (entryId: number, newNotes: string) => {
+    const userEmail = user?.username || 'unknown';
+    const entry = entries.find(e => e.id === entryId);
+    const currentEditCount = entry?.edit_count || 0;
+
+    setSavingNotes(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('time_entries')
+        .update({
+          notes: newNotes,
+          updated_at: new Date().toISOString(),
+          updated_by: userEmail,
+          manually_edited: true,
+          edit_count: currentEditCount + 1,
+        })
+        .eq('id', entryId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setEntries(entries.map(e =>
+        e.id === entryId
+          ? {
+              ...e,
+              notes: newNotes,
+              manually_edited: true,
+              edit_count: currentEditCount + 1,
+              updated_at: new Date().toISOString(),
+              updated_by: userEmail,
+            }
+          : e
+      ));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save notes';
+      setError(msg);
+      throw err;
+    } finally {
+      setSavingNotes(false);
     }
   };
 
@@ -1182,6 +1238,12 @@ export default function TimeEntriesEnhancedPage() {
                                 unlockedAt={entry.unlocked_at}
                                 onToggle={() => handleLockToggle(entry)}
                               />
+                              {/* Edited Badge */}
+                              {entry.manually_edited && (
+                                <span className="px-2 py-1 text-xs font-semibold rounded bg-amber-100 text-amber-700">
+                                  Edited
+                                </span>
+                              )}
                               {/* History Button */}
                               <button
                                 onClick={() => {
@@ -1194,6 +1256,20 @@ export default function TimeEntriesEnhancedPage() {
                                 <History className="w-3 h-3" />
                                 History
                               </button>
+                              {/* Enhance Button */}
+                              {!entry.is_locked && (
+                                <button
+                                  onClick={() => {
+                                    setEnhancingEntry(entry);
+                                    setEnhanceDialogOpen(true);
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
+                                  title="Enhance notes with AI"
+                                >
+                                  <Sparkles className="w-3 h-3" />
+                                  Enhance
+                                </button>
+                              )}
                             </div>
 
                             {entry.description && (
@@ -1202,11 +1278,13 @@ export default function TimeEntriesEnhancedPage() {
                               </div>
                             )}
 
-                            {entry.notes && (
-                              <div className="text-sm text-gray-600 italic">
-                                <span className="font-medium">Notes:</span> {entry.notes}
-                              </div>
-                            )}
+                            <InlineNotesEditor
+                              entryId={entry.id}
+                              currentNotes={entry.notes}
+                              isLocked={entry.is_locked}
+                              isSaving={savingNotes}
+                              onSave={saveNotes}
+                            />
                           </div>
                         </div>
                       </div>
@@ -1295,6 +1373,12 @@ export default function TimeEntriesEnhancedPage() {
                               unlockedAt={entry.unlocked_at}
                               onToggle={() => handleLockToggle(entry)}
                             />
+                            {/* Edited Badge */}
+                            {entry.manually_edited && (
+                              <span className="px-2 py-1 text-xs font-semibold rounded bg-amber-100 text-amber-700">
+                                Edited
+                              </span>
+                            )}
                             {/* History Button */}
                             <button
                               onClick={() => {
@@ -1307,6 +1391,20 @@ export default function TimeEntriesEnhancedPage() {
                               <History className="w-3 h-3" />
                               History
                             </button>
+                            {/* Enhance Button */}
+                            {!entry.is_locked && (
+                              <button
+                                onClick={() => {
+                                  setEnhancingEntry(entry);
+                                  setEnhanceDialogOpen(true);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
+                                title="Enhance notes with AI"
+                              >
+                                <Sparkles className="w-3 h-3" />
+                                Enhance
+                              </button>
+                            )}
                           </div>
 
                           {entry.description && (
@@ -1315,11 +1413,13 @@ export default function TimeEntriesEnhancedPage() {
                             </div>
                           )}
 
-                          {entry.notes && (
-                            <div className="text-sm text-gray-600 italic">
-                              <span className="font-medium">Notes:</span> {entry.notes}
-                            </div>
-                          )}
+                          <InlineNotesEditor
+                            entryId={entry.id}
+                            currentNotes={entry.notes}
+                            isLocked={entry.is_locked}
+                            isSaving={savingNotes}
+                            onSave={saveNotes}
+                          />
                         </div>
                       </div>
                     </div>
@@ -1355,6 +1455,16 @@ export default function TimeEntriesEnhancedPage() {
       onClose={() => {
         setHistoryDialogOpen(false);
         setHistoryEntry(null);
+      }}
+    />
+
+    <EnhanceNotesDialog
+      isOpen={enhanceDialogOpen}
+      entry={enhancingEntry}
+      onAccept={saveNotes}
+      onClose={() => {
+        setEnhanceDialogOpen(false);
+        setEnhancingEntry(null);
       }}
     />
     </ProtectedPage>

@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  basePath: '/mit-qb-frontend',
+  assetPrefix: '/mit-qb-frontend/',
   reactStrictMode: true,
   images: {
     unoptimized: true,

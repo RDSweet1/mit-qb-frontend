@@ -3,7 +3,7 @@
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
-import { LogIn, Clock, FileText, DollarSign, Settings } from 'lucide-react';
+import { LogIn, Clock, FileText, DollarSign, Settings, Users } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
@@ -207,6 +207,18 @@ export default function Home() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Settings</h3>
               <p className="text-sm text-gray-600">
                 Configure QuickBooks connection and automation
+              </p>
+            </div>
+          </Link>
+
+          <Link href="/admin/users" className="group">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 transition-all duration-200">
+              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-200 transition-colors">
+                <Users className="w-6 h-6 text-indigo-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
+              <p className="text-sm text-gray-600">
+                Manage users, roles, and permissions
               </p>
             </div>
           </Link>
