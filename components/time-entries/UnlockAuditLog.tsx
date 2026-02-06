@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Lock, Unlock, RefreshCw } from 'lucide-react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, callEdgeFunction } from '@/lib/supabaseClient'
 
 interface UnlockedEntry {
   id: number
@@ -43,20 +43,24 @@ export function UnlockAuditLog() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { error } = await supabase.rpc('lock_time_entry', {
-      entry_id: entryId,
-      user_email: user.email
-    })
+    try {
+      const data = await callEdgeFunction('lock_time_entry', {
+        entry_id: entryId,
+        user_email: user.email
+      });
 
-    if (error) {
+      if (!data.success) throw new Error(data.error || data.message);
+    } catch (error: any) {
       console.error('Error locking entry:', error)
       alert('Failed to lock entry: ' + error.message)
-    } else {
-      // Update local state
-      setEntries(entries.map(e =>
-        e.id === entryId ? { ...e, is_locked: true } : e
-      ))
+      setLockingId(null)
+      return
     }
+
+    // Update local state
+    setEntries(entries.map(e =>
+      e.id === entryId ? { ...e, is_locked: true } : e
+    ))
 
     setLockingId(null)
   }

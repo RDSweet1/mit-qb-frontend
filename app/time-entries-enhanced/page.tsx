@@ -5,6 +5,7 @@ import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Downl
 import Link from 'next/link';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
+import { callEdgeFunction } from '@/lib/supabaseClient';
 import { useMsal } from '@azure/msal-react';
 import { ProtectedPage } from '@/components/ProtectedPage';
 import { LockIcon } from '@/components/time-entries/LockIcon';
@@ -630,12 +631,12 @@ export default function TimeEntriesEnhancedPage() {
     try {
       const functionName = isLockingAction ? 'lock_time_entry' : 'unlock_time_entry';
 
-      const { data, error } = await supabase.rpc(functionName, {
+      const data = await callEdgeFunction(functionName, {
         entry_id: selectedEntry.id,
         user_email: user.username
       });
 
-      if (error) throw error;
+      if (!data.success) throw new Error(data.error || data.message);
 
       // Update local state
       setEntries(entries.map(e =>
