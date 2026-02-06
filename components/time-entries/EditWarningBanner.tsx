@@ -34,7 +34,7 @@ export function EditWarningBanner({
             </h3>
 
             <p className="text-sm text-orange-800 mb-2">
-              Changes will <strong>NOT sync back to QuickBooks</strong>. This is a local-only modification.
+              Edits will <strong>sync back to QuickBooks Time</strong> when saved.
             </p>
 
             {unlockedBy && (

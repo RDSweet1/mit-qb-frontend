@@ -537,6 +537,23 @@ export default function TimeEntriesEnhancedPage() {
             }
           : e
       ));
+
+      // Write back to QuickBooks Time (async, non-blocking)
+      try {
+        const qbResult = await callEdgeFunction('update_qb_time_entry', {
+          entry_id: entryId,
+          notes: newNotes,
+          user_email: userEmail,
+        });
+        if (qbResult.success) {
+          console.log(`✅ Notes synced back to QB Time (${qbResult.qb_time_id})`);
+        } else {
+          console.warn('⚠️ QB Time sync-back failed:', qbResult.error);
+        }
+      } catch (qbErr) {
+        // Non-blocking — local save succeeded, QB sync is best-effort
+        console.warn('⚠️ Could not sync notes back to QB Time:', qbErr);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save notes';
       setError(msg);
@@ -1055,7 +1072,7 @@ export default function TimeEntriesEnhancedPage() {
               <div className="mb-4 bg-orange-50 border-l-4 border-orange-500 p-3 rounded-r-md">
                 <p className="text-sm text-orange-800">
                   <strong>{entries.filter(e => !e.is_locked).length} entries</strong> are unlocked and editable.
-                  Changes will not sync to QuickBooks.
+                  Edits will sync back to QuickBooks Time when saved.
                 </p>
               </div>
             )}

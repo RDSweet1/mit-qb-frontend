@@ -96,12 +96,11 @@ export function UnlockWarningDialog({
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-orange-900">
-                    <p className="font-bold mb-2">WARNING:</p>
+                    <p className="font-bold mb-2">NOTE:</p>
                     <ul className="space-y-1 list-disc list-inside">
-                      <li>Changes will <strong>NOT</strong> sync back to QuickBooks</li>
-                      <li>This creates a local-only modification</li>
-                      <li>Next QB sync may overwrite your changes</li>
-                      <li>Use only when necessary</li>
+                      <li>Edits to notes will <strong>sync back</strong> to QuickBooks Time</li>
+                      <li>Edited entries are protected from being overwritten by future QB syncs</li>
+                      <li>All changes are tracked in the audit log</li>
                     </ul>
                   </div>
                 </div>
@@ -109,7 +108,7 @@ export function UnlockWarningDialog({
 
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
-                  <strong>Best Practice:</strong> Make changes in QuickBooks whenever possible.
+                  <strong>Tip:</strong> Use the AI Enhance button to improve notes for billing.
                 </p>
               </div>
             </div>
