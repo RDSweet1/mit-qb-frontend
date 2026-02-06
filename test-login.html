@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+    <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
+</head>
+<body>
+    <h1>Direct MSAL Test</h1>
+    <button id="loginBtn" style="padding: 20px; font-size: 18px;">TEST LOGIN</button>
+    <pre id="output" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+
+        log('🔍 Test page loaded');
+
+        const msalConfig = {
+            auth: {
+                clientId: '973b689d-d96c-4445-883b-739fff12330b',
+                authority: 'https://login.microsoftonline.com/aee0257d-3be3-45ae-806b-65c972c98dfb',
+                redirectUri: 'https://rdsweet1.github.io/mit-qb-frontend/'
+            },
+            cache: {
+                cacheLocation: 'localStorage',
+                storeAuthStateInCookie: true
+            }
+        };
+
+        log('🔍 MSAL Config: ' + JSON.stringify(msalConfig, null, 2));
+
+        let msalInstance;
+        try {
+            msalInstance = new msal.PublicClientApplication(msalConfig);
+            log('✅ MSAL instance created successfully!');
+        } catch (error) {
+            log('❌ Failed to create MSAL instance: ' + error.message);
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', async function() {
+            log('🔍 Button clicked!');
+
+            const loginRequest = {
+                scopes: ['User.Read', 'email', 'profile', 'openid']
+            };
+
+            log('🔍 Calling loginPopup...');
+
+            try {
+                const result = await msalInstance.loginPopup(loginRequest);
+                log('✅ Login successful! User: ' + result.account.username);
+            } catch (error) {
+                log('❌ Login failed!');
+                log('❌ Error name: ' + error.name);
+                log('❌ Error message: ' + error.message);
+                log('❌ Error code: ' + (error.errorCode || 'none'));
+                log('❌ Full error: ' + JSON.stringify(error, null, 2));
+            }
+        });
+
+        log('🔍 Script ready - click the button to test login!');
+    </script>
+</body>
+</html>

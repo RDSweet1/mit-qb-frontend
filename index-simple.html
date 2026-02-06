@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MIT Consulting - QuickBooks Timesheet System</title>
+    <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
+    <style>
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { max-width: 450px; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
+        .logo { width: 80px; height: 80px; background: linear-gradient(135deg, #3b82f6, #6366f1); border-radius: 16px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
+        h1 { font-size: 32px; margin: 0 0 8px; text-align: center; color: #1f2937; }
+        .subtitle { color: #6b7280; text-align: center; margin-bottom: 30px; }
+        .notice { padding: 15px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; margin-bottom: 24px; font-size: 14px; color: #1e40af; }
+        button { width: 100%; padding: 16px; font-size: 16px; background: linear-gradient(135deg, #3b82f6, #6366f1); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.2s; }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .footer { font-size: 12px; color: #6b7280; margin-top: 24px; text-align: center; }
+        .footer a { color: #3b82f6; text-decoration: none; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <svg width="40" height="40" fill="white" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" fill="none"/><path d="M12 6v6l4 2" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h1>MIT Consulting</h1>
+        <div class="subtitle">QuickBooks Timesheet System</div>
+        <div class="notice">
+            <strong>Internal Use Only:</strong> This application is exclusively for MIT Consulting employees.
+        </div>
+        <button id="loginBtn">
+            <span id="buttonText">Sign in with Microsoft</span>
+        </button>
+        <div class="footer">
+            By signing in, you agree to the <a href="/eula">EULA & Privacy Policy</a>
+        </div>
+    </div>
+
+    <script>
+        console.log('✅ Simple login page loaded');
+
+        const msalConfig = {
+            auth: {
+                clientId: '973b689d-d96c-4445-883b-739fff12330b',
+                authority: 'https://login.microsoftonline.com/aee0257d-3be3-45ae-806b-65c972c98dfb',
+                redirectUri: 'https://rdsweet1.github.io/mit-qb-frontend/index-simple.html'
+            },
+            cache: {
+                cacheLocation: 'localStorage',
+                storeAuthStateInCookie: true
+            }
+        };
+
+        let msalInstance;
+        try {
+            msalInstance = new msal.PublicClientApplication(msalConfig);
+            console.log('✅ MSAL instance created');
+        } catch (error) {
+            console.error('❌ Failed to create MSAL:', error);
+            alert('Failed to initialize authentication: ' + error.message);
+        }
+
+        const btn = document.getElementById('loginBtn');
+        const btnText = document.getElementById('buttonText');
+
+        btn.addEventListener('click', async function() {
+            console.log('🔍 Login button clicked');
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="spinner"></span>';
+
+            const loginRequest = {
+                scopes: ['User.Read', 'email', 'profile', 'openid', 'Mail.Send', 'Mail.ReadWrite']
+            };
+
+            try {
+                console.log('🔍 Calling loginPopup...');
+                const result = await msalInstance.loginPopup(loginRequest);
+                console.log('✅ Login successful!', result.account.username);
+
+                btnText.textContent = '✅ Login Successful!';
+
+                // Store auth in localStorage
+                localStorage.setItem('msal.account', JSON.stringify(result.account));
+                localStorage.setItem('msal.authenticated', 'true');
+
+                // Show success message instead of redirecting to broken page
+                setTimeout(() => {
+                    document.body.innerHTML = `
+                        <div style="max-width: 600px; margin: 100px auto; text-align: center; font-family: system-ui; padding: 40px;">
+                            <div style="width: 100px; height: 100px; background: #10b981; border-radius: 50%; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center;">
+                                <svg width="60" height="60" fill="white" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                            </div>
+                            <h1 style="color: #1f2937; margin-bottom: 16px;">Welcome, ${result.account.name}!</h1>
+                            <p style="color: #6b7280; font-size: 18px; margin-bottom: 30px;">You have successfully logged in to the MIT Consulting QuickBooks Timesheet System.</p>
+                            <div style="background: #f3f4f6; padding: 24px; border-radius: 12px; margin-bottom: 30px;">
+                                <p style="color: #374151; margin: 0;"><strong>Email:</strong> ${result.account.username}</p>
+                            </div>
+                            <p style="color: #9ca3af; font-size: 14px;">The dashboard is being developed. You are successfully authenticated!</p>
+                        </div>
+                    `;
+                }, 500);
+
+            } catch (error) {
+                console.error('❌ Login failed:', error);
+                btnText.textContent = 'Sign in with Microsoft';
+                btn.disabled = false;
+                alert('Login failed: ' + (error.message || 'Unknown error'));
+            }
+        });
+
+        console.log('✅ Page ready');
+    </script>
+</body>
+</html>
