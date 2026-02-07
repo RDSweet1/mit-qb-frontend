@@ -669,21 +669,15 @@ export default function TimeEntriesEnhancedPage() {
   };
 
   // Handle lock/unlock toggle
-  const handleLockToggle = (entry: TimeEntry) => {
-    setSelectedEntry(entry);
-    setIsLockingAction(entry.is_locked === false); // If currently unlocked, we're locking
-    setUnlockDialogOpen(true);
-  };
-
-  // Confirm unlock/lock action
-  const confirmLockToggle = async () => {
-    if (!selectedEntry || !user) return;
+  const handleLockToggle = async (entry: TimeEntry) => {
+    if (!user) return;
 
     try {
-      const functionName = isLockingAction ? 'lock_time_entry' : 'unlock_time_entry';
+      const locking = !entry.is_locked; // If currently unlocked, we're locking
+      const functionName = locking ? 'lock_time_entry' : 'unlock_time_entry';
 
       const data = await callEdgeFunction(functionName, {
-        entry_id: selectedEntry.id,
+        entry_id: entry.id,
         user_email: user.username
       });
 
@@ -691,18 +685,15 @@ export default function TimeEntriesEnhancedPage() {
 
       // Update local state
       setEntries(entries.map(e =>
-        e.id === selectedEntry.id
+        e.id === entry.id
           ? {
               ...e,
-              is_locked: isLockingAction,
-              unlocked_by: isLockingAction ? null : user.username,
-              unlocked_at: isLockingAction ? null : new Date().toISOString()
+              is_locked: locking,
+              unlocked_by: locking ? null : user.username,
+              unlocked_at: locking ? null : new Date().toISOString()
             }
           : e
       ));
-
-      setUnlockDialogOpen(false);
-      setSelectedEntry(null);
     } catch (err: any) {
       alert('Error: ' + err.message);
     }
@@ -1456,17 +1447,6 @@ export default function TimeEntriesEnhancedPage() {
         )}
       </main>
     </div>
-
-    <UnlockWarningDialog
-      isOpen={unlockDialogOpen}
-      isLocking={isLockingAction}
-      entryDetails={selectedEntry || undefined}
-      onConfirm={confirmLockToggle}
-      onCancel={() => {
-        setUnlockDialogOpen(false);
-        setSelectedEntry(null);
-      }}
-    />
 
     <TrackingHistoryDialog
       isOpen={historyDialogOpen}
