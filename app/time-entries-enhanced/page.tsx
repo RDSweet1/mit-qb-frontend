@@ -78,6 +78,9 @@ export default function TimeEntriesEnhancedPage() {
   const [sortBy, setSortBy] = useState<'datetime' | 'employee' | 'costcode'>('datetime');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc'); // desc = newest first
 
+  // Test mode: when ON, all emails go to David only; when OFF, emails go to customer with CC to Sharon + David
+  const [testMode, setTestMode] = useState(true);
+
   // Lock/Unlock state
   const [unlockDialogOpen, setUnlockDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
@@ -236,7 +239,7 @@ export default function TimeEntriesEnhancedPage() {
   };
 
   // Email Report - Generic function
-  const sendEmailReport = async (recipient: string, recipientType: string) => {
+  const sendEmailReport = async (recipient: string, recipientType: string, cc?: string[]) => {
     try {
       setError(null);
 
@@ -270,7 +273,8 @@ export default function TimeEntriesEnhancedPage() {
           },
           body: JSON.stringify({
             report: reportData,
-            recipient: recipient
+            recipient,
+            cc: cc || [],
           })
         }
       );
@@ -282,7 +286,8 @@ export default function TimeEntriesEnhancedPage() {
       const result = await response.json();
 
       if (result.success) {
-        setError(`✅ Report emailed successfully to ${recipientType}!`);
+        const ccNote = cc?.length ? ` (CC: ${cc.join(', ')})` : '';
+        setError(`✅ Report emailed successfully to ${recipientType}${ccNote}!`);
       } else {
         throw new Error(result.error || 'Email sending failed');
       }
@@ -293,32 +298,26 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
-  // Email to David (for testing)
-  const emailToMe = () => sendEmailReport('david@mitigationconsulting.com', 'David');
-
-  // Email to Bookkeeper (Sharon Kisner)
-  const emailToBookkeeper = () => sendEmailReport('sharon@mitigationconsulting.com', 'Bookkeeper');
-
-  // Email to Insured (Customer)
-  const emailToInsured = async () => {
-    // Get selected customer's email
-    if (selectedCustomer === 'all') {
-      setError('⚠️ Please select a specific customer to email the report to them.');
-      return;
+  // Send report respecting test mode toggle
+  const sendReportToCustomer = () => {
+    if (testMode) {
+      // Test mode: send to David only
+      sendEmailReport('david@mitigationconsulting.com', 'David (test mode)');
+    } else {
+      // Production: send to customer with CC to Sharon + David
+      if (selectedCustomer === 'all') {
+        setError('⚠️ Please select a specific customer to email the report to them.');
+        return;
+      }
+      const customer = customers.find(c => c.qb_customer_id === selectedCustomer);
+      if (!customer) { setError('❌ Customer not found'); return; }
+      if (!customer.email) { setError('❌ Customer email not found. Please add customer email in QuickBooks.'); return; }
+      sendEmailReport(
+        customer.email,
+        `Customer (${customer.display_name})`,
+        ['skisner@mitigationconsulting.com', 'david@mitigationconsulting.com']
+      );
     }
-
-    const customer = customers.find(c => c.qb_customer_id === selectedCustomer);
-    if (!customer) {
-      setError('❌ Customer not found');
-      return;
-    }
-
-    if (!customer.email) {
-      setError('❌ Customer email not found. Please add customer email in QuickBooks.');
-      return;
-    }
-
-    sendEmailReport(customer.email, `Customer (${customer.display_name})`);
   };
 
   // Approval Functions
@@ -431,10 +430,18 @@ export default function TimeEntriesEnhancedPage() {
       // Send one email per customer
       for (const [customerId, customerEntries] of byCustomer) {
         const customer = customers.find(c => c.qb_customer_id === customerId);
-        if (!customer?.email) {
+        if (!testMode && !customer?.email) {
           console.warn(`No email for customer ${customerId}, skipping`);
           continue;
         }
+
+        // Determine recipient based on test mode
+        const recipient = testMode
+          ? 'david@mitigationconsulting.com'
+          : customer!.email!;
+        const cc = testMode
+          ? []
+          : ['skisner@mitigationconsulting.com', 'david@mitigationconsulting.com'];
 
         // Prepare report data
         const reportData = {
@@ -466,7 +473,8 @@ export default function TimeEntriesEnhancedPage() {
             },
             body: JSON.stringify({
               report: reportData,
-              recipient: customer.email,
+              recipient,
+              cc,
               entryIds: customerEntries.map(e => e.id),
               customerId: customerId,
               sentBy: user?.username || 'system'
@@ -481,7 +489,7 @@ export default function TimeEntriesEnhancedPage() {
             .update({
               approval_status: 'sent',
               sent_at: new Date().toISOString(),
-              sent_to: customer.email
+              sent_to: recipient
             })
             .in('id', customerEntries.map(e => e.id));
 
@@ -492,7 +500,7 @@ export default function TimeEntriesEnhancedPage() {
               action: 'sent',
               performed_by: user?.username || 'system',
               performed_at: new Date().toISOString(),
-              details: { recipient: customer.email }
+              details: { recipient }
             }))
           );
         }
@@ -1128,63 +1136,31 @@ export default function TimeEntriesEnhancedPage() {
                     Generate Report
                   </button>
 
-                  {/* Email Buttons Row */}
-                  <div className="flex gap-2">
-                    {/* Email to Me */}
-                    <div className="flex flex-col">
-                      <button
-                        onClick={emailToMe}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-t-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={entries.length === 0}
-                        title="Email report to David for testing"
+                  {/* Test Mode Toggle + Send Report */}
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <div
+                        onClick={() => setTestMode(!testMode)}
+                        className={`relative w-10 h-6 rounded-full transition-colors ${testMode ? 'bg-amber-500' : 'bg-emerald-500'}`}
                       >
-                        <Mail className="w-4 h-4" />
-                        Email to Me
-                      </button>
-                      <span className="px-2 py-1 bg-blue-50 text-xs text-blue-700 border border-blue-200 rounded-b-lg text-center">
-                        david@mitigationconsulting.com
+                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${testMode ? 'translate-x-0.5' : 'translate-x-4'}`} />
+                      </div>
+                      <span className={`text-xs font-semibold ${testMode ? 'text-amber-700' : 'text-emerald-700'}`}>
+                        {testMode ? 'TEST MODE — sends to David only' : 'LIVE — sends to customer + CC Sharon & David'}
                       </span>
-                    </div>
+                    </label>
 
-                    {/* Email to Bookkeeper */}
-                    <div className="flex flex-col">
-                      <button
-                        onClick={emailToBookkeeper}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-t-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={entries.length === 0}
-                        title="Email report to Sharon Kisner (Bookkeeper)"
-                      >
-                        <Mail className="w-4 h-4" />
-                        Email to Bookkeeper
-                      </button>
-                      <span className="px-2 py-1 bg-purple-50 text-xs text-purple-700 border border-purple-200 rounded-b-lg text-center">
-                        sharon@mitigationconsulting.com
-                      </span>
-                    </div>
-
-                    {/* Email to Insured (Customer) */}
-                    <div className="flex flex-col">
-                      <button
-                        onClick={emailToInsured}
-                        disabled={entries.length === 0 || selectedCustomer === 'all'}
-                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-t-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
-                        title={
-                          entries.length === 0
-                            ? 'No entries to email'
-                            : selectedCustomer === 'all'
-                            ? 'Select a specific customer first'
-                            : 'Email report to customer'
-                        }
-                      >
-                        <Mail className="w-4 h-4" />
-                        Email to Insured
-                      </button>
-                      <span className="px-2 py-1 bg-orange-50 text-xs text-orange-700 border border-orange-200 rounded-b-lg text-center">
-                        {selectedCustomer === 'all'
-                          ? 'Select customer first'
-                          : customers.find(c => c.qb_customer_id === selectedCustomer)?.email || 'No email set'}
-                      </span>
-                    </div>
+                    <button
+                      onClick={sendReportToCustomer}
+                      disabled={entries.length === 0 || (!testMode && selectedCustomer === 'all')}
+                      className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        testMode ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                      }`}
+                      title={testMode ? 'Send report to David for testing' : 'Send report to customer with CC'}
+                    >
+                      <Mail className="w-4 h-4" />
+                      {testMode ? 'Send Report (Test)' : 'Send Report to Customer'}
+                    </button>
                   </div>
                 </div>
               </div>
