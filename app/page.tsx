@@ -3,7 +3,7 @@
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
-import { LogIn, Clock, FileText, DollarSign, Settings, Users } from 'lucide-react';
+import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
@@ -37,6 +37,19 @@ export default function Home() {
     if (typeof window === 'undefined') return undefined;
     const params = new URLSearchParams(window.location.search);
     return params.get('login_hint') || undefined;
+  };
+
+  const downloadDesktopShortcut = () => {
+    const hint = getLoginHint() || user?.username || '';
+    const base = window.location.origin + (window.location.pathname.includes('/mit-qb-frontend') ? '/mit-qb-frontend/' : '/');
+    const url = hint ? `${base}?login_hint=${encodeURIComponent(hint)}` : base;
+    const content = `[InternetShortcut]\r\nURL=${url}\r\nIconIndex=0\r\n`;
+    const blob = new Blob([content], { type: 'application/internet-shortcut' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'MIT Timesheet.url';
+    a.click();
+    URL.revokeObjectURL(a.href);
   };
 
   const handleLogin = async () => {
@@ -114,6 +127,14 @@ export default function Home() {
                 Sign in with Microsoft
               </>
             )}
+          </button>
+
+          <button
+            onClick={downloadDesktopShortcut}
+            className="w-full mt-3 flex items-center justify-center gap-2 px-6 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Save Desktop Shortcut
           </button>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
