@@ -3,7 +3,7 @@
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
-import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download } from 'lucide-react';
+import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorSmartphone, X } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
@@ -15,6 +15,8 @@ export default function Home() {
 
   const isAuthenticated = accounts.length > 0;
   const user = accounts[0];
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
 
   // Check if MSAL is ready before using it
   useEffect(() => {
@@ -31,6 +33,31 @@ export default function Home() {
     console.log('🔍 DEBUG v2: User:', user);
     console.log('🔍 DEBUG v2: Build timestamp:', new Date().toISOString());
   }, [isAuthenticated, accounts, user]);
+
+  // Register service worker + capture PWA install prompt
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const base = window.location.pathname.includes('/mit-qb-frontend') ? '/mit-qb-frontend' : '';
+      navigator.serviceWorker.register(`${base}/sw.js`).catch(() => {});
+    }
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      setShowInstallBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const result = await installPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      setShowInstallBanner(false);
+      setInstallPrompt(null);
+    }
+  };
 
   // Pick up login_hint from URL for pre-filled sign-in
   const getLoginHint = (): string | undefined => {
@@ -180,6 +207,29 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Install App Banner */}
+      {showInstallBanner && (
+        <div className="bg-blue-600 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <MonitorSmartphone className="w-5 h-5 flex-shrink-0" />
+              <p className="text-sm">Install MIT Timesheet as a desktop app for quick access and taskbar pinning.</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={handleInstall}
+                className="px-4 py-1.5 bg-white text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors"
+              >
+                Install App
+              </button>
+              <button onClick={() => setShowInstallBanner(false)} className="p-1 hover:bg-blue-500 rounded">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

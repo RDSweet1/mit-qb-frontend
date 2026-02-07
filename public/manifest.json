@@ -1,0 +1,24 @@
+{
+  "name": "MIT Consulting Timesheet",
+  "short_name": "MIT Timesheet",
+  "description": "Timesheet and billing management for MIT Consulting",
+  "start_url": "/mit-qb-frontend/",
+  "scope": "/mit-qb-frontend/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/mit-qb-frontend/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/mit-qb-frontend/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

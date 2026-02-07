@@ -10,6 +10,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'MIT Consulting - QuickBooks Timesheet System',
   description: 'Internal timesheet and billing management system integrated with QuickBooks Online',
+  manifest: '/mit-qb-frontend/manifest.json',
 }
 
 export default function RootLayout({
