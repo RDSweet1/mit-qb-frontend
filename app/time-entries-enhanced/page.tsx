@@ -355,34 +355,48 @@ export default function TimeEntriesEnhancedPage() {
       const userEmail = user?.username || 'unknown';
 
       // Update entries to approved status
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('time_entries')
         .update({
           approval_status: 'approved',
           approved_by: userEmail,
           approved_at: new Date().toISOString()
         })
-        .in('id', entryIds);
+        .in('id', entryIds)
+        .select();
 
       if (updateError) throw updateError;
 
-      // Log approval action
-      const auditLogs = entryIds.map(id => ({
-        time_entry_id: id,
-        action: 'approved',
-        performed_by: userEmail,
-        performed_at: new Date().toISOString(),
-        details: { method: 'bulk_approve' }
-      }));
+      console.log(`✅ Approved ${updateData?.length ?? 0} entries in DB`);
 
-      await supabase.from('approval_audit_log').insert(auditLogs);
+      // Log approval action (non-blocking)
+      supabase.from('approval_audit_log').insert(
+        entryIds.map(id => ({
+          time_entry_id: id,
+          action: 'approved',
+          performed_by: userEmail,
+          performed_at: new Date().toISOString(),
+          details: { method: 'bulk_approve' }
+        }))
+      ).then(() => console.log('Audit logged'));
 
-      // Auto-send emails after approval
-      await sendApprovedEntriesToCustomer(entryIds);
-
-      setError(`✅ Approved ${entryIds.length} entries and sent to customer!`);
+      // Update local state immediately so UI reflects the change
+      setEntries(prev => prev.map(e =>
+        entryIds.includes(e.id)
+          ? { ...e, approval_status: 'approved', approved_by: userEmail, approved_at: new Date().toISOString() }
+          : e
+      ));
       setSelectedEntries(new Set());
-      await loadTimeEntries(); // Reload to show updated status
+      setError(`✅ Approved ${entryIds.length} entries!`);
+
+      // Try to send emails (non-blocking — approval is already saved)
+      try {
+        await sendApprovedEntriesToCustomer(entryIds);
+        setError(`✅ Approved ${entryIds.length} entries and report sent!`);
+      } catch (sendErr) {
+        console.error('Email send failed (approval still saved):', sendErr);
+        setError(`✅ Approved ${entryIds.length} entries. ⚠️ Email send failed: ${sendErr instanceof Error ? sendErr.message : 'Unknown'}`);
+      }
 
     } catch (err) {
       console.error('Approval failed:', err);
@@ -710,7 +724,11 @@ export default function TimeEntriesEnhancedPage() {
     let filtered = sortedEntries;
 
     // Apply approval status filter
-    if (approvalStatusFilter !== 'all') {
+    if (approvalStatusFilter === 'not_sent') {
+      filtered = filtered.filter(e => !e.approval_status || e.approval_status === 'pending' || e.approval_status === 'approved');
+    } else if (approvalStatusFilter === 'edited') {
+      filtered = filtered.filter(e => e.manually_edited || e.edit_count > 0);
+    } else if (approvalStatusFilter !== 'all') {
       filtered = filtered.filter(e => e.approval_status === approvalStatusFilter);
     }
 
@@ -959,6 +977,8 @@ export default function TimeEntriesEnhancedPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Status</option>
+                <option value="not_sent">🔴 Not Sent (Pending + Approved)</option>
+                <option value="edited">✏️ Edited / Changed</option>
                 <option value="pending">⏳ Pending</option>
                 <option value="approved">✅ Approved</option>
                 <option value="sent">📧 Sent</option>
