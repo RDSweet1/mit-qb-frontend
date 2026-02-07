@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles, ChevronDown, ChevronRight, Send } from 'lucide-react';
 import Link from 'next/link';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
@@ -101,6 +101,14 @@ export default function TimeEntriesEnhancedPage() {
   // AI enhance dialog state
   const [enhanceDialogOpen, setEnhanceDialogOpen] = useState(false);
   const [enhancingEntry, setEnhancingEntry] = useState<TimeEntry | null>(null);
+
+  // Post-approval send dialog
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sendDialogEntryIds, setSendDialogEntryIds] = useState<number[]>([]);
+  const [sendingFromDialog, setSendingFromDialog] = useState(false);
+
+  // Collapsed customer cards (cards with all entries sent auto-collapse)
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
 
   // Service item descriptions keyed by cost code
   const [serviceItemDescriptions, setServiceItemDescriptions] = useState<Record<string, string>>({});
@@ -298,6 +306,77 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
+  // Send from post-approval dialog
+  const sendFromDialog = async (mode: 'test' | 'customer' | 'skip') => {
+    if (mode === 'skip') {
+      setSendDialogOpen(false);
+      setSendDialogEntryIds([]);
+      return;
+    }
+
+    setSendingFromDialog(true);
+    try {
+      if (mode === 'test') {
+        // Send to Sharon + David for review
+        await sendApprovedEntriesToCustomerWithOverride(sendDialogEntryIds, 'david@mitigationconsulting.com', ['skisner@mitigationconsulting.com']);
+        setError('✅ Test report sent to Sharon & David!');
+      } else {
+        // Send to actual customer with CC
+        await sendApprovedEntriesToCustomer(sendDialogEntryIds);
+        setError('✅ Report sent to customer (CC: Sharon & David)!');
+      }
+    } catch (err) {
+      setError(`⚠️ Send failed: ${err instanceof Error ? err.message : 'Unknown'}`);
+    } finally {
+      setSendingFromDialog(false);
+      setSendDialogOpen(false);
+      setSendDialogEntryIds([]);
+    }
+  };
+
+  // Send with explicit recipient override (for test mode from dialog)
+  const sendApprovedEntriesToCustomerWithOverride = async (entryIds: number[], toEmail: string, ccEmails: string[]) => {
+    const { data: entriesToSend } = await supabase.from('time_entries').select('*').in('id', entryIds);
+    if (!entriesToSend?.length) return;
+
+    const byCustomer = new Map<string, typeof entriesToSend>();
+    entriesToSend.forEach(entry => {
+      const custId = entry.qb_customer_id;
+      if (!byCustomer.has(custId)) byCustomer.set(custId, []);
+      byCustomer.get(custId)!.push(entry);
+    });
+
+    for (const [customerId, customerEntries] of byCustomer) {
+      const reportData = {
+        startDate, endDate,
+        entries: customerEntries.map(entry => ({
+          date: entry.txn_date, employee: entry.employee_name, customer: entry.qb_customer_id,
+          costCode: entry.cost_code, hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
+          billable: entry.billable_status, description: entry.description
+        })),
+        summary: { totalEntries: customerEntries.length, totalHours: calculateTotalHours(customerEntries) }
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email_time_report`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report: reportData, recipient: toEmail, cc: ccEmails, entryIds: customerEntries.map(e => e.id), customerId, sentBy: user?.username || 'system' })
+      });
+
+      if (!response.ok) throw new Error(`Email failed: ${response.statusText}`);
+    }
+  };
+
+  // Toggle card collapse
+  const toggleCardCollapse = (customerId: string) => {
+    setCollapsedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(customerId)) next.delete(customerId);
+      else next.add(customerId);
+      return next;
+    });
+  };
+
   // Send report respecting test mode toggle
   const sendReportToCustomer = () => {
     if (testMode) {
@@ -389,14 +468,9 @@ export default function TimeEntriesEnhancedPage() {
       setSelectedEntries(new Set());
       setError(`✅ Approved ${entryIds.length} entries!`);
 
-      // Try to send emails (non-blocking — approval is already saved)
-      try {
-        await sendApprovedEntriesToCustomer(entryIds);
-        setError(`✅ Approved ${entryIds.length} entries and report sent!`);
-      } catch (sendErr) {
-        console.error('Email send failed (approval still saved):', sendErr);
-        setError(`✅ Approved ${entryIds.length} entries. ⚠️ Email send failed: ${sendErr instanceof Error ? sendErr.message : 'Unknown'}`);
-      }
+      // Show send dialog so user can choose how to send
+      setSendDialogEntryIds(entryIds);
+      setSendDialogOpen(true);
 
     } catch (err) {
       console.error('Approval failed:', err);
@@ -1183,24 +1257,64 @@ export default function TimeEntriesEnhancedPage() {
               Array.from(groupedByCustomer.entries()).map(([customerId, customerEntries]) => {
                 const customerName = customers.find(c => c.qb_customer_id === customerId)?.display_name || customerId;
 
+                // Calculate card status
+                const allSent = customerEntries.every(e => e.approval_status === 'sent' || e.approval_status === 'delivered' || e.approval_status === 'read');
+                const allApproved = customerEntries.every(e => e.approval_status === 'approved' || e.approval_status === 'sent' || e.approval_status === 'delivered' || e.approval_status === 'read');
+                const someApproved = customerEntries.some(e => e.approval_status === 'approved' || e.approval_status === 'sent');
+                const isCollapsed = collapsedCards.has(customerId) || allSent;
+                const isExpanded = !isCollapsed;
+
+                // Header gradient based on status
+                const headerGradient = allSent
+                  ? 'from-emerald-600 to-emerald-700'
+                  : allApproved
+                  ? 'from-amber-500 to-amber-600'
+                  : 'from-blue-600 to-blue-700';
+
                 return (
                   <div key={customerId} className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    {/* Customer Header */}
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                    {/* Customer Header — clickable to collapse/expand */}
+                    <div
+                      className={`bg-gradient-to-r ${headerGradient} px-6 py-4 cursor-pointer select-none`}
+                      onClick={() => toggleCardCollapse(customerId)}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
+                          {isExpanded
+                            ? <ChevronDown className="w-5 h-5 text-white/80" />
+                            : <ChevronRight className="w-5 h-5 text-white/80" />
+                          }
                           <Building2 className="w-6 h-6 text-white" />
                           <div>
                             <h2 className="text-xl font-bold text-white">{customerName}</h2>
-                            <p className="text-blue-100 text-sm">
+                            <p className="text-white/80 text-sm">
                               {customerEntries.length} entries • {calculateTotalHours(customerEntries)} hours
                             </p>
                           </div>
                         </div>
+                        {/* Status Badge */}
+                        <div className="flex items-center gap-2">
+                          {allSent && (
+                            <span className="px-3 py-1 bg-white/20 text-white text-xs font-bold rounded-full">
+                              Sent {startDate} – {endDate}
+                            </span>
+                          )}
+                          {!allSent && allApproved && (
+                            <span className="px-3 py-1 bg-white/20 text-white text-xs font-bold rounded-full">
+                              Approved — Not Sent
+                            </span>
+                          )}
+                          {!allSent && !allApproved && someApproved && (
+                            <span className="px-3 py-1 bg-white/20 text-white text-xs font-bold rounded-full">
+                              Partially Approved
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Time Entries */}
+                    {/* Time Entries — hidden when collapsed */}
+                    {isExpanded && (<>
                     <div className="divide-y divide-gray-200">
                       {customerEntries.map((entry, idx) => (
                         <div key={entry.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
@@ -1332,6 +1446,7 @@ export default function TimeEntriesEnhancedPage() {
                         <span className="text-lg font-bold text-gray-900">{calculateTotalHours(customerEntries)} hours</span>
                       </div>
                     </div>
+                    </>)}
                   </div>
                 );
               })
@@ -1492,6 +1607,62 @@ export default function TimeEntriesEnhancedPage() {
         setEnhancingEntry(null);
       }}
     />
+
+    {/* Post-Approval Send Dialog */}
+    {sendDialogOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/50" onClick={() => !sendingFromDialog && sendFromDialog('skip')} />
+        <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Entries Approved!
+            </h3>
+            <p className="text-emerald-100 text-sm mt-1">
+              {sendDialogEntryIds.length} entries approved. Send the report now?
+            </p>
+          </div>
+          <div className="p-6 space-y-3">
+            <button
+              onClick={() => sendFromDialog('test')}
+              disabled={sendingFromDialog}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-amber-50 border-2 border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
+            >
+              <Send className="w-5 h-5 text-amber-600" />
+              <div className="text-left">
+                <p className="font-semibold text-amber-800">Send Test Report</p>
+                <p className="text-xs text-amber-600">To Sharon Kisner & David Sweet for review</p>
+              </div>
+            </button>
+            <button
+              onClick={() => sendFromDialog('customer')}
+              disabled={sendingFromDialog}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-emerald-50 border-2 border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors disabled:opacity-50"
+            >
+              <Mail className="w-5 h-5 text-emerald-600" />
+              <div className="text-left">
+                <p className="font-semibold text-emerald-800">Send to Customer</p>
+                <p className="text-xs text-emerald-600">To insured, CC Sharon & David</p>
+              </div>
+            </button>
+            <button
+              onClick={() => sendFromDialog('skip')}
+              disabled={sendingFromDialog}
+              className="w-full px-4 py-2 text-gray-500 hover:text-gray-700 text-sm transition-colors disabled:opacity-50"
+            >
+              Skip — Don't send now
+            </button>
+            {sendingFromDialog && (
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                Sending...
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+
     </ProtectedPage>
   );
 }
