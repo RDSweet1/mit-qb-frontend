@@ -15,7 +15,11 @@ export function ProtectedPage({ children }: ProtectedPageProps) {
 
   const handleLogin = async () => {
     try {
-      await instance.loginPopup(loginRequest);
+      // Pick up login_hint from URL for pre-filled sign-in
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const loginHint = params?.get('login_hint') || undefined;
+      const request = loginHint ? { ...loginRequest, loginHint } : loginRequest;
+      await instance.loginPopup(request);
     } catch (error) {
       console.error('Login failed:', error);
     }

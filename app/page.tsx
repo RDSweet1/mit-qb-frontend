@@ -32,16 +32,22 @@ export default function Home() {
     console.log('🔍 DEBUG v2: Build timestamp:', new Date().toISOString());
   }, [isAuthenticated, accounts, user]);
 
+  // Pick up login_hint from URL for pre-filled sign-in
+  const getLoginHint = (): string | undefined => {
+    if (typeof window === 'undefined') return undefined;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('login_hint') || undefined;
+  };
+
   const handleLogin = async () => {
     console.log('🔍 DEBUG: handleLogin called - button clicked!');
-    console.log('🔍 DEBUG: MSAL instance:', instance);
-    console.log('🔍 DEBUG: Current accounts:', accounts);
-    console.log('🔍 DEBUG: Login request:', loginRequest);
 
     setLoading(true);
     try {
-      console.log('🔍 DEBUG: Calling loginPopup...');
-      const result = await instance.loginPopup(loginRequest);
+      const loginHint = getLoginHint();
+      const request = loginHint ? { ...loginRequest, loginHint } : loginRequest;
+      console.log('🔍 DEBUG: Calling loginPopup...', loginHint ? `(hint: ${loginHint})` : '');
+      const result = await instance.loginPopup(request);
       console.log('✅ DEBUG: Login successful!', result);
     } catch (error: any) {
       console.error('❌ DEBUG: Login failed with error:', error);

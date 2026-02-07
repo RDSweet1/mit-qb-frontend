@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Users, Plus, Trash2, LogOut, Shield } from 'lucide-react';
+import { ArrowLeft, Users, Plus, Trash2, LogOut, Shield, Mail, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useMsal } from '@azure/msal-react';
 import { ProtectedPage } from '@/components/ProtectedPage';
@@ -129,6 +129,34 @@ export default function AdminUsersPage() {
       setError(err instanceof Error ? err.message : 'Failed to delete user');
     } finally {
       setSaving(null);
+    }
+  };
+
+  // Invite user
+  const [inviting, setInviting] = useState<string | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ id: string; success: boolean; message: string } | null>(null);
+
+  const inviteUser = async (appUser: AppUser) => {
+    if (!confirm(`Send onboarding invitation to ${appUser.display_name} (${appUser.email})?\n\nThey'll receive an email with a personalized link to the app.`)) return;
+
+    setInviting(appUser.id);
+    setInviteResult(null);
+    try {
+      const result = await callEdgeFunction('invite-user', {
+        email: appUser.email,
+        display_name: appUser.display_name,
+        admin_email: adminEmail,
+      });
+      if (result.success) {
+        setInviteResult({ id: appUser.id, success: true, message: 'Invite sent!' });
+        setTimeout(() => setInviteResult(null), 5000);
+      } else {
+        setInviteResult({ id: appUser.id, success: false, message: result.error || 'Failed to send' });
+      }
+    } catch (err) {
+      setInviteResult({ id: appUser.id, success: false, message: err instanceof Error ? err.message : 'Failed' });
+    } finally {
+      setInviting(null);
     }
   };
 
@@ -315,14 +343,35 @@ export default function AdminUsersPage() {
                           {formatDate(appUser.last_login)}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => deleteUser(appUser.id, appUser.email)}
-                            disabled={appUser.email === adminEmail || saving === appUser.id}
-                            className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed p-1"
-                            title={appUser.email === adminEmail ? 'Cannot delete yourself' : 'Delete user'}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => inviteUser(appUser)}
+                              disabled={inviting === appUser.id}
+                              className="text-blue-500 hover:text-blue-700 disabled:opacity-50 p-1"
+                              title="Send onboarding invite email"
+                            >
+                              {inviting === appUser.id ? (
+                                <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                              ) : inviteResult?.id === appUser.id && inviteResult.success ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Mail className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => deleteUser(appUser.id, appUser.email)}
+                              disabled={appUser.email === adminEmail || saving === appUser.id}
+                              className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                              title={appUser.email === adminEmail ? 'Cannot delete yourself' : 'Delete user'}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {inviteResult?.id === appUser.id && (
+                            <div className={`text-xs mt-1 ${inviteResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                              {inviteResult.message}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
