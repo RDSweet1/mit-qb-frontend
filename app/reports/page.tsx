@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Send, Calendar, FileText, Mail, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Send, Calendar, FileText, Mail, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
@@ -51,6 +51,40 @@ export default function ReportsPage() {
     }
     loadReportPeriods();
   }, [success]); // re-fetch after sending
+
+  // Supplemental report state
+  const [sendingSupplemental, setSendingSupplemental] = useState<number | null>(null); // period id being sent
+  const [supplementalResult, setSupplementalResult] = useState<{ id: number; success: boolean; message: string } | null>(null);
+
+  const sendSupplementalReport = async (period: ReportPeriod) => {
+    if (!confirm(`Send supplemental report to ${period.customer_name} for week of ${period.week_start}?\n\nMake sure notes have been reviewed and updated before sending.`)) {
+      return;
+    }
+    try {
+      setSendingSupplemental(period.id);
+      setSupplementalResult(null);
+      const result = await callEdgeFunction('send-supplemental-report', {
+        qb_customer_id: period.qb_customer_id,
+        week_start: period.week_start,
+        week_end: period.week_end
+      });
+      setSupplementalResult({
+        id: period.id,
+        success: true,
+        message: `Supplemental sent to ${period.customer_name} (${result.newEntries} new entries, ${result.noteChanges} note changes)`
+      });
+      // Refresh data
+      setSuccess(prev => !prev);
+    } catch (err) {
+      setSupplementalResult({
+        id: period.id,
+        success: false,
+        message: err instanceof Error ? err.message : 'Failed to send supplemental report'
+      });
+    } finally {
+      setSendingSupplemental(null);
+    }
+  };
 
   // Group report periods by week
   const periodsByWeek = reportPeriods.reduce<Record<string, ReportPeriod[]>>((acc, rp) => {
@@ -252,6 +286,7 @@ export default function ReportsPage() {
                           <th className="text-right px-4 py-2 font-medium">Hours</th>
                           <th className="text-right px-4 py-2 font-medium">Entries</th>
                           <th className="text-right px-4 py-2 font-medium">Late</th>
+                          <th className="text-right px-4 py-2 font-medium">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -294,6 +329,28 @@ export default function ReportsPage() {
                                 </span>
                               ) : (
                                 <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {(period.status === 'sent' && period.late_entry_count > 0) ? (
+                                <button
+                                  onClick={() => sendSupplementalReport(period)}
+                                  disabled={sendingSupplemental === period.id}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500 text-white rounded text-xs font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  {sendingSupplemental === period.id ? (
+                                    <><div className="spinner w-3 h-3 border"></div> Sending...</>
+                                  ) : (
+                                    <><RefreshCw className="w-3 h-3" /> Send Update</>
+                                  )}
+                                </button>
+                              ) : period.status === 'supplemental_sent' ? (
+                                <span className="text-xs text-blue-600">Update sent</span>
+                              ) : null}
+                              {supplementalResult?.id === period.id && (
+                                <div className={`mt-1 text-xs ${supplementalResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                                  {supplementalResult.message}
+                                </div>
                               )}
                             </td>
                           </tr>
