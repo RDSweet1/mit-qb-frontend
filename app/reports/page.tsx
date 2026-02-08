@@ -23,12 +23,14 @@ export default function ReportsPage() {
     qb_customer_id: string;
     week_start: string;
     week_end: string;
-    status: 'pending' | 'sent' | 'supplemental_sent' | 'no_time';
+    status: 'pending' | 'sent' | 'supplemental_sent' | 'accepted' | 'disputed' | 'no_time';
     total_hours: number;
     entry_count: number;
     late_entry_count: number;
     late_entry_hours: number;
     sent_at: string | null;
+    accepted_at: string | null;
+    report_number: string | null;
   }
 
   const [reportPeriods, setReportPeriods] = useState<ReportPeriod[]>([]);
@@ -239,6 +241,8 @@ export default function ReportsPage() {
               {Object.entries(periodsByWeek).map(([weekStart, periods]) => {
                 const weekEndDate = periods[0]?.week_end || '';
                 const sentCount = periods.filter(p => p.status === 'sent' || p.status === 'supplemental_sent').length;
+                const acceptedCount = periods.filter(p => p.status === 'accepted').length;
+                const disputedCount = periods.filter(p => p.status === 'disputed').length;
                 const missedCount = periods.filter(p => p.status === 'pending').length;
                 const noTimeCount = periods.filter(p => p.status === 'no_time').length;
                 const lateCount = periods.filter(p => p.late_entry_count > 0).length;
@@ -254,9 +258,19 @@ export default function ReportsPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-xs">
+                        {acceptedCount > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
+                            <CheckCircle className="w-3 h-3" /> {acceptedCount} accepted
+                          </span>
+                        )}
                         {sentCount > 0 && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full">
                             <CheckCircle className="w-3 h-3" /> {sentCount} sent
+                          </span>
+                        )}
+                        {disputedCount > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full">
+                            <AlertTriangle className="w-3 h-3" /> {disputedCount} disputed
                           </span>
                         )}
                         {missedCount > 0 && (
@@ -302,6 +316,16 @@ export default function ReportsPage() {
                               {period.status === 'supplemental_sent' && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                                   <Mail className="w-3 h-3" /> Supplemental
+                                </span>
+                              )}
+                              {period.status === 'accepted' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                                  <CheckCircle className="w-3 h-3" /> Accepted
+                                </span>
+                              )}
+                              {period.status === 'disputed' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                                  <AlertTriangle className="w-3 h-3" /> Disputed
                                 </span>
                               )}
                               {period.status === 'pending' && (
