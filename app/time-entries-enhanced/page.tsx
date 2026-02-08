@@ -317,9 +317,9 @@ export default function TimeEntriesEnhancedPage() {
     setSendingFromDialog(true);
     try {
       if (mode === 'test') {
-        // Send to Sharon + David for review
+        // Send to David, CC Sharon for review
         await sendApprovedEntriesToCustomerWithOverride(sendDialogEntryIds, 'david@mitigationconsulting.com', ['skisner@mitigationconsulting.com']);
-        setError('✅ Test report sent to Sharon & David!');
+        setError('✅ Test report sent to David & Sharon!');
       } else {
         // Send to actual customer with CC
         await sendApprovedEntriesToCustomer(sendDialogEntryIds);
@@ -1231,7 +1231,7 @@ export default function TimeEntriesEnhancedPage() {
                         <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${testMode ? 'translate-x-0.5' : 'translate-x-4'}`} />
                       </div>
                       <span className={`text-xs font-semibold ${testMode ? 'text-amber-700' : 'text-emerald-700'}`}>
-                        {testMode ? 'TEST MODE — sends to David only' : 'LIVE — sends to customer + CC Sharon & David'}
+                        {testMode ? 'TEST MODE — sends to David & Sharon' : 'LIVE — sends to customer + CC Sharon & David'}
                       </span>
                     </label>
 
@@ -1263,6 +1263,8 @@ export default function TimeEntriesEnhancedPage() {
                 const someApproved = customerEntries.some(e => e.approval_status === 'approved' || e.approval_status === 'sent');
                 const isCollapsed = collapsedCards.has(customerId) || allSent;
                 const isExpanded = !isCollapsed;
+                const allSelectedInCard = customerEntries.every(e => selectedEntries.has(e.id));
+                const someSelectedInCard = customerEntries.some(e => selectedEntries.has(e.id));
 
                 // Header gradient based on status
                 const headerGradient = allSent
@@ -1292,8 +1294,8 @@ export default function TimeEntriesEnhancedPage() {
                             </p>
                           </div>
                         </div>
-                        {/* Status Badge */}
-                        <div className="flex items-center gap-2">
+                        {/* Status Badge + Select All */}
+                        <div className="flex items-center gap-3">
                           {allSent && (
                             <span className="px-3 py-1 bg-white/20 text-white text-xs font-bold rounded-full">
                               Sent {startDate} – {endDate}
@@ -1308,6 +1310,30 @@ export default function TimeEntriesEnhancedPage() {
                             <span className="px-3 py-1 bg-white/20 text-white text-xs font-bold rounded-full">
                               Partially Approved
                             </span>
+                          )}
+                          {!allSent && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const ids = customerEntries.map(en => en.id);
+                                setSelectedEntries(prev => {
+                                  const next = new Set(prev);
+                                  if (allSelectedInCard) {
+                                    ids.forEach(id => next.delete(id));
+                                  } else {
+                                    ids.forEach(id => next.add(id));
+                                  }
+                                  return next;
+                                });
+                              }}
+                              className={`px-3 py-1 text-xs font-bold rounded-full transition-colors ${
+                                allSelectedInCard
+                                  ? 'bg-white text-blue-700 hover:bg-blue-50'
+                                  : 'bg-white/20 text-white hover:bg-white/30'
+                              }`}
+                            >
+                              {allSelectedInCard ? '✓ All Selected' : someSelectedInCard ? `Select All (${customerEntries.filter(e => selectedEntries.has(e.id)).length}/${customerEntries.length})` : 'Select All'}
+                            </button>
                           )}
                         </div>
                       </div>
