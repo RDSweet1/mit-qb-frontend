@@ -96,20 +96,20 @@ function fmtShortDate(dateStr: string): string {
   return `${day} ${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-function businessDaysRemaining(expiresAt: string | null): number {
-  if (!expiresAt) return 0;
+function businessDaysRemaining(sentAt: string | null): number {
+  if (!sentAt) return 3;
   const now = new Date();
-  const expiry = new Date(expiresAt);
-  if (expiry <= now) return 0;
-  let count = 0;
-  const d = new Date(now);
-  d.setHours(0, 0, 0, 0);
-  while (d < expiry) {
+  const sent = new Date(sentAt);
+  sent.setHours(0, 0, 0, 0);
+  // Count business days elapsed since sent
+  let elapsed = 0;
+  const d = new Date(sent);
+  while (d < now) {
     d.setDate(d.getDate() + 1);
     const dow = d.getDay();
-    if (dow !== 0 && dow !== 6) count++;
+    if (dow !== 0 && dow !== 6) elapsed++;
   }
-  return count;
+  return Math.max(0, 3 - elapsed);
 }
 
 // ─── MIT logo base64 (same as email templates) ─────────────────────
@@ -484,7 +484,7 @@ export default function ReviewPage() {
           <>
             {/* Review notice */}
             {(() => {
-              const daysLeft = businessDaysRemaining(reviewToken.expires_at);
+              const daysLeft = businessDaysRemaining(reportPeriod.sent_at);
               return (
                 <div style={{
                   backgroundColor: COLORS.amberBg, border: `2px solid ${COLORS.amber}`, borderRadius: 12,
