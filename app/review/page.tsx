@@ -483,18 +483,23 @@ export default function ReviewPage() {
         {pageState === 'review' && reportPeriod && reviewToken && (
           <>
             {/* Review notice */}
-            <div style={{
-              backgroundColor: COLORS.amberBg, border: `2px solid ${COLORS.amber}`, borderRadius: 12,
-              padding: 20, marginBottom: 24,
-            }}>
-              <h3 style={{ margin: '0 0 8px', color: COLORS.amberDark, fontSize: 15 }}>
-                &#9888; Please Review — {businessDaysRemaining(reviewToken.expires_at)} Business Day{businessDaysRemaining(reviewToken.expires_at) !== 1 ? 's' : ''} Remaining
-              </h3>
-              <p style={{ margin: 0, color: '#78350f', fontSize: 13, lineHeight: 1.7 }}>
-                We kindly request that you review the time entries and detailed notes below and indicate any concerns you may have.
-                If we do not receive a response within <strong>three (3) business days</strong>, the time will be accepted as reported and confirmed as billable.
-              </p>
-            </div>
+            {(() => {
+              const daysLeft = businessDaysRemaining(reviewToken.expires_at);
+              return (
+                <div style={{
+                  backgroundColor: COLORS.amberBg, border: `2px solid ${COLORS.amber}`, borderRadius: 12,
+                  padding: 20, marginBottom: 24,
+                }}>
+                  <h3 style={{ margin: '0 0 8px', color: COLORS.amberDark, fontSize: 15 }}>
+                    &#9888; Please Review — {daysLeft} Business Day{daysLeft !== 1 ? 's' : ''} Remaining
+                  </h3>
+                  <p style={{ margin: 0, color: '#78350f', fontSize: 13, lineHeight: 1.7 }}>
+                    We kindly request that you review the time entries and detailed notes below and indicate any concerns you may have.
+                    If we do not receive a response within <strong>{daysLeft} business day{daysLeft !== 1 ? 's' : ''}</strong>, the time will be accepted as reported and confirmed as billable.
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Customer name card */}
             <div style={{
@@ -826,7 +831,7 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
                           onClick={() => onToggleFlag(entry.id)}
                           title={isFlagged ? 'Remove flag' : 'Flag this entry for review'}
                         >
-                          <span style={{ fontSize: 26, opacity: isFlagged ? 1 : 0.25, transition: 'opacity 0.15s' }}>
+                          <span style={{ fontSize: 39, opacity: isFlagged ? 1 : 0.25, transition: 'opacity 0.15s' }}>
                             {isFlagged ? '\u{1F6A9}' : '\u{1F6A9}'}
                           </span>
                         </td>
