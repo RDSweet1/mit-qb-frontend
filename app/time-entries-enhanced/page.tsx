@@ -34,6 +34,7 @@ interface TimeEntry {
   minutes: number;
   service_item_name: string;
   cost_code: string;
+  qb_item_id: string | null;
   description: string;
   notes: string | null;
   billable_status: string;
@@ -57,6 +58,12 @@ interface Customer {
   qb_customer_id: string;
   display_name: string;
   email: string | null;
+}
+
+interface ServiceItem {
+  qb_item_id: string;
+  name: string;
+  code: string | null;
 }
 
 type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'all_time' | 'custom';
@@ -119,6 +126,10 @@ export default function TimeEntriesEnhancedPage() {
   const [clarifyDialogOpen, setClarifyDialogOpen] = useState(false);
   const [clarifyEntries, setClarifyEntries] = useState<TimeEntry[]>([]);
 
+  // Inline editing state for service item and billable status
+  const [editingServiceItemId, setEditingServiceItemId] = useState<number | null>(null);
+  const [editingBillableId, setEditingBillableId] = useState<number | null>(null);
+
   // Post-approval send dialog
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendDialogEntryIds, setSendDialogEntryIds] = useState<number[]>([]);
@@ -127,7 +138,8 @@ export default function TimeEntriesEnhancedPage() {
   // Collapsed customer cards (cards with all entries sent auto-collapse)
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
 
-  // Service item descriptions keyed by cost code
+  // Service items list and descriptions keyed by cost code
+  const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
   const [serviceItemDescriptions, setServiceItemDescriptions] = useState<Record<string, string>>({});
 
   // Load customers
@@ -146,16 +158,20 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
-  // Load service items (for cost code descriptions)
+  // Load service items (for cost code descriptions and inline editing dropdown)
   const loadServiceItems = async () => {
     try {
       const { data, error } = await supabase
         .from('service_items')
-        .select('code, name, description');
+        .select('qb_item_id, code, name, description')
+        .eq('is_active', true)
+        .order('name');
 
       if (error) throw error;
+      const items = data || [];
+      setServiceItems(items.map((item: any) => ({ qb_item_id: item.qb_item_id, name: item.name, code: item.code })));
       const descMap: Record<string, string> = {};
-      (data || []).forEach((item: any) => {
+      items.forEach((item: any) => {
         if (item.code) {
           descMap[item.code] = item.description || item.name || '';
         }
@@ -696,6 +712,108 @@ export default function TimeEntriesEnhancedPage() {
       throw err;
     } finally {
       setSavingNotes(false);
+    }
+  };
+
+  // Save service item change
+  const saveServiceItem = async (entryId: number, newQbItemId: string) => {
+    const userEmail = user?.username || 'unknown';
+    const entry = entries.find(e => e.id === entryId);
+    if (!entry) return;
+    const currentEditCount = entry.edit_count || 0;
+    const selectedItem = serviceItems.find(si => si.qb_item_id === newQbItemId);
+    if (!selectedItem) return;
+
+    try {
+      const { error: updateError } = await supabase
+        .from('time_entries')
+        .update({
+          qb_item_id: newQbItemId,
+          service_item_name: selectedItem.name,
+          cost_code: selectedItem.code || selectedItem.name,
+          updated_at: new Date().toISOString(),
+          updated_by: userEmail,
+          manually_edited: true,
+          edit_count: currentEditCount + 1,
+        })
+        .eq('id', entryId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setEntries(prev => prev.map(e =>
+        e.id === entryId
+          ? {
+              ...e,
+              qb_item_id: newQbItemId,
+              service_item_name: selectedItem.name,
+              cost_code: selectedItem.code || selectedItem.name,
+              manually_edited: true,
+              edit_count: currentEditCount + 1,
+              updated_at: new Date().toISOString(),
+              updated_by: userEmail,
+            }
+          : e
+      ));
+
+      // Write back to QB Online (async, non-blocking)
+      try {
+        const qbResult = await callEdgeFunction('update_qb_time_entry', {
+          entry_id: entryId,
+          qb_item_id: newQbItemId,
+          user_email: userEmail,
+        });
+        if (qbResult.success) {
+          console.log(`✅ Service item synced back to QB Online`);
+        } else {
+          console.warn('⚠️ QB Online sync-back failed:', qbResult.error);
+        }
+      } catch (qbErr) {
+        console.warn('⚠️ Could not sync service item back to QB:', qbErr);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save service item';
+      setError(msg);
+    }
+  };
+
+  // Save billable status change (local-only, no QB write-back)
+  const saveBillableStatus = async (entryId: number, newStatus: string) => {
+    const userEmail = user?.username || 'unknown';
+    const entry = entries.find(e => e.id === entryId);
+    if (!entry) return;
+    const currentEditCount = entry.edit_count || 0;
+
+    try {
+      const { error: updateError } = await supabase
+        .from('time_entries')
+        .update({
+          billable_status: newStatus,
+          updated_at: new Date().toISOString(),
+          updated_by: userEmail,
+          manually_edited: true,
+          edit_count: currentEditCount + 1,
+        })
+        .eq('id', entryId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setEntries(prev => prev.map(e =>
+        e.id === entryId
+          ? {
+              ...e,
+              billable_status: newStatus,
+              manually_edited: true,
+              edit_count: currentEditCount + 1,
+              updated_at: new Date().toISOString(),
+              updated_by: userEmail,
+            }
+          : e
+      ));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save billable status';
+      setError(msg);
     }
   };
 
@@ -1481,16 +1599,64 @@ export default function TimeEntriesEnhancedPage() {
                                 <User className="w-4 h-4 text-gray-400" />
                                 <span className="font-medium text-gray-900">{entry.employee_name}</span>
                               </div>
-                              <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded">
-                                {entry.service_item_name || entry.cost_code}
-                              </span>
-                              <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                                entry.billable_status === 'Billable'
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-gray-100 text-gray-700'
-                              }`}>
-                                {entry.billable_status}
-                              </span>
+                              {/* Service Item Badge (click-to-edit) */}
+                              {editingServiceItemId === entry.id ? (
+                                <select
+                                  autoFocus
+                                  className="px-2 py-1 text-xs font-semibold rounded border border-purple-300 bg-white text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                  value={entry.qb_item_id || ''}
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      saveServiceItem(entry.id, e.target.value);
+                                    }
+                                    setEditingServiceItemId(null);
+                                  }}
+                                  onBlur={() => setEditingServiceItemId(null)}
+                                >
+                                  <option value="" disabled>Select item...</option>
+                                  {serviceItems.map(si => (
+                                    <option key={si.qb_item_id} value={si.qb_item_id}>
+                                      {si.name}{si.code ? ` (${si.code})` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span
+                                  className={`px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded ${!entry.is_locked ? 'cursor-pointer hover:bg-purple-200' : ''}`}
+                                  onClick={() => { if (!entry.is_locked) setEditingServiceItemId(entry.id); }}
+                                  title={entry.is_locked ? 'Locked' : 'Click to change service item'}
+                                >
+                                  {entry.service_item_name || entry.cost_code}
+                                </span>
+                              )}
+                              {/* Billable Status Badge (click-to-edit) */}
+                              {editingBillableId === entry.id ? (
+                                <select
+                                  autoFocus
+                                  className="px-2 py-1 text-xs font-semibold rounded border border-green-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-400"
+                                  value={entry.billable_status}
+                                  onChange={(e) => {
+                                    saveBillableStatus(entry.id, e.target.value);
+                                    setEditingBillableId(null);
+                                  }}
+                                  onBlur={() => setEditingBillableId(null)}
+                                >
+                                  <option value="Billable">Billable</option>
+                                  <option value="NotBillable">Not Billable</option>
+                                </select>
+                              ) : (
+                                <span
+                                  className={`px-2 py-1 text-xs font-semibold rounded ${
+                                    entry.billable_status === 'Billable'
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-gray-100 text-gray-700'
+                                  } ${!entry.is_locked ? 'cursor-pointer hover:opacity-80' : ''}`}
+                                  onClick={() => { if (!entry.is_locked) setEditingBillableId(entry.id); }}
+                                  title={entry.is_locked ? 'Locked' : 'Click to change billable status'}
+                                >
+                                  {entry.billable_status}
+                                </span>
+                              )}
                               {/* Approval Status Badge */}
                               <span className={`px-2 py-1 text-xs font-semibold rounded ${
                                 entry.approval_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
@@ -1635,16 +1801,64 @@ export default function TimeEntriesEnhancedPage() {
                               <User className="w-4 h-4 text-gray-400" />
                               <span className="font-medium text-gray-900">{entry.employee_name}</span>
                             </div>
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded">
-                              {entry.service_item_name || entry.cost_code}
-                            </span>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                              entry.billable_status === 'Billable'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {entry.billable_status}
-                            </span>
+                            {/* Service Item Badge (click-to-edit) */}
+                            {editingServiceItemId === entry.id ? (
+                              <select
+                                autoFocus
+                                className="px-2 py-1 text-xs font-semibold rounded border border-purple-300 bg-white text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                value={entry.qb_item_id || ''}
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    saveServiceItem(entry.id, e.target.value);
+                                  }
+                                  setEditingServiceItemId(null);
+                                }}
+                                onBlur={() => setEditingServiceItemId(null)}
+                              >
+                                <option value="" disabled>Select item...</option>
+                                {serviceItems.map(si => (
+                                  <option key={si.qb_item_id} value={si.qb_item_id}>
+                                    {si.name}{si.code ? ` (${si.code})` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span
+                                className={`px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded ${!entry.is_locked ? 'cursor-pointer hover:bg-purple-200' : ''}`}
+                                onClick={() => { if (!entry.is_locked) setEditingServiceItemId(entry.id); }}
+                                title={entry.is_locked ? 'Locked' : 'Click to change service item'}
+                              >
+                                {entry.service_item_name || entry.cost_code}
+                              </span>
+                            )}
+                            {/* Billable Status Badge (click-to-edit) */}
+                            {editingBillableId === entry.id ? (
+                              <select
+                                autoFocus
+                                className="px-2 py-1 text-xs font-semibold rounded border border-green-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-400"
+                                value={entry.billable_status}
+                                onChange={(e) => {
+                                  saveBillableStatus(entry.id, e.target.value);
+                                  setEditingBillableId(null);
+                                }}
+                                onBlur={() => setEditingBillableId(null)}
+                              >
+                                <option value="Billable">Billable</option>
+                                <option value="NotBillable">Not Billable</option>
+                              </select>
+                            ) : (
+                              <span
+                                className={`px-2 py-1 text-xs font-semibold rounded ${
+                                  entry.billable_status === 'Billable'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-700'
+                                } ${!entry.is_locked ? 'cursor-pointer hover:opacity-80' : ''}`}
+                                onClick={() => { if (!entry.is_locked) setEditingBillableId(entry.id); }}
+                                title={entry.is_locked ? 'Locked' : 'Click to change billable status'}
+                              >
+                                {entry.billable_status}
+                              </span>
+                            )}
                             {/* Approval Status Badge */}
                             <span className={`px-2 py-1 text-xs font-semibold rounded ${
                               entry.approval_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
