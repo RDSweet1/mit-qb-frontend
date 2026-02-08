@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Send, Calendar, FileText, Mail, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Send, Calendar, FileText, Mail, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
@@ -35,6 +35,32 @@ export default function ReportsPage() {
 
   const [reportPeriods, setReportPeriods] = useState<ReportPeriod[]>([]);
   const [statusLoading, setStatusLoading] = useState(true);
+  const [clarificationCounts, setClarificationCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    // Load active clarification counts grouped by customer
+    async function loadClarificationCounts() {
+      const { data } = await supabase
+        .from('internal_assignments')
+        .select('time_entry_id')
+        .in('status', ['pending', 'responded']);
+
+      if (data?.length) {
+        const entryIds = data.map(a => a.time_entry_id);
+        const { data: entries } = await supabase
+          .from('time_entries')
+          .select('qb_customer_id')
+          .in('id', entryIds);
+
+        const counts: Record<string, number> = {};
+        (entries || []).forEach(e => {
+          counts[e.qb_customer_id] = (counts[e.qb_customer_id] || 0) + 1;
+        });
+        setClarificationCounts(counts);
+      }
+    }
+    loadClarificationCounts();
+  }, [success]);
 
   useEffect(() => {
     async function loadReportPeriods() {
@@ -306,7 +332,15 @@ export default function ReportsPage() {
                       <tbody>
                         {periods.map((period) => (
                           <tr key={period.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                            <td className="px-4 py-2 text-sm text-gray-900">{period.customer_name || 'Unknown'}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900">
+                              {period.customer_name || 'Unknown'}
+                              {clarificationCounts[period.qb_customer_id] > 0 && (
+                                <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium" title={`${clarificationCounts[period.qb_customer_id]} entries pending clarification`}>
+                                  <MessageSquare className="w-3 h-3" />
+                                  {clarificationCounts[period.qb_customer_id]}
+                                </span>
+                              )}
+                            </td>
                             <td className="px-4 py-2 text-center">
                               {period.status === 'sent' && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">

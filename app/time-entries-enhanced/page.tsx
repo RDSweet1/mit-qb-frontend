@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles, ChevronDown, ChevronRight, Send } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles, ChevronDown, ChevronRight, Send, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
@@ -14,6 +14,7 @@ import { EditWarningBanner } from '@/components/time-entries/EditWarningBanner';
 import { TrackingHistoryDialog } from '@/components/time-entries/TrackingHistoryDialog';
 import { InlineNotesEditor } from '@/components/time-entries/InlineNotesEditor';
 import { EnhanceNotesDialog } from '@/components/time-entries/EnhanceNotesDialog';
+import { AssignClarificationDialog } from '@/components/time-entries/AssignClarificationDialog';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -49,6 +50,7 @@ interface TimeEntry {
   change_reason?: string | null;
   post_send_edit?: boolean;
   amended_at?: string | null;
+  has_active_clarification?: boolean;
 }
 
 interface Customer {
@@ -112,6 +114,10 @@ export default function TimeEntriesEnhancedPage() {
   // AI enhance dialog state
   const [enhanceDialogOpen, setEnhanceDialogOpen] = useState(false);
   const [enhancingEntry, setEnhancingEntry] = useState<TimeEntry | null>(null);
+
+  // Clarification dialog state
+  const [clarifyDialogOpen, setClarifyDialogOpen] = useState(false);
+  const [clarifyEntries, setClarifyEntries] = useState<TimeEntry[]>([]);
 
   // Post-approval send dialog
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -1282,14 +1288,28 @@ export default function TimeEntriesEnhancedPage() {
                       Approve All Pending
                     </button>
                     {selectedEntries.size > 0 && (
-                      <button
-                        onClick={deselectAllEntries}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                        title="Clear selection"
-                      >
-                        <X className="w-4 h-4" />
-                        Clear
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            const selected = entries.filter(e => selectedEntries.has(e.id));
+                            setClarifyEntries(selected);
+                            setClarifyDialogOpen(true);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+                          title={`Request clarification for ${selectedEntries.size} selected entries`}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          Clarify ({selectedEntries.size})
+                        </button>
+                        <button
+                          onClick={deselectAllEntries}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                          title="Clear selection"
+                        >
+                          <X className="w-4 h-4" />
+                          Clear
+                        </button>
+                      </>
                     )}
                   </div>
 
@@ -1525,6 +1545,22 @@ export default function TimeEntriesEnhancedPage() {
                                   Enhance
                                 </button>
                               )}
+                              {/* Clarify Button */}
+                              <button
+                                onClick={() => {
+                                  setClarifyEntries([entry]);
+                                  setClarifyDialogOpen(true);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+                                title="Request clarification"
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                Clarify
+                              </button>
+                              {/* Active clarification badge */}
+                              {entry.has_active_clarification && (
+                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" title="Clarification pending" />
+                              )}
                             </div>
 
                             {/* Cost Code Description (read-only, from service_items) */}
@@ -1662,6 +1698,22 @@ export default function TimeEntriesEnhancedPage() {
                                 <Sparkles className="w-3 h-3" />
                                 Enhance
                               </button>
+                            )}
+                            {/* Clarify Button */}
+                            <button
+                              onClick={() => {
+                                setClarifyEntries([entry]);
+                                setClarifyDialogOpen(true);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+                              title="Request clarification"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              Clarify
+                            </button>
+                            {/* Active clarification badge */}
+                            {entry.has_active_clarification && (
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" title="Clarification pending" />
                             )}
                           </div>
 
@@ -1847,6 +1899,20 @@ export default function TimeEntriesEnhancedPage() {
         </div>
       </div>
     )}
+
+    <AssignClarificationDialog
+      isOpen={clarifyDialogOpen}
+      entries={clarifyEntries}
+      adminEmail={user?.username || ''}
+      onClose={() => {
+        setClarifyDialogOpen(false);
+        setClarifyEntries([]);
+      }}
+      onAssigned={() => {
+        loadTimeEntries();
+        setSelectedEntries(new Set());
+      }}
+    />
 
     </ProtectedPage>
   );

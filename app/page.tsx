@@ -3,10 +3,11 @@
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
-import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorSmartphone, X } from 'lucide-react';
+import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorSmartphone, X, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function Home() {
   const { instance, accounts, inProgress } = useMsal();
@@ -17,6 +18,7 @@ export default function Home() {
   const user = accounts[0];
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [clarificationCount, setClarificationCount] = useState(0);
 
   // Check if MSAL is ready before using it
   useEffect(() => {
@@ -33,6 +35,16 @@ export default function Home() {
     console.log('🔍 DEBUG v2: User:', user);
     console.log('🔍 DEBUG v2: Build timestamp:', new Date().toISOString());
   }, [isAuthenticated, accounts, user]);
+
+  // Load clarification badge count
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    supabase
+      .from('internal_assignments')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['pending', 'responded'])
+      .then(({ count }) => { setClarificationCount(count || 0); });
+  }, [isAuthenticated]);
 
   // Register service worker + capture PWA install prompt
   useEffect(() => {
@@ -297,6 +309,23 @@ export default function Home() {
               <p className="text-sm text-gray-600">
                 Manage users, roles, and permissions
               </p>
+            </div>
+          </Link>
+
+          <Link href="/internal-review" className="group">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-amber-300 transition-all duration-200 relative">
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-amber-200 transition-colors">
+                <MessageSquare className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Internal Clarifications</h3>
+              <p className="text-sm text-gray-600">
+                Request and track time entry clarifications
+              </p>
+              {clarificationCount > 0 && (
+                <span className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {clarificationCount}
+                </span>
+              )}
             </div>
           </Link>
         </div>
