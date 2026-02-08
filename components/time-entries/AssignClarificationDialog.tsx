@@ -51,7 +51,7 @@ export function AssignClarificationDialog({
 
   useEffect(() => {
     if (isOpen) {
-      loadUsers();
+      loadUsersAndPrefill();
       // Reset form
       setSelectedUserId('');
       setSelectedEmail('');
@@ -64,12 +64,35 @@ export function AssignClarificationDialog({
     }
   }, [isOpen]);
 
-  const loadUsers = async () => {
+  const loadUsersAndPrefill = async () => {
     const { data } = await supabase
       .from('app_users')
       .select('id, email, display_name')
       .order('display_name');
-    setUsers(data || []);
+    const loadedUsers = data || [];
+    setUsers(loadedUsers);
+
+    // Pre-fill assignee from the entry's employee name
+    if (entries.length > 0) {
+      const employeeName = entries[0].employee_name;
+      // Check if all selected entries are from the same employee
+      const allSameEmployee = entries.every(e => e.employee_name === employeeName);
+      if (allSameEmployee && employeeName) {
+        // Try to match to an existing app_user (case-insensitive)
+        const match = loadedUsers.find(
+          u => u.display_name.toLowerCase() === employeeName.toLowerCase()
+        );
+        if (match) {
+          setSelectedUserId(match.id);
+          setSelectedEmail(match.email);
+          setSelectedName(match.display_name);
+        } else {
+          // No app_user match — switch to invite mode with name pre-filled
+          setShowNewPerson(true);
+          setNewName(employeeName);
+        }
+      }
+    }
   };
 
   const handleUserSelect = (userId: string) => {
@@ -198,11 +221,17 @@ export function AssignClarificationDialog({
                 </select>
                 <button
                   type="button"
-                  onClick={() => setShowNewPerson(true)}
+                  onClick={() => {
+                    setShowNewPerson(true);
+                    // Pre-fill name from entry if available and not already set
+                    if (!newName && entries.length > 0) {
+                      setNewName(entries[0].employee_name);
+                    }
+                  }}
                   className="mt-2 flex items-center gap-1.5 text-sm text-amber-700 hover:text-amber-900"
                 >
                   <UserPlus className="w-4 h-4" />
-                  Invite new person
+                  Assign to someone else
                 </button>
               </>
             ) : (
@@ -220,6 +249,7 @@ export function AssignClarificationDialog({
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="Email address"
                   className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none"
+                  autoFocus={!!newName && !newEmail}
                 />
                 <button
                   type="button"
