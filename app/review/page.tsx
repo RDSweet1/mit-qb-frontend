@@ -566,8 +566,8 @@ export default function ReviewPage() {
               return (
                 <div style={{
                   position: 'fixed', bottom: 0, left: 0, right: 0,
-                  backgroundColor: hasChanges ? '#fef2f2' : '#fff',
-                  borderTop: `2px solid ${hasChanges ? '#fca5a5' : '#e5e7eb'}`,
+                  backgroundColor: hasChanges ? '#fffbeb' : '#fff',
+                  borderTop: `2px solid ${hasChanges ? '#f59e0b' : '#e5e7eb'}`,
                   padding: '12px 24px',
                   boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
                   zIndex: 50,
@@ -610,14 +610,14 @@ export default function ReviewPage() {
                         disabled={submitting}
                         style={{
                           padding: '12px 28px',
-                          backgroundColor: submitting ? '#9ca3af' : COLORS.red,
+                          backgroundColor: submitting ? '#9ca3af' : '#d97706',
                           color: '#fff', border: 'none', borderRadius: 8,
                           fontSize: 14, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
                           transition: 'background-color 0.2s',
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {submitting ? 'Submitting...' : `Submit with ${changeCount} Change${changeCount !== 1 ? 's' : ''}`}
+                        {submitting ? 'Submitting...' : `Accept with Notations (${changeCount})`}
                       </button>
                     )}
                   </div>
@@ -781,10 +781,13 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
       {/* Instruction hint for interactive mode */}
       {canFlag && (
         <div style={{
-          padding: '10px 16px', marginBottom: 12, backgroundColor: '#eff6ff',
-          border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 13, color: '#1e40af',
+          padding: '14px 18px', marginBottom: 12, backgroundColor: '#eff6ff',
+          border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 14, color: '#1e40af',
+          lineHeight: 2,
         }}>
-          Click the flag icon on any entry to mark it for review. Use the reassign button to move an entry to a different project. If everything looks correct, use the <strong>Accept All</strong> button below.
+          <div><span style={{ fontSize: 20, verticalAlign: 'middle', marginRight: 6 }}>{'\u{1F6A9}'}</span> <strong>Click the flag</strong> on any entry to mark it for review and add a comment.</div>
+          <div style={{ marginTop: 4 }}><span style={{ display: 'inline-block', padding: '2px 8px', backgroundColor: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', borderRadius: 4, fontSize: 11, verticalAlign: 'middle', marginRight: 6 }}>{'\u2794'} Move</span> Use the <strong>reassign button</strong> to move an entry to a different project.</div>
+          <div style={{ marginTop: 4 }}>If everything looks correct, use <strong>Accept All</strong> or <strong>Accept with Notations</strong>.</div>
         </div>
       )}
 
@@ -798,7 +801,7 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ backgroundColor: COLORS.grayLight }}>
-                {canFlag && <th style={{ ...thStyle, width: 44, textAlign: 'center', padding: '10px 4px' }}></th>}
+                {canFlag && <th style={{ ...thStyle, width: 50, textAlign: 'center', padding: '10px 4px' }}>{'\u{1F6A9}'}</th>}
                 <th style={thStyle}>Date</th>
                 <th style={thStyle}>Professional</th>
                 <th style={thStyle}>Service</th>
@@ -819,12 +822,12 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
                     <tr style={{ backgroundColor: rowBg, borderLeft: isFlagged ? `3px solid ${COLORS.red}` : 'none' }}>
                       {canFlag && (
                         <td
-                          style={{ ...tdStyle, textAlign: 'center', padding: '10px 4px', cursor: 'pointer', userSelect: 'none' }}
+                          style={{ ...tdStyle, textAlign: 'center', padding: '10px 6px', cursor: 'pointer', userSelect: 'none' }}
                           onClick={() => onToggleFlag(entry.id)}
                           title={isFlagged ? 'Remove flag' : 'Flag this entry for review'}
                         >
-                          <span style={{ fontSize: 18, opacity: isFlagged ? 1 : 0.3 }}>
-                            {isFlagged ? '\u{1F6A9}' : '\u{2691}'}
+                          <span style={{ fontSize: 26, opacity: isFlagged ? 1 : 0.25, transition: 'opacity 0.15s' }}>
+                            {isFlagged ? '\u{1F6A9}' : '\u{1F6A9}'}
                           </span>
                         </td>
                       )}
