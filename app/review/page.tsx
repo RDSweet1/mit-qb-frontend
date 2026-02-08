@@ -45,6 +45,12 @@ interface TimeEntry {
   billable_status: string;
 }
 
+interface Customer {
+  id: number;
+  qb_customer_id: string;
+  display_name: string;
+}
+
 type PageState = 'loading' | 'not_found' | 'expired' | 'already_actioned' | 'review' | 'submitted' | 'error';
 
 interface EntryFlag {
@@ -123,6 +129,8 @@ export default function ReviewPage() {
   const [submittedAction, setSubmittedAction] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [flaggedEntries, setFlaggedEntries] = useState<Map<number, string>>(new Map());
+  const [reassignedEntries, setReassignedEntries] = useState<Map<number, string>>(new Map());
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const visitLogged = useRef(false);
 
   function toggleFlag(entryId: number) {
@@ -141,6 +149,18 @@ export default function ReviewPage() {
     setFlaggedEntries(prev => {
       const next = new Map(prev);
       next.set(entryId, note);
+      return next;
+    });
+  }
+
+  function reassignEntry(entryId: number, customerName: string | null) {
+    setReassignedEntries(prev => {
+      const next = new Map(prev);
+      if (customerName) {
+        next.set(entryId, customerName);
+      } else {
+        next.delete(entryId);
+      }
       return next;
     });
   }
@@ -199,6 +219,14 @@ export default function ReviewPage() {
 
       setEntries(entryData || []);
 
+      // 4b. Fetch customer list for reassignment dropdown
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('id, qb_customer_id, display_name')
+        .order('display_name', { ascending: true });
+
+      setCustomers(customerData || []);
+
       // 5. Log visit (once)
       if (!visitLogged.current) {
         visitLogged.current = true;
@@ -240,6 +268,16 @@ export default function ReviewPage() {
     if (customerNotes.trim()) {
       parts.push(`General Comments:\n${customerNotes.trim()}`);
     }
+    if (reassignedEntries.size > 0) {
+      parts.push('Reassigned Entries:');
+      for (const [entryId, newProject] of reassignedEntries) {
+        const entry = entries.find(e => e.id === entryId);
+        const label = entry
+          ? `${fmtShortDate(entry.txn_date)} — ${entry.employee_name} — ${(entry.hours + entry.minutes / 60).toFixed(2)} hrs`
+          : `Entry #${entryId}`;
+        parts.push(`  → ${label}\n    Reassign to: "${newProject}"`);
+      }
+    }
     if (flaggedEntries.size > 0) {
       parts.push('Flagged Entries:');
       for (const [entryId, note] of flaggedEntries) {
@@ -280,7 +318,7 @@ export default function ReviewPage() {
     if (!reviewToken || !reportPeriod || submitting) return;
     const notes = buildCombinedNotes();
     if (!notes.trim()) {
-      alert('Please flag at least one entry or enter general comments before submitting.');
+      alert('Please flag at least one entry, reassign an entry, or enter general comments before submitting.');
       return;
     }
     setSubmitting(true);
@@ -478,6 +516,9 @@ export default function ReviewPage() {
               flaggedEntries={flaggedEntries}
               onToggleFlag={toggleFlag}
               onSetFlagNote={setFlagNote}
+              reassignedEntries={reassignedEntries}
+              onReassign={reassignEntry}
+              customers={customers}
             />
 
             {/* General comments area */}
@@ -511,61 +552,70 @@ export default function ReviewPage() {
             </div>
 
             {/* Sticky bottom action bar */}
-            <div style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0,
-              backgroundColor: flaggedEntries.size > 0 ? '#fef2f2' : '#fff',
-              borderTop: `2px solid ${flaggedEntries.size > 0 ? '#fca5a5' : '#e5e7eb'}`,
-              padding: '12px 24px',
-              boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
-              zIndex: 50,
-              transition: 'background-color 0.3s, border-color 0.3s',
-            }}>
-              <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 12, alignItems: 'center' }}>
-                <div style={{ flex: 1, fontSize: 13, color: COLORS.gray }}>
-                  <strong>{entries.length}</strong> entries &middot; <strong>{totalHours.toFixed(2)}</strong> hrs
-                  {flaggedEntries.size > 0 && (
-                    <span style={{ color: COLORS.red, fontWeight: 'bold', marginLeft: 8 }}>
-                      &middot; {flaggedEntries.size} flagged for review
-                    </span>
-                  )}
+            {(() => {
+              const hasChanges = flaggedEntries.size > 0 || reassignedEntries.size > 0;
+              const changeCount = flaggedEntries.size + reassignedEntries.size;
+              return (
+                <div style={{
+                  position: 'fixed', bottom: 0, left: 0, right: 0,
+                  backgroundColor: hasChanges ? '#fef2f2' : '#fff',
+                  borderTop: `2px solid ${hasChanges ? '#fca5a5' : '#e5e7eb'}`,
+                  padding: '12px 24px',
+                  boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+                  zIndex: 50,
+                  transition: 'background-color 0.3s, border-color 0.3s',
+                }}>
+                  <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{ flex: 1, fontSize: 13, color: COLORS.gray }}>
+                      <strong>{entries.length}</strong> entries &middot; <strong>{totalHours.toFixed(2)}</strong> hrs
+                      {flaggedEntries.size > 0 && (
+                        <span style={{ color: COLORS.red, fontWeight: 'bold', marginLeft: 8 }}>
+                          &middot; {flaggedEntries.size} flagged
+                        </span>
+                      )}
+                      {reassignedEntries.size > 0 && (
+                        <span style={{ color: '#7c3aed', fontWeight: 'bold', marginLeft: 8 }}>
+                          &middot; {reassignedEntries.size} reassigned
+                        </span>
+                      )}
+                    </div>
+                    {!hasChanges ? (
+                      <button
+                        onClick={handleAccept}
+                        disabled={submitting}
+                        style={{
+                          padding: '12px 28px',
+                          backgroundColor: submitting ? '#9ca3af' : COLORS.green,
+                          color: '#fff', border: 'none', borderRadius: 8,
+                          fontSize: 14, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
+                          transition: 'background-color 0.2s',
+                          whiteSpace: 'nowrap',
+                        }}
+                        onMouseOver={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = COLORS.greenDark; }}
+                        onMouseOut={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = COLORS.green; }}
+                      >
+                        {submitting ? 'Submitting...' : '\u2713  Accept All as Accurate'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleSubmitComments}
+                        disabled={submitting}
+                        style={{
+                          padding: '12px 28px',
+                          backgroundColor: submitting ? '#9ca3af' : COLORS.red,
+                          color: '#fff', border: 'none', borderRadius: 8,
+                          fontSize: 14, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
+                          transition: 'background-color 0.2s',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {submitting ? 'Submitting...' : `Submit with ${changeCount} Change${changeCount !== 1 ? 's' : ''}`}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {flaggedEntries.size === 0 ? (
-                  /* No flags — show Accept All */
-                  <button
-                    onClick={handleAccept}
-                    disabled={submitting}
-                    style={{
-                      padding: '12px 28px',
-                      backgroundColor: submitting ? '#9ca3af' : COLORS.green,
-                      color: '#fff', border: 'none', borderRadius: 8,
-                      fontSize: 14, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
-                      transition: 'background-color 0.2s',
-                      whiteSpace: 'nowrap',
-                    }}
-                    onMouseOver={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = COLORS.greenDark; }}
-                    onMouseOut={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = COLORS.green; }}
-                  >
-                    {submitting ? 'Submitting...' : '\u2713  Accept All as Accurate'}
-                  </button>
-                ) : (
-                  /* Entries flagged — show Submit with Changes */
-                  <button
-                    onClick={handleSubmitComments}
-                    disabled={submitting}
-                    style={{
-                      padding: '12px 28px',
-                      backgroundColor: submitting ? '#9ca3af' : COLORS.red,
-                      color: '#fff', border: 'none', borderRadius: 8,
-                      fontSize: 14, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
-                      transition: 'background-color 0.2s',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {submitting ? 'Submitting...' : `Submit with ${flaggedEntries.size} Flagged ${flaggedEntries.size === 1 ? 'Entry' : 'Entries'}`}
-                  </button>
-                )}
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Footer */}
             <div style={{
@@ -604,8 +654,84 @@ function StatusBanner({ color, bgColor, title, message }: {
   );
 }
 
-// ─── Report Content Component (summary + table with per-row flagging) ───
-function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly, flaggedEntries, onToggleFlag, onSetFlagNote }: {
+// ─── Searchable Project Dropdown ─────────────────────────────────────
+function ProjectDropdown({ customers, currentProject, entryId, onSelect, onClose }: {
+  customers: Customer[];
+  currentProject: string | null;
+  entryId: number;
+  onSelect: (entryId: number, name: string | null) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const filtered = customers.filter(c =>
+    c.display_name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div style={{
+      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+      backgroundColor: '#fff', border: '2px solid #7c3aed', borderRadius: 8,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.15)', marginTop: 4, overflow: 'hidden',
+    }}>
+      <div style={{ padding: 8, borderBottom: '1px solid #e5e7eb' }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search projects..."
+          style={{
+            width: '100%', padding: '8px 10px', border: '1px solid #d1d5db',
+            borderRadius: 6, fontSize: 13, boxSizing: 'border-box',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+        {currentProject && (
+          <div
+            onClick={(e) => { e.stopPropagation(); onSelect(entryId, null); onClose(); }}
+            style={{
+              padding: '8px 12px', fontSize: 13, cursor: 'pointer',
+              backgroundColor: '#fef2f2', color: COLORS.red, borderBottom: '1px solid #e5e7eb',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+          >
+            \u2715 Remove reassignment
+          </div>
+        )}
+        {filtered.length === 0 && (
+          <div style={{ padding: '12px', fontSize: 13, color: COLORS.gray, textAlign: 'center' }}>
+            No projects found
+          </div>
+        )}
+        {filtered.map(c => (
+          <div
+            key={c.id}
+            onClick={(e) => { e.stopPropagation(); onSelect(entryId, c.display_name); onClose(); }}
+            style={{
+              padding: '8px 12px', fontSize: 13, cursor: 'pointer',
+              backgroundColor: c.display_name === currentProject ? '#ede9fe' : '#fff',
+              borderBottom: '1px solid #f3f4f6',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f5f3ff'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = c.display_name === currentProject ? '#ede9fe' : '#fff'}
+          >
+            {c.display_name}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Report Content Component (summary + table with per-row flagging + reassignment) ───
+function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly, flaggedEntries, onToggleFlag, onSetFlagNote, reassignedEntries, onReassign, customers }: {
   entries: TimeEntry[];
   totalHours: number;
   uniqueDays: number;
@@ -614,9 +740,14 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
   flaggedEntries?: Map<number, string>;
   onToggleFlag?: (entryId: number) => void;
   onSetFlagNote?: (entryId: number, note: string) => void;
+  reassignedEntries?: Map<number, string>;
+  onReassign?: (entryId: number, customerName: string | null) => void;
+  customers?: Customer[];
 }) {
   const canFlag = !readOnly && flaggedEntries && onToggleFlag && onSetFlagNote;
-  const colCount = canFlag ? 6 : 5;
+  const canReassign = !readOnly && reassignedEntries && onReassign && customers && customers.length > 0;
+  const colCount = (canFlag ? 1 : 0) + 5 + (canReassign ? 1 : 0);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
 
   return (
     <>
@@ -645,7 +776,7 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
           padding: '10px 16px', marginBottom: 12, backgroundColor: '#eff6ff',
           border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 13, color: '#1e40af',
         }}>
-          Click the flag icon on any entry to mark it for review and add a comment. If everything looks correct, use the <strong>Accept All</strong> button below.
+          Click the flag icon on any entry to mark it for review. Use the reassign button to move an entry to a different project. If everything looks correct, use the <strong>Accept All</strong> button below.
         </div>
       )}
 
@@ -663,8 +794,9 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
                 <th style={thStyle}>Date</th>
                 <th style={thStyle}>Professional</th>
                 <th style={thStyle}>Service</th>
-                <th style={{ ...thStyle, width: '65%' }}>Description of Services</th>
+                <th style={{ ...thStyle, width: canReassign ? '50%' : '65%' }}>Description of Services</th>
                 <th style={{ ...thStyle, textAlign: 'right' }}>Hours</th>
+                {canReassign && <th style={{ ...thStyle, width: 140, textAlign: 'center' }}>Reassign</th>}
               </tr>
             </thead>
             <tbody>
@@ -701,6 +833,57 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
                       </td>
                       <td style={{ ...tdStyle, maxWidth: 400, wordBreak: 'break-word' }}>{entry.description || '-'}</td>
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{hours}</td>
+                      {canReassign && (
+                        <td style={{ ...tdStyle, textAlign: 'center', position: 'relative', padding: '6px 8px' }}>
+                          {reassignedEntries.has(entry.id) ? (
+                            <div>
+                              <div
+                                onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === entry.id ? null : entry.id); }}
+                                style={{
+                                  padding: '4px 8px', backgroundColor: '#ede9fe', color: '#7c3aed',
+                                  borderRadius: 4, fontSize: 11, cursor: 'pointer', border: '1px solid #c4b5fd',
+                                  wordBreak: 'break-word',
+                                }}
+                                title={`Reassigned to: ${reassignedEntries.get(entry.id)}`}
+                              >
+                                {'\u2794'} {reassignedEntries.get(entry.id)}
+                              </div>
+                              {openDropdownId === entry.id && (
+                                <ProjectDropdown
+                                  customers={customers}
+                                  currentProject={reassignedEntries.get(entry.id) || null}
+                                  entryId={entry.id}
+                                  onSelect={onReassign}
+                                  onClose={() => setOpenDropdownId(null)}
+                                />
+                              )}
+                            </div>
+                          ) : (
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === entry.id ? null : entry.id); }}
+                                style={{
+                                  padding: '4px 10px', backgroundColor: '#f5f3ff', color: '#7c3aed',
+                                  border: '1px solid #ddd6fe', borderRadius: 4, fontSize: 11,
+                                  cursor: 'pointer', whiteSpace: 'nowrap',
+                                }}
+                                title="Reassign to different project"
+                              >
+                                {'\u2794'} Move
+                              </button>
+                              {openDropdownId === entry.id && (
+                                <ProjectDropdown
+                                  customers={customers}
+                                  currentProject={null}
+                                  entryId={entry.id}
+                                  onSelect={onReassign}
+                                  onClose={() => setOpenDropdownId(null)}
+                                />
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      )}
                     </tr>
                     {/* Per-entry comment field when flagged */}
                     {canFlag && isFlagged && (
