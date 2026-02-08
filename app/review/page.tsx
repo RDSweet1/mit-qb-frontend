@@ -663,7 +663,7 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
                 <th style={thStyle}>Date</th>
                 <th style={thStyle}>Professional</th>
                 <th style={thStyle}>Service</th>
-                <th style={{ ...thStyle, width: '45%' }}>Description of Services</th>
+                <th style={{ ...thStyle, width: '65%' }}>Description of Services</th>
                 <th style={{ ...thStyle, textAlign: 'right' }}>Hours</th>
               </tr>
             </thead>
