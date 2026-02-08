@@ -1154,55 +1154,57 @@ export default function TimeEntriesEnhancedPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Date Range
             </label>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {(['this_week', 'last_week', 'this_month', 'last_month'] as DatePreset[]).map((preset) => (
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex flex-wrap gap-2">
+                {(['this_week', 'last_week', 'this_month', 'last_month'] as DatePreset[]).map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => handleDatePresetChange(preset)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      datePreset === preset
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {preset.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                  </button>
+                ))}
                 <button
-                  key={preset}
-                  onClick={() => handleDatePresetChange(preset)}
+                  onClick={() => handleDatePresetChange('all_time')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    datePreset === preset
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    datePreset === 'all_time'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200'
                   }`}
                 >
-                  {preset.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                  📊 Show All Data
                 </button>
-              ))}
-              <button
-                onClick={() => handleDatePresetChange('all_time')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  datePreset === 'all_time'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                }`}
-              >
-                📊 Show All Data
-              </button>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-xs text-gray-600 mb-1">From</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setDatePreset('custom');
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
               </div>
-              <div className="flex-1">
-                <label className="block text-xs text-gray-600 mb-1">To</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setDatePreset('custom');
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="flex items-end gap-3 ml-auto">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">From</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setDatePreset('custom');
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">To</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setDatePreset('custom');
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
             </div>
           </div>
