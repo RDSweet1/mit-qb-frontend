@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 
@@ -46,6 +46,11 @@ interface TimeEntry {
 }
 
 type PageState = 'loading' | 'not_found' | 'expired' | 'already_actioned' | 'review' | 'submitted' | 'error';
+
+interface EntryFlag {
+  entryId: number;
+  note: string;
+}
 
 // ─── Colors (matching shared email templates) ───────────────────────
 const COLORS = {
@@ -117,7 +122,28 @@ export default function ReviewPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submittedAction, setSubmittedAction] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [flaggedEntries, setFlaggedEntries] = useState<Map<number, string>>(new Map());
   const visitLogged = useRef(false);
+
+  function toggleFlag(entryId: number) {
+    setFlaggedEntries(prev => {
+      const next = new Map(prev);
+      if (next.has(entryId)) {
+        next.delete(entryId);
+      } else {
+        next.set(entryId, '');
+      }
+      return next;
+    });
+  }
+
+  function setFlagNote(entryId: number, note: string) {
+    setFlaggedEntries(prev => {
+      const next = new Map(prev);
+      next.set(entryId, note);
+      return next;
+    });
+  }
 
   // Load data on mount
   const loadData = useCallback(async () => {
@@ -208,16 +234,36 @@ export default function ReviewPage() {
     loadData();
   }, [loadData]);
 
+  // ─── Build combined notes (global + per-entry flags) ────────────
+  function buildCombinedNotes(): string {
+    const parts: string[] = [];
+    if (customerNotes.trim()) {
+      parts.push(`General Comments:\n${customerNotes.trim()}`);
+    }
+    if (flaggedEntries.size > 0) {
+      parts.push('Flagged Entries:');
+      for (const [entryId, note] of flaggedEntries) {
+        const entry = entries.find(e => e.id === entryId);
+        const label = entry
+          ? `${fmtShortDate(entry.txn_date)} — ${entry.employee_name} — ${(entry.hours + entry.minutes / 60).toFixed(2)} hrs`
+          : `Entry #${entryId}`;
+        parts.push(`  • ${label}${note ? `\n    "${note}"` : ''}`);
+      }
+    }
+    return parts.join('\n');
+  }
+
   // ─── Handle Accept ──────────────────────────────────────────────
   async function handleAccept() {
     if (!reviewToken || !reportPeriod || submitting) return;
     setSubmitting(true);
 
     try {
+      const notes = buildCombinedNotes();
       await callEdgeFunction('customer-review-action', {
         token: reviewToken.token,
         action: 'accepted',
-        notes: customerNotes || undefined,
+        notes: notes || undefined,
       });
 
       setSubmittedAction('accepted');
@@ -232,8 +278,9 @@ export default function ReviewPage() {
   // ─── Handle Submit Comments ─────────────────────────────────────
   async function handleSubmitComments() {
     if (!reviewToken || !reportPeriod || submitting) return;
-    if (!customerNotes.trim()) {
-      alert('Please enter your comments before submitting.');
+    const notes = buildCombinedNotes();
+    if (!notes.trim()) {
+      alert('Please flag at least one entry or enter general comments before submitting.');
       return;
     }
     setSubmitting(true);
@@ -242,7 +289,7 @@ export default function ReviewPage() {
       await callEdgeFunction('customer-review-action', {
         token: reviewToken.token,
         action: 'disputed',
-        notes: customerNotes,
+        notes,
       });
 
       setSubmittedAction('disputed');
@@ -422,73 +469,108 @@ export default function ReviewPage() {
               )}
             </div>
 
-            {/* Report content */}
-            <ReportContent entries={entries} totalHours={totalHours} uniqueDays={uniqueDays} reportPeriod={reportPeriod} />
+            {/* Report content with per-row flagging */}
+            <ReportContent
+              entries={entries}
+              totalHours={totalHours}
+              uniqueDays={uniqueDays}
+              reportPeriod={reportPeriod}
+              flaggedEntries={flaggedEntries}
+              onToggleFlag={toggleFlag}
+              onSetFlagNote={setFlagNote}
+            />
 
-            {/* ─── Action Section ───────────────── */}
+            {/* General comments area */}
             <div style={{
               backgroundColor: '#fff', border: `1px solid ${COLORS.grayBorder}`, borderRadius: 12,
-              padding: 28, marginTop: 24,
+              padding: 28, marginTop: 24, marginBottom: 100,
             }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#111' }}>Your Response</h3>
+              <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#111' }}>Additional Comments</h3>
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: COLORS.gray }}>
+                Use the flag buttons on individual entries above to identify specific concerns,
+                or add general comments below.
+              </p>
+              <textarea
+                value={customerNotes}
+                onChange={(e) => setCustomerNotes(e.target.value)}
+                placeholder="Any additional notes, clarifications, or general concerns..."
+                style={{
+                  width: '100%', minHeight: 80, padding: 12, border: `1px solid ${COLORS.grayBorder}`,
+                  borderRadius: 8, fontSize: 14, fontFamily: 'Arial, sans-serif', resize: 'vertical',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {flaggedEntries.size > 0 && (
+                <div style={{
+                  marginTop: 12, padding: 12, backgroundColor: '#fef2f2', border: '1px solid #fecaca',
+                  borderRadius: 8, fontSize: 13, color: '#991b1b',
+                }}>
+                  {flaggedEntries.size} {flaggedEntries.size === 1 ? 'entry' : 'entries'} flagged for review
+                </div>
+              )}
+            </div>
 
-              {/* Comments area */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 13, color: COLORS.gray, marginBottom: 6 }}>
-                  Comments or Concerns (optional for acceptance, required for disputes)
-                </label>
-                <textarea
-                  value={customerNotes}
-                  onChange={(e) => setCustomerNotes(e.target.value)}
-                  placeholder="If you have any notes, clarifications, or concerns regarding the time entries above, please enter them here..."
-                  style={{
-                    width: '100%', minHeight: 100, padding: 12, border: `1px solid ${COLORS.grayBorder}`,
-                    borderRadius: 8, fontSize: 14, fontFamily: 'Arial, sans-serif', resize: 'vertical',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              {/* Buttons */}
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <button
-                  onClick={handleAccept}
-                  disabled={submitting}
-                  style={{
-                    flex: 1, minWidth: 200, padding: '14px 24px',
-                    backgroundColor: submitting ? '#9ca3af' : COLORS.green,
-                    color: '#fff', border: 'none', borderRadius: 8,
-                    fontSize: 15, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
-                    transition: 'background-color 0.2s',
-                  }}
-                  onMouseOver={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = COLORS.greenDark; }}
-                  onMouseOut={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = COLORS.green; }}
-                >
-                  {submitting ? 'Submitting...' : '✓  Accept as Accurate'}
-                </button>
-                <button
-                  onClick={handleSubmitComments}
-                  disabled={submitting}
-                  style={{
-                    flex: 1, minWidth: 200, padding: '14px 24px',
-                    backgroundColor: submitting ? '#e5e7eb' : '#fff',
-                    color: submitting ? '#9ca3af' : COLORS.blue,
-                    border: `2px solid ${submitting ? '#e5e7eb' : COLORS.blue}`, borderRadius: 8,
-                    fontSize: 15, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseOver={(e) => { if (!submitting) { e.currentTarget.style.backgroundColor = '#eff6ff'; } }}
-                  onMouseOut={(e) => { if (!submitting) { e.currentTarget.style.backgroundColor = '#fff'; } }}
-                >
-                  Submit Comments
-                </button>
+            {/* Sticky bottom action bar */}
+            <div style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0,
+              backgroundColor: flaggedEntries.size > 0 ? '#fef2f2' : '#fff',
+              borderTop: `2px solid ${flaggedEntries.size > 0 ? '#fca5a5' : '#e5e7eb'}`,
+              padding: '12px 24px',
+              boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+              zIndex: 50,
+              transition: 'background-color 0.3s, border-color 0.3s',
+            }}>
+              <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ flex: 1, fontSize: 13, color: COLORS.gray }}>
+                  <strong>{entries.length}</strong> entries &middot; <strong>{totalHours.toFixed(2)}</strong> hrs
+                  {flaggedEntries.size > 0 && (
+                    <span style={{ color: COLORS.red, fontWeight: 'bold', marginLeft: 8 }}>
+                      &middot; {flaggedEntries.size} flagged for review
+                    </span>
+                  )}
+                </div>
+                {flaggedEntries.size === 0 ? (
+                  /* No flags — show Accept All */
+                  <button
+                    onClick={handleAccept}
+                    disabled={submitting}
+                    style={{
+                      padding: '12px 28px',
+                      backgroundColor: submitting ? '#9ca3af' : COLORS.green,
+                      color: '#fff', border: 'none', borderRadius: 8,
+                      fontSize: 14, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
+                      transition: 'background-color 0.2s',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseOver={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = COLORS.greenDark; }}
+                    onMouseOut={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = COLORS.green; }}
+                  >
+                    {submitting ? 'Submitting...' : '\u2713  Accept All as Accurate'}
+                  </button>
+                ) : (
+                  /* Entries flagged — show Submit with Changes */
+                  <button
+                    onClick={handleSubmitComments}
+                    disabled={submitting}
+                    style={{
+                      padding: '12px 28px',
+                      backgroundColor: submitting ? '#9ca3af' : COLORS.red,
+                      color: '#fff', border: 'none', borderRadius: 8,
+                      fontSize: 14, fontWeight: 'bold', cursor: submitting ? 'not-allowed' : 'pointer',
+                      transition: 'background-color 0.2s',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {submitting ? 'Submitting...' : `Submit with ${flaggedEntries.size} Flagged ${flaggedEntries.size === 1 ? 'Entry' : 'Entries'}`}
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Footer */}
             <div style={{
               marginTop: 24, padding: 16, textAlign: 'center',
-              fontSize: 12, color: COLORS.gray,
+              fontSize: 12, color: COLORS.gray, marginBottom: 80,
             }}>
               <p style={{ margin: '0 0 4px' }}>
                 <strong>DO NOT PAY</strong> — This is a time record, not an invoice.
@@ -522,14 +604,20 @@ function StatusBanner({ color, bgColor, title, message }: {
   );
 }
 
-// ─── Report Content Component (summary + table) ────────────────────
-function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly }: {
+// ─── Report Content Component (summary + table with per-row flagging) ───
+function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly, flaggedEntries, onToggleFlag, onSetFlagNote }: {
   entries: TimeEntry[];
   totalHours: number;
   uniqueDays: number;
   reportPeriod: ReportPeriod;
   readOnly?: boolean;
+  flaggedEntries?: Map<number, string>;
+  onToggleFlag?: (entryId: number) => void;
+  onSetFlagNote?: (entryId: number, note: string) => void;
 }) {
+  const canFlag = !readOnly && flaggedEntries && onToggleFlag && onSetFlagNote;
+  const colCount = canFlag ? 6 : 5;
+
   return (
     <>
       {/* Summary stats */}
@@ -551,6 +639,16 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
         </div>
       </div>
 
+      {/* Instruction hint for interactive mode */}
+      {canFlag && (
+        <div style={{
+          padding: '10px 16px', marginBottom: 12, backgroundColor: '#eff6ff',
+          border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 13, color: '#1e40af',
+        }}>
+          Click the flag icon on any entry to mark it for review and add a comment. If everything looks correct, use the <strong>Accept All</strong> button below.
+        </div>
+      )}
+
       {/* Activity table */}
       <div style={{
         backgroundColor: '#fff', border: `1px solid ${COLORS.grayBorder}`, borderRadius: 8,
@@ -561,6 +659,7 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ backgroundColor: COLORS.grayLight }}>
+                {canFlag && <th style={{ ...thStyle, width: 44, textAlign: 'center', padding: '10px 4px' }}></th>}
                 <th style={thStyle}>Date</th>
                 <th style={thStyle}>Professional</th>
                 <th style={thStyle}>Service</th>
@@ -572,28 +671,63 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
               {entries.map((entry, i) => {
                 const hours = (entry.hours + entry.minutes / 60).toFixed(2);
                 const sc = SERVICE_COLORS[entry.cost_code || ''] || { bg: '#f3f4f6', text: '#374151' };
+                const isFlagged = flaggedEntries?.has(entry.id);
+                const rowBg = isFlagged ? '#fef2f2' : (i % 2 === 1 ? COLORS.grayLight : '#fff');
+
                 return (
-                  <tr key={entry.id} style={{ backgroundColor: i % 2 === 1 ? COLORS.grayLight : '#fff' }}>
-                    <td style={tdStyle}>{fmtShortDate(entry.txn_date)}</td>
-                    <td style={tdStyle}>{entry.employee_name || 'Unknown'}</td>
-                    <td style={tdStyle}>
-                      <span style={{
-                        backgroundColor: sc.bg, color: sc.text,
-                        padding: '2px 8px', borderRadius: 4, fontSize: 11,
-                        display: 'inline-block',
-                      }}>
-                        {entry.cost_code || 'General'}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>{entry.description || '-'}</td>
-                    <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{hours}</td>
-                  </tr>
+                  <React.Fragment key={entry.id}>
+                    <tr style={{ backgroundColor: rowBg, borderLeft: isFlagged ? `3px solid ${COLORS.red}` : 'none' }}>
+                      {canFlag && (
+                        <td
+                          style={{ ...tdStyle, textAlign: 'center', padding: '10px 4px', cursor: 'pointer', userSelect: 'none' }}
+                          onClick={() => onToggleFlag(entry.id)}
+                          title={isFlagged ? 'Remove flag' : 'Flag this entry for review'}
+                        >
+                          <span style={{ fontSize: 18, opacity: isFlagged ? 1 : 0.3 }}>
+                            {isFlagged ? '\u{1F6A9}' : '\u{2691}'}
+                          </span>
+                        </td>
+                      )}
+                      <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{fmtShortDate(entry.txn_date)}</td>
+                      <td style={tdStyle}>{entry.employee_name || 'Unknown'}</td>
+                      <td style={tdStyle}>
+                        <span style={{
+                          backgroundColor: sc.bg, color: sc.text,
+                          padding: '2px 8px', borderRadius: 4, fontSize: 11,
+                          display: 'inline-block',
+                        }}>
+                          {entry.cost_code || 'General'}
+                        </span>
+                      </td>
+                      <td style={{ ...tdStyle, maxWidth: 400, wordBreak: 'break-word' }}>{entry.description || '-'}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{hours}</td>
+                    </tr>
+                    {/* Per-entry comment field when flagged */}
+                    {canFlag && isFlagged && (
+                      <tr style={{ backgroundColor: '#fef2f2' }}>
+                        <td colSpan={colCount} style={{ padding: '0 12px 12px', borderBottom: `1px solid ${COLORS.grayBorder}` }}>
+                          <input
+                            type="text"
+                            value={flaggedEntries.get(entry.id) || ''}
+                            onChange={(e) => onSetFlagNote(entry.id, e.target.value)}
+                            placeholder="What's the concern with this entry? (optional)"
+                            style={{
+                              width: '100%', padding: '8px 12px', border: '1px solid #fca5a5',
+                              borderRadius: 6, fontSize: 13, fontFamily: 'Arial, sans-serif',
+                              backgroundColor: '#fff', boxSizing: 'border-box',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>
             <tfoot>
               <tr style={{ backgroundColor: COLORS.greenBg }}>
-                <td colSpan={4} style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', color: COLORS.greenDark }}>
+                <td colSpan={colCount - 1} style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', color: COLORS.greenDark }}>
                   Week Total:
                 </td>
                 <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', fontSize: 16, color: COLORS.greenDark }}>
