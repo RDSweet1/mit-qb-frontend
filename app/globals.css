@@ -8,13 +8,9 @@
   --background-end-rgb: 255, 255, 255;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
+/* Dark mode disabled — app is light-only. The previous dark-mode override
+   turned body text white while backgrounds stayed light, causing invisible
+   text on devices with dark mode enabled (e.g. customer review portal). */
 
 body {
   color: rgb(var(--foreground-rgb));

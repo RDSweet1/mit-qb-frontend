@@ -219,13 +219,7 @@ export default function ReviewPage() {
 
       setEntries(entryData || []);
 
-      // 4b. Fetch customer list for reassignment dropdown
-      const { data: customerData } = await supabase
-        .from('customers')
-        .select('id, qb_customer_id, display_name')
-        .order('display_name', { ascending: true });
-
-      setCustomers(customerData || []);
+      // Note: customer list for reassignment is internal-only (not in customer portal)
 
       // 5. Log visit (once)
       if (!visitLogged.current) {
@@ -267,16 +261,6 @@ export default function ReviewPage() {
     const parts: string[] = [];
     if (customerNotes.trim()) {
       parts.push(`General Comments:\n${customerNotes.trim()}`);
-    }
-    if (reassignedEntries.size > 0) {
-      parts.push('Reassigned Entries:');
-      for (const [entryId, newProject] of reassignedEntries) {
-        const entry = entries.find(e => e.id === entryId);
-        const label = entry
-          ? `${fmtShortDate(entry.txn_date)} — ${entry.employee_name} — ${(entry.hours + entry.minutes / 60).toFixed(2)} hrs`
-          : `Entry #${entryId}`;
-        parts.push(`  → ${label}\n    Reassign to: "${newProject}"`);
-      }
     }
     if (flaggedEntries.size > 0) {
       parts.push('Flagged Entries:');
@@ -345,7 +329,7 @@ export default function ReviewPage() {
 
   // ─── Render ──────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', fontFamily: 'Arial, sans-serif', color: '#111827' }}>
       <style>{`
         @media (max-width: 768px) {
           .review-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -529,9 +513,6 @@ export default function ReviewPage() {
               flaggedEntries={flaggedEntries}
               onToggleFlag={toggleFlag}
               onSetFlagNote={setFlagNote}
-              reassignedEntries={reassignedEntries}
-              onReassign={reassignEntry}
-              customers={customers}
             />
 
             {/* General comments area */}
@@ -566,8 +547,8 @@ export default function ReviewPage() {
 
             {/* Sticky bottom action bar */}
             {(() => {
-              const hasChanges = flaggedEntries.size > 0 || reassignedEntries.size > 0;
-              const changeCount = flaggedEntries.size + reassignedEntries.size;
+              const hasChanges = flaggedEntries.size > 0;
+              const changeCount = flaggedEntries.size;
               return (
                 <div style={{
                   position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -584,11 +565,6 @@ export default function ReviewPage() {
                       {flaggedEntries.size > 0 && (
                         <span style={{ color: COLORS.red, fontWeight: 'bold', marginLeft: 8 }}>
                           &middot; {flaggedEntries.size} flagged
-                        </span>
-                      )}
-                      {reassignedEntries.size > 0 && (
-                        <span style={{ color: '#7c3aed', fontWeight: 'bold', marginLeft: 8 }}>
-                          &middot; {reassignedEntries.size} reassigned
                         </span>
                       )}
                     </div>
@@ -791,7 +767,6 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
           lineHeight: 2,
         }}>
           <div><span style={{ fontSize: 20, verticalAlign: 'middle', marginRight: 6 }}>{'\u{1F6A9}'}</span> <strong>Click the flag</strong> on any entry to mark it for review and add a comment.</div>
-          <div style={{ marginTop: 4 }}><span style={{ display: 'inline-block', padding: '2px 8px', backgroundColor: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', borderRadius: 4, fontSize: 11, verticalAlign: 'middle', marginRight: 6 }}>{'\u2794'} Move</span> Use the <strong>reassign button</strong> to move an entry to a different project.</div>
           <div style={{ marginTop: 4 }}>If everything looks correct, use <strong>Accept All</strong> or <strong>Accept with Notations</strong>.</div>
         </div>
       )}
@@ -957,4 +932,5 @@ const tdStyle: React.CSSProperties = {
   padding: '10px 12px',
   border: '2px solid #d1d5db',
   verticalAlign: 'top',
+  color: '#111827',
 };
