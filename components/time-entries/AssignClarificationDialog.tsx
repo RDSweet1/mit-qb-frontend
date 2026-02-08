@@ -52,19 +52,20 @@ export function AssignClarificationDialog({
   useEffect(() => {
     if (isOpen) {
       loadUsersAndPrefill();
-      // Reset form
-      setSelectedUserId('');
-      setSelectedEmail('');
-      setSelectedName('');
-      setQuestion('');
-      setShowNewPerson(false);
-      setNewEmail('');
-      setNewName('');
-      setError(null);
     }
   }, [isOpen]);
 
   const loadUsersAndPrefill = async () => {
+    // Reset form first (synchronous, before the await)
+    setSelectedUserId('');
+    setSelectedEmail('');
+    setSelectedName('');
+    setQuestion('');
+    setShowNewPerson(false);
+    setNewEmail('');
+    setNewName('');
+    setError(null);
+
     const { data } = await supabase
       .from('app_users')
       .select('id, email, display_name')
@@ -75,7 +76,6 @@ export function AssignClarificationDialog({
     // Pre-fill assignee from the entry's employee name
     if (entries.length > 0) {
       const employeeName = entries[0].employee_name;
-      // Check if all selected entries are from the same employee
       const allSameEmployee = entries.every(e => e.employee_name === employeeName);
       if (allSameEmployee && employeeName) {
         // Try to match to an existing app_user (case-insensitive)
@@ -87,7 +87,7 @@ export function AssignClarificationDialog({
           setSelectedEmail(match.email);
           setSelectedName(match.display_name);
         } else {
-          // No app_user match — switch to invite mode with name pre-filled
+          // No app_user match — show invite form with name pre-filled, cursor on email
           setShowNewPerson(true);
           setNewName(employeeName);
         }
