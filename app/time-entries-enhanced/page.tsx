@@ -337,7 +337,7 @@ export default function TimeEntriesEnhancedPage() {
   // Send with explicit recipient override (for test mode from dialog)
   const sendApprovedEntriesToCustomerWithOverride = async (entryIds: number[], toEmail: string, ccEmails: string[]) => {
     const { data: entriesToSend } = await supabase.from('time_entries').select('*').in('id', entryIds);
-    if (!entriesToSend?.length) return;
+    if (!entriesToSend?.length) throw new Error('No entries found to send');
 
     const byCustomer = new Map<string, typeof entriesToSend>();
     entriesToSend.forEach(entry => {
@@ -363,8 +363,28 @@ export default function TimeEntriesEnhancedPage() {
         body: JSON.stringify({ report: reportData, recipient: toEmail, cc: ccEmails, entryIds: customerEntries.map(e => e.id), customerId, sentBy: user?.username || 'system' })
       });
 
-      if (!response.ok) throw new Error(`Email failed: ${response.statusText}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('Edge function error:', errText);
+        throw new Error(`Email failed (${response.status}): ${errText}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error || 'Email sending failed');
+
+      // Update entries to 'sent' in DB
+      await supabase
+        .from('time_entries')
+        .update({ approval_status: 'sent', sent_at: new Date().toISOString(), sent_to: toEmail })
+        .in('id', customerEntries.map(e => e.id));
     }
+
+    // Update local state
+    setEntries(prev => prev.map(e =>
+      entryIds.includes(e.id)
+        ? { ...e, approval_status: 'sent', sent_at: new Date().toISOString(), sent_to: toEmail } as any
+        : e
+    ));
   };
 
   // Toggle card collapse
