@@ -294,6 +294,9 @@ export default function TimeEntriesEnhancedPage() {
             report: reportData,
             recipient,
             cc: cc || [],
+            customerId: selectedCustomer !== 'all' ? selectedCustomer : undefined,
+            entryIds: sortedEntries.map(e => e.id),
+            sentBy: user?.username || 'system',
           })
         }
       );
