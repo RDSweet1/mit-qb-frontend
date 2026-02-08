@@ -346,9 +346,17 @@ export default function ReviewPage() {
   // ─── Render ──────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', fontFamily: 'Arial, sans-serif' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .review-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .review-table-wrap table { min-width: 700px; }
+          .review-sticky-bar .bar-inner { flex-wrap: wrap; }
+          .review-sticky-bar .bar-stats { width: 100%; margin-bottom: 4px; }
+        }
+      `}</style>
       {/* Header */}
       <div style={{ backgroundColor: COLORS.blue, padding: '24px 0' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
           <img src={MIT_LOGO} width={32} height={32} alt="MIT" style={{ borderRadius: 4 }} />
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 'bold', color: '#fff' }}>
@@ -364,7 +372,7 @@ export default function ReviewPage() {
       {/* Period banner */}
       {reportPeriod && (
         <div style={{ backgroundColor: COLORS.blueDark, padding: '12px 0' }}>
-          <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ color: '#fff', fontSize: 14 }}>
               <strong>Report Period:</strong> {fmtDate(reportPeriod.week_start)} – {fmtDate(reportPeriod.week_end)}
             </span>
@@ -376,7 +384,7 @@ export default function ReviewPage() {
       )}
 
       {/* Main content */}
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 24px 48px' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 24px 48px' }}>
         {/* ─── Loading ─────────────────────────── */}
         {pageState === 'loading' && (
           <div style={{ textAlign: 'center', padding: 80 }}>
@@ -565,7 +573,7 @@ export default function ReviewPage() {
                   zIndex: 50,
                   transition: 'background-color 0.3s, border-color 0.3s',
                 }}>
-                  <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', gap: 12, alignItems: 'center' }}>
                     <div style={{ flex: 1, fontSize: 13, color: COLORS.gray }}>
                       <strong>{entries.length}</strong> entries &middot; <strong>{totalHours.toFixed(2)}</strong> hrs
                       {flaggedEntries.size > 0 && (
@@ -786,7 +794,7 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
         overflow: 'hidden',
       }}>
         <h3 style={{ margin: 0, padding: '16px 20px 12px', fontSize: 15, color: '#1f2937' }}>Activity Detail</h3>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="review-table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ backgroundColor: COLORS.grayLight }}>
