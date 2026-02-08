@@ -746,14 +746,16 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
 const thStyle: React.CSSProperties = {
   padding: '10px 12px',
   textAlign: 'left',
-  borderBottom: `1px solid ${COLORS.grayBorder}`,
+  border: '2px solid #d1d5db',
   color: '#374151',
   fontSize: 11,
   textTransform: 'uppercase',
   fontWeight: 600,
+  verticalAlign: 'top',
 };
 
 const tdStyle: React.CSSProperties = {
   padding: '10px 12px',
-  borderBottom: `1px solid ${COLORS.grayBorder}`,
+  border: '2px solid #d1d5db',
+  verticalAlign: 'top',
 };
