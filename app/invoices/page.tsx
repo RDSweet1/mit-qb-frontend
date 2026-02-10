@@ -43,6 +43,12 @@ export default function InvoicesPage() {
     return format(lastMonth, 'yyyy-MM');
   });
 
+  // Parse "yyyy-MM" into a local-time Date (avoids UTC timezone shift)
+  const parseMonth = (ym: string) => {
+    const [y, m] = ym.split('-').map(Number);
+    return new Date(y, m - 1, 1);
+  };
+
   // Preview stage
   const [batchId, setBatchId] = useState<string | null>(null);
   const [previews, setPreviews] = useState<CustomerPreview[]>([]);
@@ -92,7 +98,7 @@ export default function InvoicesPage() {
     setPreviewError(null);
 
     try {
-      const monthStart = new Date(selectedMonth + '-01');
+      const monthStart = parseMonth(selectedMonth);
       const monthEnd = endOfMonth(monthStart);
 
       const response = await callEdgeFunction('preview-invoices', {
@@ -223,7 +229,7 @@ export default function InvoicesPage() {
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-500">
-                  Period: {format(new Date(selectedMonth + '-01'), 'MMMM yyyy')}
+                  Period: {format(parseMonth(selectedMonth), 'MMMM yyyy')}
                 </p>
               </div>
 
@@ -303,7 +309,7 @@ export default function InvoicesPage() {
                     )}
                   </div>
                   <div className="text-sm text-gray-600">
-                    {format(new Date(selectedMonth + '-01'), 'MMMM yyyy')}
+                    {format(parseMonth(selectedMonth), 'MMMM yyyy')}
                   </div>
                 </div>
               </div>
