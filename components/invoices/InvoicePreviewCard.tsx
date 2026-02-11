@@ -78,11 +78,19 @@ const STATUS_CONFIG = {
 };
 
 export default function InvoicePreviewCard({ preview, onActionChange }: Props) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(preview.missingRateCount > 0);
   const config = STATUS_CONFIG[preview.comparisonStatus];
   const StatusIcon = config.icon;
 
   const availableActions = getAvailableActions(preview.comparisonStatus);
+
+  // Sort line items: missing rates first, then by date
+  const sortedLineItems = [...preview.lineItems].sort((a: any, b: any) => {
+    const aMissing = a._display?.missingRate ? 0 : 1;
+    const bMissing = b._display?.missingRate ? 0 : 1;
+    if (aMissing !== bMissing) return aMissing - bMissing;
+    return (a._display?.date || '').localeCompare(b._display?.date || '');
+  });
 
   return (
     <div className={`rounded-lg border ${config.borderColor} ${config.bgColor} overflow-hidden`}>
@@ -168,42 +176,63 @@ export default function InvoicePreviewCard({ preview, onActionChange }: Props) {
       {/* Expandable Line Items */}
       {expanded && (
         <div className="border-t border-gray-200 bg-white p-4">
+          {preview.missingRateCount > 0 && preview.missingRateCount < preview.lineItemCount && (
+            <div className="px-4 pt-3 pb-1 text-xs font-semibold text-red-700 uppercase tracking-wide">
+              Missing Service Item ({preview.missingRateCount})
+            </div>
+          )}
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-gray-500 border-b">
                 <th className="pb-2 font-medium">Date</th>
                 <th className="pb-2 font-medium">Employee</th>
-                <th className="pb-2 font-medium">Service</th>
+                <th className="pb-2 font-medium">Time</th>
+                <th className="pb-2 font-medium">Service Item</th>
                 <th className="pb-2 font-medium text-right">Hours</th>
                 <th className="pb-2 font-medium text-right">Rate</th>
                 <th className="pb-2 font-medium text-right">Amount</th>
               </tr>
             </thead>
             <tbody>
-              {preview.lineItems.map((item: any, idx: number) => {
+              {sortedLineItems.map((item: any, idx: number) => {
                 const d = item._display || {};
                 const isMissing = d.missingRate;
+                // Show separator between missing and assigned sections
+                const prevItem = idx > 0 ? sortedLineItems[idx - 1]?._display : null;
+                const showDivider = idx > 0 && prevItem?.missingRate && !isMissing;
                 return (
-                  <tr key={idx} className={`border-b ${isMissing ? 'bg-red-50 border-red-100' : 'border-gray-100'}`}>
-                    <td className="py-2 text-gray-700">{d.date || '-'}</td>
-                    <td className="py-2 text-gray-700">{d.employee || '-'}</td>
-                    <td className={`py-2 ${isMissing ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-                      {d.service || '-'}
-                    </td>
-                    <td className="py-2 text-right text-gray-700">{d.hours?.toFixed(2) || '-'}</td>
-                    <td className={`py-2 text-right ${isMissing ? 'text-red-600' : 'text-gray-700'}`}>
-                      {isMissing ? 'N/A' : `$${d.rate?.toFixed(2) || '-'}`}
-                    </td>
-                    <td className={`py-2 text-right font-medium ${isMissing ? 'text-red-600' : 'text-gray-900'}`}>
-                      {isMissing ? '$0.00' : `$${d.amount?.toFixed(2) || '-'}`}
-                    </td>
-                  </tr>
+                  <>
+                    {showDivider && (
+                      <tr key={`div-${idx}`}>
+                        <td colSpan={7} className="py-1">
+                          <div className="border-t-2 border-gray-300 pt-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            Assigned ({preview.lineItemCount - preview.missingRateCount})
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    <tr key={idx} className={`border-b ${isMissing ? 'bg-red-50 border-red-100' : 'border-gray-100'}`}>
+                      <td className="py-2 text-gray-700">{d.date || '-'}</td>
+                      <td className="py-2 text-gray-700">{d.employee || '-'}</td>
+                      <td className="py-2 text-gray-500 text-xs">{d.timeDetail || '-'}</td>
+                      <td className={`py-2 ${isMissing ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
+                        {d.service || '-'}
+                      </td>
+                      <td className="py-2 text-right text-gray-700">{d.hours?.toFixed(2) || '-'}</td>
+                      <td className={`py-2 text-right ${isMissing ? 'text-red-600' : 'text-gray-700'}`}>
+                        {isMissing ? 'N/A' : `$${d.rate?.toFixed(2) || '-'}`}
+                      </td>
+                      <td className={`py-2 text-right font-medium ${isMissing ? 'text-red-600' : 'text-gray-900'}`}>
+                        {isMissing ? '$0.00' : `$${d.amount?.toFixed(2) || '-'}`}
+                      </td>
+                    </tr>
+                  </>
                 );
               })}
             </tbody>
             <tfoot>
               <tr className="font-semibold">
-                <td colSpan={3} className="pt-2 text-gray-900">Total</td>
+                <td colSpan={4} className="pt-2 text-gray-900">Total</td>
                 <td className="pt-2 text-right text-gray-900">{preview.totalHours.toFixed(2)}</td>
                 <td className="pt-2"></td>
                 <td className="pt-2 text-right text-gray-900">
