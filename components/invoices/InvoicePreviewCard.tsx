@@ -22,6 +22,7 @@ export interface CustomerPreview {
   totalAmount: number;
   lineItems: any[];
   lineItemCount: number;
+  missingRateCount: number;
   qbExistingInvoiceId: string | null;
   qbExistingInvoiceNumber: string | null;
   qbExistingTotal: number | null;
@@ -113,6 +114,17 @@ export default function InvoicePreviewCard({ preview, onActionChange }: Props) {
                 </span>
               </div>
 
+              {/* Missing rate warning */}
+              {preview.missingRateCount > 0 && (
+                <div className="mt-2 p-2 bg-red-100 border border-red-200 rounded text-sm text-red-800 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    <strong>{preview.missingRateCount} of {preview.lineItemCount} entries missing service item/rate</strong>
+                    {' '}&mdash; these will bill at $0. Assign service items in QuickBooks before invoicing.
+                  </span>
+                </div>
+              )}
+
               {/* Show QB existing info */}
               {preview.qbExistingInvoiceId && (
                 <div className="mt-1 text-sm text-gray-500">
@@ -170,14 +182,21 @@ export default function InvoicePreviewCard({ preview, onActionChange }: Props) {
             <tbody>
               {preview.lineItems.map((item: any, idx: number) => {
                 const d = item._display || {};
+                const isMissing = d.missingRate;
                 return (
-                  <tr key={idx} className="border-b border-gray-100">
+                  <tr key={idx} className={`border-b ${isMissing ? 'bg-red-50 border-red-100' : 'border-gray-100'}`}>
                     <td className="py-2 text-gray-700">{d.date || '-'}</td>
                     <td className="py-2 text-gray-700">{d.employee || '-'}</td>
-                    <td className="py-2 text-gray-700">{d.service || '-'}</td>
+                    <td className={`py-2 ${isMissing ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
+                      {d.service || '-'}
+                    </td>
                     <td className="py-2 text-right text-gray-700">{d.hours?.toFixed(2) || '-'}</td>
-                    <td className="py-2 text-right text-gray-700">${d.rate?.toFixed(2) || '-'}</td>
-                    <td className="py-2 text-right font-medium text-gray-900">${d.amount?.toFixed(2) || '-'}</td>
+                    <td className={`py-2 text-right ${isMissing ? 'text-red-600' : 'text-gray-700'}`}>
+                      {isMissing ? 'N/A' : `$${d.rate?.toFixed(2) || '-'}`}
+                    </td>
+                    <td className={`py-2 text-right font-medium ${isMissing ? 'text-red-600' : 'text-gray-900'}`}>
+                      {isMissing ? '$0.00' : `$${d.amount?.toFixed(2) || '-'}`}
+                    </td>
                   </tr>
                 );
               })}

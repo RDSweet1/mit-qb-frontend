@@ -315,6 +315,22 @@ export default function InvoicesPage() {
               </div>
             )}
 
+            {/* Missing Rates Warning */}
+            {summary && summary.missingRates > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-red-800 font-semibold">
+                    {summary.missingRates} time entries across {summary.customersWithMissingRates} customers are missing service items
+                  </p>
+                  <p className="text-red-700 text-sm mt-1">
+                    These entries have no rate assigned and will bill at $0. Assign service items in QuickBooks
+                    and re-sync before creating invoices. Affected customers are defaulted to &ldquo;Skip&rdquo;.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Per-Customer Cards */}
             <div className="space-y-3 mb-24">
               {previews.map((preview) => (
