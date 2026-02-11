@@ -3,7 +3,7 @@
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
-import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorSmartphone, X, MessageSquare } from 'lucide-react';
+import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorSmartphone, X, MessageSquare, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
@@ -19,6 +19,7 @@ export default function Home() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [clarificationCount, setClarificationCount] = useState(0);
+  const [unbilledCount, setUnbilledCount] = useState(0);
 
   // Check if MSAL is ready before using it
   useEffect(() => {
@@ -44,6 +45,16 @@ export default function Home() {
       .select('id', { count: 'exact', head: true })
       .in('status', ['pending', 'responded'])
       .then(({ count }) => { setClarificationCount(count || 0); });
+  }, [isAuthenticated]);
+
+  // Load unbilled entries count (entries with no qb_item_id)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    supabase
+      .from('time_entries')
+      .select('id', { count: 'exact', head: true })
+      .is('qb_item_id', null)
+      .then(({ count }) => { setUnbilledCount(count || 0); });
   }, [isAuthenticated]);
 
   // Register service worker + capture PWA install prompt
@@ -326,6 +337,35 @@ export default function Home() {
                   {clarificationCount}
                 </span>
               )}
+            </div>
+          </Link>
+
+          <Link href="/analytics/unbilled-time" className="group">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-300 transition-all duration-200 relative">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors">
+                <BarChart3 className="w-6 h-6 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Unbilled Time</h3>
+              <p className="text-sm text-gray-600">
+                Find time entries missing cost codes
+              </p>
+              {unbilledCount > 0 && (
+                <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {unbilledCount}
+                </span>
+              )}
+            </div>
+          </Link>
+
+          <Link href="/admin/employee-rates" className="group">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-emerald-300 transition-all duration-200">
+              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors">
+                <DollarSign className="w-6 h-6 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Employee Rates</h3>
+              <p className="text-sm text-gray-600">
+                Manage labor cost rates and profitability
+              </p>
             </div>
           </Link>
         </div>
