@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { RefreshCw, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { RefreshCw, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 
 interface OverheadItem {
@@ -94,9 +95,17 @@ export default function OverheadView() {
       {/* Header with sync button and totals */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <p className="text-sm text-gray-600">
-            Non-payroll overhead line items used in profitability calculations.
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-gray-600">
+              Non-payroll overhead line items used in profitability calculations.
+            </p>
+            <Link
+              href="/overhead"
+              className="inline-flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap"
+            >
+              Manage Overhead <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
           <div className="flex gap-6 mt-2">
             <div>
               <span className="text-xs text-gray-500 uppercase">Annual Total</span>
@@ -203,7 +212,11 @@ export default function OverheadView() {
                         {fmtMoney(Number(item.annual_amount) / 52)}
                       </td>
                       <td className="px-4 py-2.5 text-center">
-                        {item.source === 'qb_sync' ? (
+                        {item.source === 'vendor_txn' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                            Transactions
+                          </span>
+                        ) : item.source === 'qb_sync' ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                             QB
                           </span>
