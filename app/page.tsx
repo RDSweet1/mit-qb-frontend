@@ -7,6 +7,8 @@ import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorS
 import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
+import { ProfitabilitySummary } from '@/components/dashboard/ProfitabilitySummary';
+import { AppNav } from '@/components/AppNav';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function Home() {
@@ -231,6 +233,9 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Navigation */}
+      <AppNav />
+
       {/* Install App Banner */}
       {showInstallBanner && (
         <div className="bg-blue-600 text-white">
@@ -385,6 +390,11 @@ export default function Home() {
         {/* Quick Stats */}
         <div className="mt-8">
           <DashboardStats />
+        </div>
+
+        {/* Profitability Summary */}
+        <div className="mt-6">
+          <ProfitabilitySummary />
         </div>
 
         {/* Analytics Charts */}

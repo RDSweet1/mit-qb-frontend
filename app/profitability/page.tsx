@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, LogOut, DollarSign, Settings } from 'lucide-react';
+import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, LogOut, DollarSign, Settings, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useMsal } from '@azure/msal-react';
 import { ProtectedPage } from '@/components/ProtectedPage';
+import { AppNav } from '@/components/AppNav';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { format, startOfWeek, endOfWeek, addWeeks, isBefore, isAfter } from 'date-fns';
 import PnlSummaryView from '@/components/profitability/PnlSummaryView';
@@ -326,18 +327,15 @@ export default function ProfitabilityPage() {
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/" className="text-gray-600 hover:text-gray-900">
-                  <ArrowLeft className="w-6 h-6" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center gap-3">
+                <Link href="/" className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-white" />
                 </Link>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Profitability</h1>
-                    <p className="text-sm text-gray-600">Weekly P&L trends and overhead analysis</p>
-                  </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">MIT Consulting</h1>
+                  <p className="text-xs text-gray-500">Timesheet & Billing</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -356,8 +354,17 @@ export default function ProfitabilityPage() {
             </div>
           </div>
         </header>
+        <AppNav />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-purple-600" />
+              Profitability
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">Weekly P&L trends, overhead analysis, and QB financial reports</p>
+          </div>
+
           {/* Date Range Controls */}
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
             <div className="flex flex-wrap items-center gap-3">
