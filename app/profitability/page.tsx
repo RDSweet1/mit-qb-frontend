@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, LogOut } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, LogOut, DollarSign, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useMsal } from '@azure/msal-react';
 import { ProtectedPage } from '@/components/ProtectedPage';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { format, startOfWeek, endOfWeek, addWeeks, isBefore, isAfter } from 'date-fns';
+import PnlSummaryView from '@/components/profitability/PnlSummaryView';
+import OverheadView from '@/components/profitability/OverheadView';
 import {
   LineChart,
   Line,
@@ -95,6 +97,8 @@ export default function ProfitabilityPage() {
   const { instance, accounts } = useMsal();
   const user = accounts[0];
 
+  type ActiveTab = 'profitability' | 'pnl' | 'overhead';
+  const [activeTab, setActiveTab] = useState<ActiveTab>('profitability');
   const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -399,6 +403,44 @@ export default function ProfitabilityPage() {
             </div>
           </div>
 
+          {/* Tab Bar */}
+          <div className="flex gap-1 mb-6">
+            {([
+              { key: 'profitability' as ActiveTab, label: 'Profitability', icon: TrendingUp },
+              { key: 'pnl' as ActiveTab, label: 'P&L Summary', icon: DollarSign },
+              { key: 'overhead' as ActiveTab, label: 'Overhead', icon: Settings },
+            ]).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === tab.key
+                    ? 'bg-purple-100 text-purple-800'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* P&L Summary Tab */}
+          {activeTab === 'pnl' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <PnlSummaryView startDate={startDate} endDate={endDate} />
+            </div>
+          )}
+
+          {/* Overhead Tab */}
+          {activeTab === 'overhead' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <OverheadView />
+            </div>
+          )}
+
+          {/* Profitability Tab (existing content) */}
+          {activeTab === 'profitability' && <>
           {/* Missing Weeks Notice */}
           {missingWeeks.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between">
@@ -569,6 +611,7 @@ export default function ProfitabilityPage() {
               </div>
             </>
           )}
+          </>}
         </main>
       </div>
     </ProtectedPage>
