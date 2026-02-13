@@ -15,12 +15,15 @@ import {
   Line,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 
 // --- Types ---
@@ -51,7 +54,7 @@ interface Snapshot {
   unbilled_hours: number;
 }
 
-type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_quarter' | 'ytd' | 'custom';
+type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_quarter' | 'ytd' | 'last_year' | 'custom';
 
 // --- Helpers ---
 
@@ -151,6 +154,10 @@ export default function ProfitabilityPage() {
         start = new Date(now.getFullYear(), 0, 1);
         end = now;
         break;
+      case 'last_year':
+        start = new Date(now.getFullYear() - 1, 0, 1);
+        end = new Date(now.getFullYear() - 1, 11, 31);
+        break;
       default:
         return;
     }
@@ -194,13 +201,32 @@ export default function ProfitabilityPage() {
 
   // Chart data
   const chartData = useMemo(() => {
-    return snapshots.map(s => ({
-      week: weekLabel(s.week_start),
-      Revenue: Number(s.billable_revenue),
-      'Total Cost': Number(s.labor_cost) + Number(s.non_payroll_overhead || 0),
-      'Gross Margin': Number(s.billable_revenue) - Number(s.labor_cost) - Number(s.non_payroll_overhead || 0),
-      'Utilization %': Number(s.utilization_percent),
-    }));
+    let cumulative = 0;
+    return snapshots.map(s => {
+      const margin = Number(s.billable_revenue) - Number(s.labor_cost) - Number(s.non_payroll_overhead || 0);
+      cumulative += margin;
+      return {
+        week: weekLabel(s.week_start),
+        Revenue: Number(s.billable_revenue),
+        'Total Cost': Number(s.labor_cost) + Number(s.non_payroll_overhead || 0),
+        'Gross Margin': margin,
+        'Utilization %': Number(s.utilization_percent),
+        'Cumulative Net': cumulative,
+      };
+    });
+  }, [snapshots]);
+
+  // Running totals map for the table (keyed by week_start, in chronological order)
+  const runningTotals = useMemo(() => {
+    const sorted = [...snapshots].sort((a, b) => a.week_start.localeCompare(b.week_start));
+    const map: Record<string, number> = {};
+    let cumulative = 0;
+    for (const s of sorted) {
+      const margin = Number(s.billable_revenue) - Number(s.labor_cost) - Number(s.non_payroll_overhead || 0);
+      cumulative += margin;
+      map[s.week_start] = cumulative;
+    }
+    return map;
   }, [snapshots]);
 
   // Employee aggregate
@@ -320,6 +346,7 @@ export default function ProfitabilityPage() {
     { key: 'last_month', label: 'Last Month' },
     { key: 'this_quarter', label: 'This Quarter' },
     { key: 'ytd', label: 'YTD' },
+    { key: 'last_year', label: 'Last Year' },
   ];
 
   return (
@@ -528,6 +555,45 @@ export default function ProfitabilityPage() {
                 </div>
               )}
 
+              {/* Cumulative Net Profit */}
+              {chartData.length > 1 && (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Cumulative Net Profit</h3>
+                    <span className={`text-lg font-bold ${chartData[chartData.length - 1]['Cumulative Net'] >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {fmtMoney(chartData[chartData.length - 1]['Cumulative Net'])}
+                    </span>
+                  </div>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#16a34a" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#dc2626" stopOpacity={0} />
+                          <stop offset="95%" stopColor="#dc2626" stopOpacity={0.3} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" tick={{ fontSize: 12 }} />
+                      <YAxis tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+                      <Tooltip formatter={(value: any) => [fmtMoney(Number(value)), 'Cumulative Net Profit']} />
+                      <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+                      <Area
+                        type="monotone"
+                        dataKey="Cumulative Net"
+                        stroke="#16a34a"
+                        strokeWidth={2.5}
+                        fill="url(#profitGradient)"
+                        dot={{ r: 3, fill: '#16a34a' }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
               {/* Weekly Detail Table */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
@@ -548,6 +614,7 @@ export default function ProfitabilityPage() {
                         <SortHeader col="total_cost" label="Total Cost" align="right" />
                         <SortHeader col="gross_margin" label="Margin" align="right" />
                         <SortHeader col="margin_percent" label="Margin%" align="right" />
+                        <th className="px-3 py-3 text-xs font-semibold text-gray-600 uppercase text-right">YTD Net</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -563,6 +630,7 @@ export default function ProfitabilityPage() {
                             totalCost={totalCost}
                             margin={margin}
                             marginPct={marginPct}
+                            ytdNet={runningTotals[s.week_start] ?? 0}
                             isExpanded={isExpanded}
                             onToggle={() => setExpandedWeek(isExpanded ? null : s.week_start)}
                           />
@@ -626,11 +694,12 @@ export default function ProfitabilityPage() {
 }
 
 // Sub-component: expandable snapshot row
-function SnapshotRow({ snapshot: s, totalCost, margin, marginPct, isExpanded, onToggle }: {
+function SnapshotRow({ snapshot: s, totalCost, margin, marginPct, ytdNet, isExpanded, onToggle }: {
   snapshot: Snapshot;
   totalCost: number;
   margin: number;
   marginPct: number;
+  ytdNet: number;
   isExpanded: boolean;
   onToggle: () => void;
 }) {
@@ -655,10 +724,11 @@ function SnapshotRow({ snapshot: s, totalCost, margin, marginPct, isExpanded, on
         <td className="px-3 py-3 text-sm text-red-700 text-right font-medium">{fmtMoney(totalCost)}</td>
         <td className={`px-3 py-3 text-sm text-right font-medium ${margin >= 0 ? 'text-blue-700' : 'text-red-700'}`}>{fmtMoney(margin)}</td>
         <td className={`px-3 py-3 text-sm text-right font-medium ${marginPct >= 0 ? 'text-blue-700' : 'text-red-700'}`}>{fmtPct(marginPct)}</td>
+        <td className={`px-3 py-3 text-sm text-right font-bold ${ytdNet >= 0 ? 'text-green-700' : 'text-red-700'}`}>{fmtMoney(ytdNet)}</td>
       </tr>
       {isExpanded && (hasCategoryData || hasEmployeeData) && (
         <tr>
-          <td colSpan={11} className="bg-gray-50 px-6 py-4">
+          <td colSpan={12} className="bg-gray-50 px-6 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Category breakdown */}
               {hasCategoryData && (
