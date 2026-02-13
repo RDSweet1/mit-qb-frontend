@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, MessageSquare, CheckCircle, Clock, Send, ChevronDown, ChevronUp, X, RefreshCw } from 'lucide-react';
-import Link from 'next/link';
+import { MessageSquare, CheckCircle, Clock, Send, ChevronDown, ChevronUp, X, RefreshCw } from 'lucide-react';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { useMsal } from '@azure/msal-react';
-import { ProtectedPage } from '@/components/ProtectedPage';
+import { AppShell } from '@/components/AppShell';
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface Assignment {
@@ -189,33 +188,20 @@ export default function InternalReviewPage() {
   }
 
   return (
-    <ProtectedPage>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/" className="text-gray-500 hover:text-gray-700">
-                  <ArrowLeft className="w-5 h-5" />
-                </Link>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">Internal Clarifications</h1>
-                  <p className="text-sm text-gray-500">Manage clarification requests with field techs</p>
-                </div>
-              </div>
-              <button
-                onClick={loadData}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <AppShell>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Internal Clarifications</h2>
+          <p className="text-sm text-gray-500">Manage clarification requests with field techs</p>
+        </div>
+        <button
+          onClick={loadData}
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <button
@@ -463,8 +449,6 @@ export default function InternalReviewPage() {
               </div>
             );
           })}
-        </main>
-      </div>
-    </ProtectedPage>
+    </AppShell>
   );
 }

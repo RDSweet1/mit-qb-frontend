@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Send, Calendar, FileText, Eye, Check, X, Building2, Clock, User, Filter } from 'lucide-react';
-import Link from 'next/link';
+import { Send, Calendar, FileText, Eye, Check, X, Building2, Clock, User, Filter } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { AppShell } from '@/components/AppShell';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 
 interface TimeEntry {
@@ -176,55 +176,42 @@ export default function ReportsEnhancedPage() {
     .reduce((sum, r) => sum + r.total_hours, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-gray-600 hover:text-gray-900">
-                <ArrowLeft className="w-6 h-6" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Weekly Time Reports</h1>
-                <p className="text-sm text-gray-600">Search, filter, preview, and send reports to customers</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {!previewMode && (
-                <button
-                  onClick={() => sendReports(true)}
-                  disabled={sending || selectedCount === 0}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                  Send Without Review
-                </button>
-              )}
-              <button
-                onClick={() => sendReports(false)}
-                disabled={sending || selectedCount === 0}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {previewMode ? (
-                  <>
-                    <Send className="w-4 h-4" />
-                    {sending ? 'Sending...' : `Send ${selectedCount} Reports`}
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4" />
-                    Review & Send
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+    <AppShell>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Weekly Time Reports</h2>
+          <p className="text-sm text-gray-600">Search, filter, preview, and send reports to customers</p>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center gap-3">
+          {!previewMode && (
+            <button
+              onClick={() => sendReports(true)}
+              disabled={sending || selectedCount === 0}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Send Without Review
+            </button>
+          )}
+          <button
+            onClick={() => sendReports(false)}
+            disabled={sending || selectedCount === 0}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {previewMode ? (
+              <>
+                <Send className="w-4 h-4" />
+                {sending ? 'Sending...' : `Send ${selectedCount} Reports`}
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4" />
+                Review & Send
+              </>
+            )}
+          </button>
+        </div>
+      </div>
         {!previewMode ? (
           <>
             {/* Search & Filter Section */}
@@ -494,7 +481,6 @@ export default function ReportsEnhancedPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

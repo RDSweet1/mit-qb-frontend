@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, LogOut, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles, ChevronDown, ChevronRight, Send, MessageSquare } from 'lucide-react';
-import Link from 'next/link';
+import { RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles, ChevronDown, ChevronRight, Send, MessageSquare } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { createClient } from '@supabase/supabase-js';
 import { callEdgeFunction } from '@/lib/supabaseClient';
 import { useMsal } from '@azure/msal-react';
-import { ProtectedPage } from '@/components/ProtectedPage';
+import { AppShell } from '@/components/AppShell';
 import { LockIcon } from '@/components/time-entries/LockIcon';
 import { UnlockWarningDialog } from '@/components/time-entries/UnlockWarningDialog';
 import { EditWarningBanner } from '@/components/time-entries/EditWarningBanner';
@@ -69,12 +68,8 @@ interface ServiceItem {
 type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'all_time' | 'custom';
 
 export default function TimeEntriesEnhancedPage() {
-  const { instance, accounts } = useMsal();
+  const { accounts } = useMsal();
   const user = accounts[0];
-
-  const handleLogout = () => {
-    instance.logoutPopup();
-  };
 
   // State
   const [entries, setEntries] = useState<TimeEntry[]>([]);
@@ -1106,45 +1101,21 @@ export default function TimeEntriesEnhancedPage() {
   }, [startDate, endDate, selectedCustomer, selectedEmployee]);
 
   return (
-    <ProtectedPage>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/" className="text-gray-600 hover:text-gray-900">
-                  <ArrowLeft className="w-6 h-6" />
-                </Link>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Time Entries - Weekly Reports</h1>
-                  <p className="text-sm text-gray-600">Production QuickBooks Data</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">{user?.username}</p>
-                </div>
-                <button
-                  onClick={syncFromQuickBooks}
-                  disabled={syncing}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                  {syncing ? 'Syncing...' : 'Sync from QB'}
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
+    <AppShell>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Time Entries</h2>
+          <p className="text-sm text-gray-600">Production QuickBooks Data</p>
+        </div>
+        <button
+          onClick={syncFromQuickBooks}
+          disabled={syncing}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+          {syncing ? 'Syncing...' : 'Sync from QB'}
+        </button>
+      </div>
 
       {/* Filters */}
       <div className="bg-white border-b border-gray-200">
@@ -1318,7 +1289,6 @@ export default function TimeEntriesEnhancedPage() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <div className={`mb-6 border-2 rounded-lg p-6 shadow-lg ${
             error.startsWith('✅')
@@ -1957,9 +1927,6 @@ export default function TimeEntriesEnhancedPage() {
             )}
           </>
         )}
-      </main>
-    </div>
-
     <TrackingHistoryDialog
       isOpen={historyDialogOpen}
       entryId={historyEntry?.id || null}
@@ -2130,6 +2097,6 @@ export default function TimeEntriesEnhancedPage() {
       }}
     />
 
-    </ProtectedPage>
+    </AppShell>
   );
 }

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Send, Calendar, FileText, Mail, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
-import Link from 'next/link';
+import { Send, Calendar, FileText, Mail, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
+import { AppShell } from '@/components/AppShell';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 
 export default function ReportsPage() {
@@ -145,24 +145,12 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Weekly Reports</h1>
-              <p className="text-sm text-gray-600">Generate and send time reports to clients</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell>
+      <div className="max-w-4xl mx-auto">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Weekly Reports</h2>
+        <p className="text-sm text-gray-600">Generate and send time reports to clients</p>
+      </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -421,7 +409,7 @@ export default function ReportsPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, DollarSign, Plus, Trash2, LogOut, RefreshCw, Save } from 'lucide-react';
+import { DollarSign, Plus, Trash2, RefreshCw, Save } from 'lucide-react';
 import Link from 'next/link';
-import { useMsal } from '@azure/msal-react';
-import { ProtectedPage } from '@/components/ProtectedPage';
+import { AppShell } from '@/components/AppShell';
 import { supabase } from '@/lib/supabaseClient';
 
 interface EmployeeRate {
@@ -21,8 +20,6 @@ interface EmployeeRate {
 }
 
 export default function EmployeeRatesPage() {
-  const { instance, accounts } = useMsal();
-  const user = accounts[0];
 
   const [rates, setRates] = useState<EmployeeRate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -211,42 +208,14 @@ export default function EmployeeRatesPage() {
   };
 
   return (
-    <ProtectedPage>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/" className="text-gray-600 hover:text-gray-900">
-                  <ArrowLeft className="w-6 h-6" />
-                </Link>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-6 h-6 text-emerald-600" />
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Employee Cost Rates</h1>
-                    <p className="text-sm text-gray-600">Manage labor cost rates and burden multipliers</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">{user?.username}</p>
-                </div>
-                <button
-                  onClick={() => instance.logoutPopup()}
-                  className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell>
+      <div className="flex items-center gap-2 mb-6">
+        <DollarSign className="w-6 h-6 text-emerald-600" />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Employee Cost Rates</h2>
+          <p className="text-sm text-gray-600">Manage labor cost rates and burden multipliers</p>
+        </div>
+      </div>
           {/* Messages */}
           {error && (
             <div className="mb-6 p-4 rounded-lg border bg-red-50 border-red-300 text-red-800">
@@ -501,8 +470,6 @@ export default function EmployeeRatesPage() {
               Manage Report Recipients &rarr;
             </Link>
           </div>
-        </main>
-      </div>
-    </ProtectedPage>
+    </AppShell>
   );
 }

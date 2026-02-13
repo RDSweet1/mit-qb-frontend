@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { ProfitabilitySummary } from '@/components/dashboard/ProfitabilitySummary';
-import { AppNav } from '@/components/AppNav';
+import { AppShell } from '@/components/AppShell';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function Home() {
@@ -130,10 +130,6 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
-    instance.logoutPopup();
-  };
-
   // Show loading screen while MSAL initializes
   if (!isMsalReady) {
     return (
@@ -203,64 +199,28 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">MIT Consulting</h1>
-                <p className="text-xs text-gray-500">Timesheet & Billing</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.username}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation */}
-      <AppNav />
-
+    <AppShell>
       {/* Install App Banner */}
       {showInstallBanner && (
-        <div className="bg-blue-600 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <MonitorSmartphone className="w-5 h-5 flex-shrink-0" />
-              <p className="text-sm">Install MIT Timesheet as a desktop app for quick access and taskbar pinning.</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={handleInstall}
-                className="px-4 py-1.5 bg-white text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors"
-              >
-                Install App
-              </button>
-              <button onClick={() => setShowInstallBanner(false)} className="p-1 hover:bg-blue-500 rounded">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="bg-blue-600 text-white rounded-lg mb-6 py-3 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <MonitorSmartphone className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm">Install MIT Timesheet as a desktop app for quick access and taskbar pinning.</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={handleInstall}
+              className="px-4 py-1.5 bg-white text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors"
+            >
+              Install App
+            </button>
+            <button onClick={() => setShowInstallBanner(false)} className="p-1 hover:bg-blue-500 rounded">
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h2>
           <p className="text-gray-600">Manage timesheets, reports, and invoices</p>
@@ -411,7 +371,6 @@ export default function Home() {
 
         {/* Analytics Charts */}
         <AnalyticsCharts />
-      </main>
-    </div>
+    </AppShell>
   );
 }

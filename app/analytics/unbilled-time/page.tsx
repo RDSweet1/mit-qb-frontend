@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, AlertTriangle, Download, ExternalLink, LogOut, Search } from 'lucide-react';
+import { AlertTriangle, Download, ExternalLink, Search } from 'lucide-react';
 import Link from 'next/link';
-import { useMsal } from '@azure/msal-react';
-import { ProtectedPage } from '@/components/ProtectedPage';
+import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 
 interface TimeEntry {
@@ -37,9 +37,6 @@ function fmt(d: Date): string {
 }
 
 export default function UnbilledTimePage() {
-  const { instance, accounts } = useMsal();
-  const user = accounts[0];
-
   const [datePreset, setDatePreset] = useState<DatePreset>('last_month');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -204,42 +201,12 @@ export default function UnbilledTimePage() {
   }
 
   return (
-    <ProtectedPage>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/" className="text-gray-600 hover:text-gray-900">
-                  <ArrowLeft className="w-6 h-6" />
-                </Link>
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-6 h-6 text-amber-600" />
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Unbilled Time</h1>
-                    <p className="text-sm text-gray-600">Time entries missing cost codes</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">{user?.username}</p>
-                </div>
-                <button
-                  onClick={() => instance.logoutPopup()}
-                  className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell>
+          <PageHeader
+            title="Unbilled Time"
+            subtitle="Time entries missing cost codes"
+            icon={<AlertTriangle className="w-6 h-6 text-amber-600" />}
+          />
           {/* Date Range Controls */}
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
             <div className="flex flex-wrap items-center gap-3">
@@ -414,8 +381,6 @@ export default function UnbilledTimePage() {
               </div>
             </div>
           )}
-        </main>
-      </div>
-    </ProtectedPage>
+    </AppShell>
   );
 }

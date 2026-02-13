@@ -2,16 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare } from 'lucide-react';
+import { Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare, Wrench } from 'lucide-react';
 
 const navItems = [
   { href: '/time-entries-enhanced', label: 'Time Entries', icon: Clock, color: 'blue' },
   { href: '/reports', label: 'Reports', icon: FileText, color: 'green' },
   { href: '/invoices', label: 'Invoices', icon: DollarSign, color: 'purple' },
   { href: '/profitability', label: 'Profitability', icon: TrendingUp, color: 'purple' },
+  { href: '/overhead', label: 'Overhead', icon: Wrench, color: 'teal' },
   { href: '/analytics/unbilled-time', label: 'Unbilled', icon: BarChart3, color: 'orange' },
   { href: '/internal-review', label: 'Clarifications', icon: MessageSquare, color: 'amber' },
-  { href: '/admin/users', label: 'Admin', icon: Settings, color: 'gray' },
+  { href: '/settings', label: 'Settings', icon: Settings, color: 'gray' },
+  { href: '/admin/users', label: 'Admin', icon: Users, color: 'gray' },
 ];
 
 export function AppNav() {

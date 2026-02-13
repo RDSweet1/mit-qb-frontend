@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Users, Plus, Trash2, LogOut, Shield, Mail, Check } from 'lucide-react';
-import Link from 'next/link';
+import { Users, Plus, Trash2, Shield, Mail, Check } from 'lucide-react';
 import { useMsal } from '@azure/msal-react';
-import { ProtectedPage } from '@/components/ProtectedPage';
+import { AppShell } from '@/components/AppShell';
 import { callEdgeFunction } from '@/lib/supabaseClient';
 
 interface AppUser {
@@ -23,7 +22,7 @@ interface AppUser {
 }
 
 export default function AdminUsersPage() {
-  const { instance, accounts } = useMsal();
+  const { accounts } = useMsal();
   const user = accounts[0];
   const adminEmail = user?.username || '';
 
@@ -37,10 +36,6 @@ export default function AdminUsersPage() {
   const [newEmail, setNewEmail] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [adding, setAdding] = useState(false);
-
-  const handleLogout = () => {
-    instance.logoutPopup();
-  };
 
   const loadUsers = async () => {
     setLoading(true);
@@ -184,43 +179,14 @@ export default function AdminUsersPage() {
   ];
 
   return (
-    <ProtectedPage>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/" className="text-gray-600 hover:text-gray-900">
-                  <ArrowLeft className="w-6 h-6" />
-                </Link>
-                <div className="flex items-center gap-2">
-                  <Shield className="w-6 h-6 text-indigo-600" />
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-                    <p className="text-sm text-gray-600">Manage app users and permissions</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">{user?.username}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppShell>
+      <div className="flex items-center gap-2 mb-6">
+        <Shield className="w-6 h-6 text-indigo-600" />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+          <p className="text-sm text-gray-600">Manage app users and permissions</p>
+        </div>
+      </div>
           {error && (
             <div className={`mb-6 p-4 rounded-lg border ${
               error.startsWith('✅')
@@ -380,8 +346,6 @@ export default function AdminUsersPage() {
               </div>
             </div>
           )}
-        </main>
-      </div>
-    </ProtectedPage>
+    </AppShell>
   );
 }

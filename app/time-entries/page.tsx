@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, RefreshCw, Calendar, Clock, User, Building2 } from 'lucide-react';
-import Link from 'next/link';
+import { RefreshCw, Calendar, Clock, User, Building2 } from 'lucide-react';
 import { callEdgeFunction } from '@/lib/supabaseClient';
+import { AppShell } from '@/components/AppShell';
 import { format } from 'date-fns';
 
 interface TimeEntry {
@@ -56,34 +56,21 @@ export default function TimeEntriesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-gray-600 hover:text-gray-900">
-                <ArrowLeft className="w-6 h-6" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Time Entries</h1>
-                <p className="text-sm text-gray-600">Synced from QuickBooks Workforce</p>
-              </div>
-            </div>
-            <button
-              onClick={syncFromQuickBooks}
-              disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync from QuickBooks'}
-            </button>
-          </div>
+    <AppShell>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Time Entries</h2>
+          <p className="text-sm text-gray-600">Synced from QuickBooks Workforce</p>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <button
+          onClick={syncFromQuickBooks}
+          disabled={syncing}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+          {syncing ? 'Syncing...' : 'Sync from QuickBooks'}
+        </button>
+      </div>
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800">{error}</p>
@@ -179,7 +166,6 @@ export default function TimeEntriesPage() {
             </div>
           </>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

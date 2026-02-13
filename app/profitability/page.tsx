@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, LogOut, DollarSign, Settings, Clock } from 'lucide-react';
-import Link from 'next/link';
-import { useMsal } from '@azure/msal-react';
-import { ProtectedPage } from '@/components/ProtectedPage';
-import { AppNav } from '@/components/AppNav';
+import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, DollarSign, Settings } from 'lucide-react';
+import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { format, startOfWeek, endOfWeek, addWeeks, isBefore, isAfter } from 'date-fns';
 import PnlSummaryView from '@/components/profitability/PnlSummaryView';
@@ -98,9 +96,6 @@ function getWeeksInRange(start: string, end: string): string[] {
 // --- Component ---
 
 export default function ProfitabilityPage() {
-  const { instance, accounts } = useMsal();
-  const user = accounts[0];
-
   type ActiveTab = 'profitability' | 'pnl' | 'overhead';
   const [activeTab, setActiveTab] = useState<ActiveTab>('profitability');
   const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
@@ -350,47 +345,12 @@ export default function ProfitabilityPage() {
   ];
 
   return (
-    <ProtectedPage>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center gap-3">
-                <Link href="/" className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-white" />
-                </Link>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">MIT Consulting</h1>
-                  <p className="text-xs text-gray-500">Timesheet & Billing</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">{user?.username}</p>
-                </div>
-                <button
-                  onClick={() => instance.logoutPopup()}
-                  className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-        <AppNav />
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
-              Profitability
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">Weekly P&L trends, overhead analysis, and QB financial reports</p>
-          </div>
+    <AppShell>
+          <PageHeader
+            title="Profitability"
+            subtitle="Weekly P&L trends, overhead analysis, and QB financial reports"
+            icon={<TrendingUp className="w-6 h-6 text-purple-600" />}
+          />
 
           {/* Date Range Controls */}
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
@@ -687,9 +647,7 @@ export default function ProfitabilityPage() {
             </>
           )}
           </>}
-        </main>
-      </div>
-    </ProtectedPage>
+    </AppShell>
   );
 }
 
