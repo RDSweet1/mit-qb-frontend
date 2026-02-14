@@ -256,7 +256,7 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href="/admin/users" className="group">
+          <Link href="/admin" className="group">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 transition-all duration-200">
               <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-200 transition-colors">
                 <Users className="w-6 h-6 text-indigo-600" />
@@ -326,7 +326,7 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href="/admin/employee-rates" className="group">
+          <Link href="/admin?tab=rates" className="group">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-emerald-300 transition-all duration-200">
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors">
                 <DollarSign className="w-6 h-6 text-emerald-600" />

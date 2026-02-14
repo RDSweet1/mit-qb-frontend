@@ -13,7 +13,7 @@ const navItems = [
   { href: '/analytics/unbilled-time', label: 'Unbilled', icon: BarChart3, color: 'orange' },
   { href: '/internal-review', label: 'Clarifications', icon: MessageSquare, color: 'amber' },
   { href: '/settings', label: 'Settings', icon: Settings, color: 'gray' },
-  { href: '/admin/users', label: 'Admin', icon: Users, color: 'gray' },
+  { href: '/admin', label: 'Admin', icon: Users, color: 'gray' },
 ];
 
 export function AppNav() {
