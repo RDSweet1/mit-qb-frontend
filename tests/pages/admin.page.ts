@@ -10,13 +10,13 @@ export class AdminPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/admin/users');
+    await this.page.goto('/admin');
     await this.page.waitForLoadState('networkidle');
   }
 
   async verify() {
     await this.verifyAppShell();
-    await this.verifyPageHeader('User Management');
+    await this.verifyPageHeader('Administration');
     await this.verifyActiveNavTab('Admin');
   }
 }
