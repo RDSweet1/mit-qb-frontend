@@ -5,6 +5,8 @@ import path from 'path';
 // Load environment variables from .env.local
 dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 
+const authFile = path.join(__dirname, 'tests', '.auth', 'user.json');
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -22,14 +24,29 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'chromium',
+      name: 'auth-setup',
+      testMatch: /auth\.setup\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'e2e',
+      testDir: './tests/e2e',
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authFile,
+      },
+    },
+    {
+      name: 'api',
+      testDir: './tests/api',
       use: { ...devices['Desktop Chrome'] },
     },
   ],
 
-  webServer: process.env.TEST_LOCAL ? {
+  webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-  } : undefined,
+    reuseExistingServer: true,
+  },
 });
