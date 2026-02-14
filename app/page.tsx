@@ -3,7 +3,7 @@
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
-import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorSmartphone, X, MessageSquare, BarChart3, TrendingUp, Wrench } from 'lucide-react';
+import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorSmartphone, X, MessageSquare, BarChart3, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
@@ -309,19 +309,7 @@ export default function Home() {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Profitability</h3>
               <p className="text-sm text-gray-600">
-                Weekly P&L trends and overhead analysis
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/overhead" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-teal-300 transition-all duration-200">
-              <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-teal-200 transition-colors">
-                <Wrench className="w-6 h-6 text-teal-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Overhead</h3>
-              <p className="text-sm text-gray-600">
-                Manage vendor-based overhead categorization
+                Weekly P&L, overhead, and margin analysis
               </p>
             </div>
           </Link>
