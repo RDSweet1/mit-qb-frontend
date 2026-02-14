@@ -2,16 +2,18 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, DollarSign, Settings, Wrench } from 'lucide-react';
+import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, DollarSign, Settings, Wrench, Users } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { format, startOfWeek, endOfWeek, addWeeks, isBefore, isAfter } from 'date-fns';
 import PnlSummaryView from '@/components/profitability/PnlSummaryView';
 import OverheadView from '@/components/profitability/OverheadView';
+import CustomerDrillDown from '@/components/profitability/CustomerDrillDown';
 import OverheadSyncPanel from '@/components/overhead/OverheadSyncPanel';
 import VendorTransactionTable from '@/components/overhead/VendorTransactionTable';
 import CategoryManager from '@/components/overhead/CategoryManager';
+import type { CustomerProfitability } from '@/lib/types';
 import {
   LineChart,
   Line,
@@ -100,10 +102,10 @@ function getWeeksInRange(start: string, end: string): string[] {
 // --- Component ---
 
 export default function ProfitabilityPage() {
-  type ActiveTab = 'profitability' | 'pnl' | 'overhead' | 'vendor-overhead';
+  type ActiveTab = 'profitability' | 'pnl' | 'overhead' | 'vendor-overhead' | 'by-customer';
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as ActiveTab | null;
-  const validTabs: ActiveTab[] = ['profitability', 'pnl', 'overhead', 'vendor-overhead'];
+  const validTabs: ActiveTab[] = ['profitability', 'pnl', 'overhead', 'vendor-overhead', 'by-customer'];
   const [activeTab, setActiveTab] = useState<ActiveTab>(
     tabParam && validTabs.includes(tabParam) ? tabParam : 'profitability'
   );
@@ -126,6 +128,13 @@ export default function ProfitabilityPage() {
   const [generateProgress, setGenerateProgress] = useState('');
   const [sortCol, setSortCol] = useState<string>('week_start');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  // Customer profitability tab state
+  const [customerData, setCustomerData] = useState<CustomerProfitability[]>([]);
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [customerSortCol, setCustomerSortCol] = useState<string>('revenue');
+  const [customerSortDir, setCustomerSortDir] = useState<'asc' | 'desc'>('desc');
+  const [drillDownCustomer, setDrillDownCustomer] = useState<{ id: string; name: string } | null>(null);
 
   // Initialize date range + load vendor categories
   useEffect(() => {
@@ -204,6 +213,79 @@ export default function ProfitabilityPage() {
         setLoading(false);
       });
   }, [startDate, endDate]);
+
+  // Load customer profitability when tab is active
+  useEffect(() => {
+    if (activeTab !== 'by-customer' || !startDate || !endDate) return;
+    setCustomerLoading(true);
+    supabase
+      .from('customer_profitability')
+      .select('*')
+      .gte('week_start', startDate)
+      .lte('week_start', endDate)
+      .order('week_start', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) console.error('Error loading customer profitability:', error);
+        setCustomerData((data || []) as CustomerProfitability[]);
+        setCustomerLoading(false);
+      });
+  }, [activeTab, startDate, endDate]);
+
+  // Aggregate customer profitability by customer
+  const customerAggregates = useMemo(() => {
+    const map: Record<string, {
+      name: string;
+      revenue: number;
+      cost: number;
+      hours: number;
+      billableHours: number;
+      entries: number;
+    }> = {};
+    for (const row of customerData) {
+      const cid = row.qb_customer_id;
+      if (!map[cid]) {
+        map[cid] = { name: row.customer_name || 'Unknown', revenue: 0, cost: 0, hours: 0, billableHours: 0, entries: 0 };
+      }
+      map[cid].revenue += Number(row.billable_revenue);
+      map[cid].cost += Number(row.labor_cost);
+      map[cid].hours += Number(row.total_hours);
+      map[cid].billableHours += Number(row.billable_hours);
+      map[cid].entries += Number(row.entry_count);
+    }
+    return Object.entries(map).map(([cid, d]) => ({
+      customerId: cid,
+      name: d.name,
+      revenue: d.revenue,
+      cost: d.cost,
+      margin: d.revenue - d.cost,
+      marginPct: d.revenue > 0 ? ((d.revenue - d.cost) / d.revenue) * 100 : 0,
+      hours: d.hours,
+      billableHours: d.billableHours,
+      utilPct: d.hours > 0 ? (d.billableHours / d.hours) * 100 : 0,
+      entries: d.entries,
+    }));
+  }, [customerData]);
+
+  const sortedCustomerAggregates = useMemo(() => {
+    return [...customerAggregates].sort((a, b) => {
+      if (customerSortCol === 'name') {
+        return customerSortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+      }
+      const av = (a as Record<string, any>)[customerSortCol] as number;
+      const bv = (b as Record<string, any>)[customerSortCol] as number;
+      return customerSortDir === 'asc' ? av - bv : bv - av;
+    });
+  }, [customerAggregates, customerSortCol, customerSortDir]);
+
+  const customerSummaryTotals = useMemo(() => {
+    const totalRevenue = customerAggregates.reduce((s, c) => s + c.revenue, 0);
+    const totalCost = customerAggregates.reduce((s, c) => s + c.cost, 0);
+    const totalHours = customerAggregates.reduce((s, c) => s + c.hours, 0);
+    const totalBillable = customerAggregates.reduce((s, c) => s + c.billableHours, 0);
+    const margin = totalRevenue - totalCost;
+    const marginPct = totalRevenue > 0 ? (margin / totalRevenue) * 100 : 0;
+    return { totalRevenue, totalCost, margin, marginPct, totalHours, totalBillable };
+  }, [customerAggregates]);
 
   // Aggregated summary stats
   const summary = useMemo(() => {
@@ -423,9 +505,10 @@ export default function ProfitabilityPage() {
           </div>
 
           {/* Tab Bar */}
-          <div className="flex gap-1 mb-6">
+          <div className="flex gap-1 mb-6 flex-wrap">
             {([
               { key: 'profitability' as ActiveTab, label: 'Profitability', icon: TrendingUp },
+              { key: 'by-customer' as ActiveTab, label: 'By Customer', icon: Users },
               { key: 'pnl' as ActiveTab, label: 'P&L Summary', icon: DollarSign },
               { key: 'overhead' as ActiveTab, label: 'Overhead', icon: Settings },
               { key: 'vendor-overhead' as ActiveTab, label: 'Vendor Overhead', icon: Wrench },
@@ -474,6 +557,149 @@ export default function ProfitabilityPage() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <VendorTransactionTable categories={vendorCategories} refreshKey={vendorRefreshKey} />
               </div>
+            </>
+          )}
+
+          {/* By Customer Tab */}
+          {activeTab === 'by-customer' && (
+            <>
+              {customerLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                </div>
+              ) : customerAggregates.length === 0 ? (
+                <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-200 text-center">
+                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Customer Data</h3>
+                  <p className="text-sm text-gray-600">No per-customer profitability data found. Run the profitability report to generate it.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                      <p className="text-2xl font-bold text-gray-900">{customerAggregates.length}</p>
+                      <p className="text-xs text-gray-500 uppercase mt-1">Customers</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                      <p className="text-2xl font-bold text-green-600">{fmtMoney(customerSummaryTotals.totalRevenue)}</p>
+                      <p className="text-xs text-gray-500 uppercase mt-1">Total Revenue</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                      <p className={`text-2xl font-bold ${customerSummaryTotals.margin >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                        {fmtMoney(customerSummaryTotals.margin)}
+                      </p>
+                      <p className="text-xs text-gray-500 uppercase mt-1">Total Margin ({fmtPct(customerSummaryTotals.marginPct)})</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                      <p className="text-2xl font-bold text-purple-600">{customerSummaryTotals.totalBillable.toFixed(0)}h</p>
+                      <p className="text-xs text-gray-500 uppercase mt-1">Billable Hours</p>
+                    </div>
+                  </div>
+
+                  {/* Customer Table */}
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900">Customer Profitability</h3>
+                      <p className="text-sm text-gray-500">Click any row for detailed drill-down</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-200">
+                            {[
+                              { col: 'name', label: 'Customer', align: 'left' },
+                              { col: 'revenue', label: 'Revenue', align: 'right' },
+                              { col: 'cost', label: 'Cost', align: 'right' },
+                              { col: 'margin', label: 'Margin', align: 'right' },
+                              { col: 'marginPct', label: 'Margin %', align: 'right' },
+                              { col: 'hours', label: 'Hours', align: 'right' },
+                              { col: 'utilPct', label: 'Util %', align: 'right' },
+                            ].map(h => (
+                              <th
+                                key={h.col}
+                                className={`px-4 py-3 text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:text-gray-900 select-none ${h.align === 'right' ? 'text-right' : 'text-left'}`}
+                                onClick={() => {
+                                  if (customerSortCol === h.col) {
+                                    setCustomerSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                                  } else {
+                                    setCustomerSortCol(h.col);
+                                    setCustomerSortDir('desc');
+                                  }
+                                }}
+                              >
+                                {h.label} {customerSortCol === h.col ? (customerSortDir === 'asc' ? '\u25B2' : '\u25BC') : ''}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {sortedCustomerAggregates.map(c => (
+                            <tr
+                              key={c.customerId}
+                              className="hover:bg-purple-50 cursor-pointer transition-colors"
+                              onClick={() => setDrillDownCustomer({ id: c.customerId, name: c.name })}
+                            >
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{c.name}</td>
+                              <td className="px-4 py-3 text-sm text-green-700 text-right font-medium">{fmtMoney(c.revenue)}</td>
+                              <td className="px-4 py-3 text-sm text-red-700 text-right">{fmtMoney(c.cost)}</td>
+                              <td className={`px-4 py-3 text-sm text-right font-medium ${c.margin >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                                {fmtMoney(c.margin)}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
+                                  c.marginPct < 20 ? 'bg-red-100 text-red-800' :
+                                  c.marginPct < 40 ? 'bg-amber-100 text-amber-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {fmtPct(c.marginPct)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 text-right">{c.hours.toFixed(1)}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900 text-right">{fmtPct(c.utilPct)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        {/* Summary Row */}
+                        <tfoot>
+                          <tr className="bg-gray-50 border-t-2 border-gray-300 font-semibold">
+                            <td className="px-4 py-3 text-sm text-gray-900">Total ({customerAggregates.length} customers)</td>
+                            <td className="px-4 py-3 text-sm text-green-700 text-right">{fmtMoney(customerSummaryTotals.totalRevenue)}</td>
+                            <td className="px-4 py-3 text-sm text-red-700 text-right">{fmtMoney(customerSummaryTotals.totalCost)}</td>
+                            <td className={`px-4 py-3 text-sm text-right ${customerSummaryTotals.margin >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                              {fmtMoney(customerSummaryTotals.margin)}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
+                                customerSummaryTotals.marginPct < 20 ? 'bg-red-100 text-red-800' :
+                                customerSummaryTotals.marginPct < 40 ? 'bg-amber-100 text-amber-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {fmtPct(customerSummaryTotals.marginPct)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900 text-right">{customerSummaryTotals.totalHours.toFixed(1)}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                              {fmtPct(customerSummaryTotals.totalHours > 0 ? (customerSummaryTotals.totalBillable / customerSummaryTotals.totalHours) * 100 : 0)}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Drill-Down Modal */}
+              {drillDownCustomer && (
+                <CustomerDrillDown
+                  customerId={drillDownCustomer.id}
+                  customerName={drillDownCustomer.name}
+                  startDate={startDate}
+                  endDate={endDate}
+                  onClose={() => setDrillDownCustomer(null)}
+                />
+              )}
             </>
           )}
 

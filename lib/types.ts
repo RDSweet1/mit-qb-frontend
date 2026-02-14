@@ -107,4 +107,39 @@ export interface ReportPeriod {
   report_number: string | null;
 }
 
+export interface CustomerProfitability {
+  id: number;
+  week_start: string;
+  week_end: string;
+  qb_customer_id: string;
+  customer_name: string;
+  total_hours: number;
+  billable_hours: number;
+  overhead_hours: number;
+  billable_revenue: number;
+  labor_cost: number;
+  margin: number;
+  margin_percent: number;
+  entry_count: number;
+  unbilled_hours: number;
+  breakdown_by_employee: Record<string, { hours: number; cost: number; revenue: number }>;
+  breakdown_by_service: Record<string, { hours: number; revenue: number; count: number }>;
+}
+
+export interface ScheduleConfig {
+  id: number;
+  function_name: string;
+  display_name: string;
+  description: string | null;
+  is_paused: boolean;
+  schedule_day: string;
+  schedule_time: string;
+  timezone: string;
+  last_run_at: string | null;
+  last_run_status: string | null;
+  paused_by: string | null;
+  paused_at: string | null;
+  updated_at: string;
+}
+
 export type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'all_time' | 'custom';

@@ -11,12 +11,13 @@ test.describe('Admin', () => {
     await basePage.verifyActiveNavTab('Admin');
   });
 
-  test('all 3 admin tabs are visible', async ({ page }) => {
+  test('all 4 admin tabs are visible', async ({ page }) => {
     await page.goto('/admin');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-testid="admin-tab-users"]')).toBeVisible();
     await expect(page.locator('[data-testid="admin-tab-rates"]')).toBeVisible();
     await expect(page.locator('[data-testid="admin-tab-recipients"]')).toBeVisible();
+    await expect(page.locator('[data-testid="admin-tab-scheduling"]')).toBeVisible();
   });
 
   test('switching tabs shows correct content', async ({ page }) => {
@@ -33,6 +34,10 @@ test.describe('Admin', () => {
     // Switch to Report Recipients
     await page.locator('[data-testid="admin-tab-recipients"]').click();
     await expect(page.locator('[data-testid="admin-tab-recipients"]')).toHaveClass(/border-indigo-600/);
+
+    // Switch to Scheduling
+    await page.locator('[data-testid="admin-tab-scheduling"]').click();
+    await expect(page.locator('[data-testid="admin-tab-scheduling"]')).toHaveClass(/border-indigo-600/);
   });
 
   test('old /admin/users route redirects to /admin', async ({ page }) => {

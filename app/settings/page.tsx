@@ -1,18 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Link as LinkIcon, RefreshCw, Database, Calendar, Mail } from 'lucide-react';
+import { Settings as SettingsIcon, Link as LinkIcon, RefreshCw, Database, Calendar, Mail, Pause, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
+import type { ScheduleConfig } from '@/lib/types';
+
+function formatTime12(time: string): string {
+  const [h, m] = (time || '09:00').split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function formatDay(day: string): string {
+  if (day === 'weekdays') return 'Weekdays';
+  if (day === 'daily') return 'Daily';
+  return day.charAt(0).toUpperCase() + day.slice(1) + 's';
+}
 
 export default function SettingsPage() {
   const [qbStatus, setQbStatus] = useState<'connected' | 'disconnected' | 'unknown'>('unknown');
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const [schedules, setSchedules] = useState<ScheduleConfig[]>([]);
 
   useEffect(() => {
     checkQuickBooksConnection();
+    loadSchedules();
   }, []);
 
   const checkQuickBooksConnection = async () => {
@@ -52,6 +68,14 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadSchedules = async () => {
+    const { data } = await supabase
+      .from('schedule_config')
+      .select('*')
+      .order('id', { ascending: true });
+    setSchedules((data || []) as ScheduleConfig[]);
   };
 
   const connectToQuickBooks = () => {
@@ -185,43 +209,57 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Automation</h2>
-              <p className="text-sm text-gray-600">Scheduled tasks and cron jobs</p>
+              <p className="text-sm text-gray-600">Scheduled tasks and automation status</p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">Weekly Reports</span>
-                <span className="text-xs text-gray-500">Mondays @ 9 AM</span>
+            {schedules.length > 0 ? schedules.map(s => (
+              <div key={s.id} className={`p-4 rounded-lg ${s.is_paused ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">{s.display_name}</span>
+                    {s.is_paused && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+                        <Pause className="w-3 h-3" /> Paused
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    {formatDay(s.schedule_day)} @ {formatTime12(s.schedule_time)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">{s.description}</p>
+                {s.last_run_at && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Last run: {new Date(s.last_run_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    {s.last_run_status === 'success' && <CheckCircle className="w-3 h-3 text-green-500 inline ml-1" />}
+                  </p>
+                )}
               </div>
-              <p className="text-xs text-gray-600">
-                Automatically sends weekly time reports to customers every Monday morning
-              </p>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">Monthly Invoices</span>
-                <span className="text-xs text-gray-500">1st of month @ 10 AM</span>
-              </div>
-              <p className="text-xs text-gray-600">
-                Creates monthly invoices in QuickBooks on the first day of each month
-              </p>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">Time Sync</span>
-                <span className="text-xs text-gray-500">Daily @ 8 AM</span>
-              </div>
-              <p className="text-xs text-gray-600">
-                Syncs time entries from QuickBooks Workforce daily
-              </p>
-            </div>
+            )) : (
+              <>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-900">Weekly Reports</span>
+                    <span className="text-xs text-gray-500">Mondays @ 9:00 AM</span>
+                  </div>
+                  <p className="text-xs text-gray-600">Send weekly time reports to customers</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-900">Follow-Up Reminders</span>
+                    <span className="text-xs text-gray-500">Weekdays @ 9:00 AM</span>
+                  </div>
+                  <p className="text-xs text-gray-600">3-day reminder sequence for unreviewed reports</p>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-xs text-blue-800">
-              <strong>Note:</strong> Automation is configured via Supabase Edge Functions and PostgreSQL cron jobs. Contact your administrator to modify schedules.
+              <strong>Note:</strong> Schedules can be modified by administrators on the Admin &rarr; Scheduling tab.
             </p>
           </div>
         </div>

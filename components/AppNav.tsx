@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 const navItems = [
   { href: '/time-entries-enhanced', label: 'Time Entries', icon: Clock, color: 'blue' },
@@ -17,9 +19,20 @@ const navItems = [
 
 export function AppNav() {
   const pathname = usePathname();
+  const [pausedCount, setPausedCount] = useState(0);
 
   // Normalize path — strip basePath prefix if present
   const normalizedPath = pathname?.replace(/^\/mit-qb-frontend/, '') || '/';
+
+  useEffect(() => {
+    supabase
+      .from('schedule_config')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_paused', true)
+      .then(({ count }) => {
+        setPausedCount(count || 0);
+      });
+  }, []);
 
   return (
     <nav className="bg-white border-b border-gray-200" data-testid="app-nav">
@@ -29,12 +42,14 @@ export function AppNav() {
             const isActive = normalizedPath === item.href ||
               (item.href !== '/' && normalizedPath.startsWith(item.href));
 
+            const showBadge = item.href === '/admin' && pausedCount > 0;
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 data-testid={`nav-tab-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors border-b-2 ${
+                className={`relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors border-b-2 ${
                   isActive
                     ? 'border-blue-600 text-blue-700 bg-blue-50'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -42,6 +57,11 @@ export function AppNav() {
               >
                 <item.icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{item.label}</span>
+                {showBadge && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+                    {pausedCount}
+                  </span>
+                )}
               </Link>
             );
           })}

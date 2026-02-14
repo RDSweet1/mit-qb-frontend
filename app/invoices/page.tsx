@@ -127,21 +127,21 @@ export default function InvoicesPage() {
       setSummary(response.summary);
       setStage('preview');
 
-      // Fetch profitability margins for the invoice period
+      // Fetch profitability margins for the invoice period from customer_profitability
       const periodStart = format(monthStart, 'yyyy-MM-dd');
       const periodEnd = format(monthEnd, 'yyyy-MM-dd');
 
-      const { data: snapshots } = await supabase
-        .from('profitability_snapshots')
+      const { data: cpData } = await supabase
+        .from('customer_profitability')
         .select('qb_customer_id, margin_percent')
         .gte('week_start', periodStart)
         .lte('week_start', periodEnd);
 
-      if (snapshots) {
+      if (cpData) {
         const marginMap: Record<string, number[]> = {};
-        for (const s of snapshots) {
+        for (const s of cpData) {
           if (!marginMap[s.qb_customer_id]) marginMap[s.qb_customer_id] = [];
-          marginMap[s.qb_customer_id].push(s.margin_percent);
+          marginMap[s.qb_customer_id].push(Number(s.margin_percent));
         }
         const avgMargins: Record<string, number> = {};
         for (const [cid, vals] of Object.entries(marginMap)) {
