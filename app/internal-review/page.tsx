@@ -1,52 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { MessageSquare, CheckCircle, Clock, Send, ChevronDown, ChevronUp, X, RefreshCw } from 'lucide-react';
-import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
+import { callEdgeFunction } from '@/lib/supabaseClient';
 import { fmtDateTime } from '@/lib/utils';
 import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
-import type { Customer } from '@/lib/types';
-
-// ─── Types ──────────────────────────────────────────────────────────
-interface Assignment {
-  id: number;
-  time_entry_id: number;
-  assigned_by: string;
-  assigned_to_email: string;
-  assigned_to_name: string;
-  question: string;
-  suggested_description: string | null;
-  status: string;
-  batch_id: string | null;
-  created_at: string;
-  responded_at: string | null;
-  cleared_at: string | null;
-  cleared_by: string | null;
-}
-
-interface Message {
-  id: number;
-  assignment_id: number;
-  sender_email: string;
-  sender_name: string;
-  sender_role: 'admin' | 'assignee';
-  message: string;
-  suggested_description: string | null;
-  created_at: string;
-}
-
-interface ClarificationTimeEntry {
-  id: number;
-  txn_date: string;
-  employee_name: string;
-  qb_customer_id: string;
-  cost_code: string | null;
-  description: string | null;
-  hours: number;
-  minutes: number;
-}
+import { useAssignmentData } from '@/lib/hooks/useAssignmentData';
 
 type StatusFilter = 'all' | 'pending' | 'responded' | 'cleared';
 
@@ -55,69 +16,12 @@ export default function InternalReviewPage() {
   const { accounts } = useMsal();
   const user = accounts[0];
 
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [timeEntries, setTimeEntries] = useState<Record<number, ClarificationTimeEntry>>({});
-  const [customers, setCustomers] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  const { assignments, messages, entries: timeEntries, customers, loading, reload: loadData } = useAssignmentData({ fetchAll: true });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
   const [clearing, setClearing] = useState<number | null>(null);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      // Load assignments
-      const { data: assignData } = await supabase
-        .from('internal_assignments')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      setAssignments(assignData || []);
-
-      // Load all messages
-      if (assignData?.length) {
-        const ids = assignData.map(a => a.id);
-        const { data: msgData } = await supabase
-          .from('internal_messages')
-          .select('*')
-          .in('assignment_id', ids)
-          .order('created_at', { ascending: true });
-        setMessages(msgData || []);
-
-        // Load time entries
-        const entryIds = [...new Set(assignData.map(a => a.time_entry_id))];
-        const { data: entryData } = await supabase
-          .from('time_entries')
-          .select('id, txn_date, employee_name, qb_customer_id, cost_code, description, hours, minutes')
-          .in('id', entryIds);
-
-        const entryMap: Record<number, ClarificationTimeEntry> = {};
-        (entryData || []).forEach(e => { entryMap[e.id] = e; });
-        setTimeEntries(entryMap);
-
-        // Load customer names
-        const custIds = [...new Set((entryData || []).map(e => e.qb_customer_id))];
-        if (custIds.length) {
-          const { data: custData } = await supabase
-            .from('customers')
-            .select('qb_customer_id, display_name')
-            .in('qb_customer_id', custIds);
-          const custMap: Record<string, string> = {};
-          (custData || []).forEach(c => { custMap[c.qb_customer_id] = c.display_name; });
-          setCustomers(custMap);
-        }
-      }
-    } catch (err) {
-      console.error('Error loading assignments:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadData(); }, []);
 
   // ─── Filtered assignments ──────────────────────────────────────
   const filtered = useMemo(() => {
@@ -155,7 +59,7 @@ export default function InternalReviewPage() {
   };
 
   // ─── Clear Handler ─────────────────────────────────────────────
-  const handleClear = async (assignment: Assignment, applyDesc: boolean) => {
+  const handleClear = async (assignment: typeof assignments[0], applyDesc: boolean) => {
     setClearing(assignment.id);
     try {
       await callEdgeFunction('clear-internal-assignment', {

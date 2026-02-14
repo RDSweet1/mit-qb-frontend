@@ -1,57 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { fmtDateTime } from '@/lib/utils';
-
-// ─── Types ──────────────────────────────────────────────────────────
-interface InternalReviewToken {
-  id: number;
-  assignment_id: number;
-  token: string;
-  expires_at: string;
-  first_opened_at: string | null;
-  last_opened_at: string | null;
-  open_count: number;
-}
-
-interface InternalAssignment {
-  id: number;
-  time_entry_id: number;
-  assigned_by: string;
-  assigned_to_email: string;
-  assigned_to_name: string;
-  question: string;
-  suggested_description: string | null;
-  status: string;
-  batch_id: string | null;
-  created_at: string;
-  responded_at: string | null;
-  cleared_at: string | null;
-}
-
-interface InternalMessage {
-  id: number;
-  assignment_id: number;
-  sender_email: string;
-  sender_name: string;
-  sender_role: 'admin' | 'assignee';
-  message: string;
-  suggested_description: string | null;
-  created_at: string;
-}
-
-interface TimeEntry {
-  id: number;
-  txn_date: string;
-  employee_name: string;
-  qb_customer_id: string;
-  cost_code: string | null;
-  description: string | null;
-  hours: number;
-  minutes: number;
-}
+import { useAssignmentData } from '@/lib/hooks/useAssignmentData';
 
 type PageState = 'loading' | 'not_found' | 'expired' | 'active' | 'submitted' | 'cleared';
 
@@ -95,135 +48,49 @@ export default function ClarifyPage() {
   const token = searchParams.get('token');
   const batchId = searchParams.get('batch');
 
+  const {
+    assignments, messages, entries: entriesMap, customers: customerNames,
+    reviewToken, loading: hookLoading, error: hookError, expired, allCleared,
+  } = useAssignmentData({ token, batchId });
+
+  const entries = Object.values(entriesMap);
   const [pageState, setPageState] = useState<PageState>('loading');
-  const [reviewToken, setReviewToken] = useState<InternalReviewToken | null>(null);
-  const [assignments, setAssignments] = useState<InternalAssignment[]>([]);
-  const [messages, setMessages] = useState<InternalMessage[]>([]);
-  const [entries, setEntries] = useState<TimeEntry[]>([]);
-  const [customerNames, setCustomerNames] = useState<Record<string, string>>({});
   const [replyText, setReplyText] = useState('');
   const [suggestedDesc, setSuggestedDesc] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
   const visitLogged = useRef(false);
 
-  const loadData = useCallback(async () => {
-    if (!token) {
-      setPageState('not_found');
-      return;
-    }
-
-    try {
-      // 1. Fetch internal review token
-      const { data: tokenData, error: tokenErr } = await supabase
-        .from('internal_review_tokens')
-        .select('*')
-        .eq('token', token)
-        .single();
-
-      if (tokenErr || !tokenData) {
-        setPageState('not_found');
-        return;
-      }
-
-      setReviewToken(tokenData);
-
-      // Check expiry
-      if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
-        setPageState('expired');
-        return;
-      }
-
-      // 2. Fetch assignment(s) — single or batch
-      let assignmentQuery = supabase
-        .from('internal_assignments')
-        .select('*');
-
-      if (batchId) {
-        assignmentQuery = assignmentQuery.eq('batch_id', batchId);
-      } else {
-        assignmentQuery = assignmentQuery.eq('id', tokenData.assignment_id);
-      }
-
-      const { data: assignData } = await assignmentQuery.order('id', { ascending: true });
-
-      if (!assignData?.length) {
-        setPageState('not_found');
-        return;
-      }
-
-      setAssignments(assignData);
-
-      // Check if all assignments are cleared
-      const allCleared = assignData.every(a => a.status === 'cleared' || a.status === 'cancelled');
-      if (allCleared) {
-        setPageState('cleared');
-      }
-
-      // 3. Fetch messages for all assignments
-      const assignmentIds = assignData.map(a => a.id);
-      const { data: msgData } = await supabase
-        .from('internal_messages')
-        .select('*')
-        .in('assignment_id', assignmentIds)
-        .order('created_at', { ascending: true });
-
-      setMessages(msgData || []);
-
-      // 4. Fetch time entries
-      const entryIds = assignData.map(a => a.time_entry_id);
-      const { data: entryData } = await supabase
-        .from('time_entries')
-        .select('id, txn_date, employee_name, qb_customer_id, cost_code, description, hours, minutes')
-        .in('id', entryIds)
-        .order('txn_date', { ascending: true });
-
-      setEntries(entryData || []);
-
-      // 5. Look up customer names
-      if (entryData?.length) {
-        const custIds = [...new Set(entryData.map(e => e.qb_customer_id))];
-        const { data: custData } = await supabase
-          .from('customers')
-          .select('qb_customer_id, display_name')
-          .in('qb_customer_id', custIds);
-
-        const names: Record<string, string> = {};
-        (custData || []).forEach(c => { names[c.qb_customer_id] = c.display_name; });
-        setCustomerNames(names);
-      }
-
-      // Pre-fill suggested description from current entry description (single entry only)
-      if (entryData?.length === 1) {
-        setSuggestedDesc(entryData[0].description || '');
-      }
-
-      // 6. Log visit
-      if (!visitLogged.current) {
-        visitLogged.current = true;
-        await supabase
-          .from('internal_review_tokens')
-          .update({
-            last_opened_at: new Date().toISOString(),
-            open_count: (tokenData.open_count || 0) + 1,
-            ...(!tokenData.first_opened_at ? { first_opened_at: new Date().toISOString() } : {}),
-          })
-          .eq('id', tokenData.id);
-      }
-
-      if (!allCleared) {
-        setPageState('active');
-      }
-    } catch (err: any) {
-      console.error('Error loading clarification data:', err);
-      setErrorMsg(err.message || 'Failed to load data');
-      setPageState('not_found');
-    }
-  }, [token, batchId]);
-
+  // Derive page state from hook results
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (hookLoading) { setPageState('loading'); return; }
+    if (expired) { setPageState('expired'); return; }
+    if (hookError === 'not_found' || (!token && !hookLoading)) { setPageState('not_found'); return; }
+    if (hookError) { setPageState('not_found'); return; }
+    if (allCleared) { setPageState('cleared'); return; }
+    if (assignments.length > 0) { setPageState('active'); }
+  }, [hookLoading, hookError, expired, allCleared, assignments, token]);
+
+  // Pre-fill suggested description for single-entry mode
+  useEffect(() => {
+    if (entries.length === 1 && !suggestedDesc) {
+      setSuggestedDesc(entries[0].description || '');
+    }
+  }, [entries]);
+
+  // Log visit once
+  useEffect(() => {
+    if (reviewToken && !visitLogged.current) {
+      visitLogged.current = true;
+      supabase
+        .from('internal_review_tokens')
+        .update({
+          last_opened_at: new Date().toISOString(),
+          open_count: (reviewToken.open_count || 0) + 1,
+          ...(!reviewToken.first_opened_at ? { first_opened_at: new Date().toISOString() } : {}),
+        })
+        .eq('id', reviewToken.id);
+    }
+  }, [reviewToken]);
 
   // ─── Handle Submit ──────────────────────────────────────────────
   async function handleSubmit() {

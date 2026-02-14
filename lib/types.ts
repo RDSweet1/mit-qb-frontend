@@ -142,4 +142,41 @@ export interface ScheduleConfig {
   updated_at: string;
 }
 
+export interface InternalAssignment {
+  id: number;
+  time_entry_id: number;
+  assigned_by: string;
+  assigned_to_email: string;
+  assigned_to_name: string;
+  question: string;
+  suggested_description: string | null;
+  status: string;
+  batch_id: string | null;
+  created_at: string;
+  responded_at: string | null;
+  cleared_at: string | null;
+  cleared_by?: string | null;
+}
+
+export interface InternalMessage {
+  id: number;
+  assignment_id: number;
+  sender_email: string;
+  sender_name: string;
+  sender_role: 'admin' | 'assignee';
+  message: string;
+  suggested_description: string | null;
+  created_at: string;
+}
+
+export interface InternalReviewToken {
+  id: number;
+  assignment_id: number;
+  token: string;
+  expires_at: string;
+  first_opened_at: string | null;
+  last_opened_at: string | null;
+  open_count: number;
+}
+
 export type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'all_time' | 'custom';
