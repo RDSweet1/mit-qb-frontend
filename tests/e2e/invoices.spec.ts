@@ -8,6 +8,19 @@ test.describe('Invoices', () => {
     await invoices.verify();
   });
 
+  test('month selector is visible and has a default value', async ({ page }) => {
+    const invoices = new InvoicesPage(page);
+    await invoices.goto();
+    await expect(invoices.monthSelector).toBeVisible();
+  });
+
+  test('generate preview button exists', async ({ page }) => {
+    const invoices = new InvoicesPage(page);
+    await invoices.goto();
+    const generateBtn = page.getByRole('button', { name: /generate preview/i });
+    await expect(generateBtn).toBeVisible();
+  });
+
   test('no console errors on load', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));

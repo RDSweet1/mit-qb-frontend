@@ -4,11 +4,13 @@ import { BasePage } from '../fixtures/base-page';
 export class TimeEntriesPage extends BasePage {
   readonly syncButton: Locator;
   readonly entriesTable: Locator;
+  readonly statusBadges: Locator;
 
   constructor(page: Page) {
     super(page);
     this.syncButton = page.getByRole('button', { name: /sync/i });
     this.entriesTable = page.locator('table');
+    this.statusBadges = page.locator('[data-testid="entry-status-badge"]');
   }
 
   async goto() {

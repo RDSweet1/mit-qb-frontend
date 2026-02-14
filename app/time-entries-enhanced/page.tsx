@@ -1599,8 +1599,10 @@ export default function TimeEntriesEnhancedPage() {
                               {/* Report Status Badge */}
                               {(() => {
                                 const rs = getReportStatus(entry);
-                                if (!rs || rs === 'pending') return null;
+                                const effectiveStatus = rs || 'unbilled';
                                 const styles: Record<string, string> = {
+                                  unbilled: 'bg-gray-50 text-gray-500 border-gray-200',
+                                  pending: 'bg-gray-50 text-gray-500 border-gray-200',
                                   sent: 'bg-blue-50 text-blue-600 border-blue-200',
                                   supplemental_sent: 'bg-blue-50 text-blue-600 border-blue-200',
                                   accepted: 'bg-green-50 text-green-600 border-green-200',
@@ -1608,6 +1610,8 @@ export default function TimeEntriesEnhancedPage() {
                                   no_time: 'bg-gray-50 text-gray-500 border-gray-200',
                                 };
                                 const labels: Record<string, string> = {
+                                  unbilled: 'Unbilled',
+                                  pending: 'Unbilled',
                                   sent: 'Report Sent',
                                   supplemental_sent: 'Supplemental',
                                   accepted: 'Accepted',
@@ -1615,8 +1619,8 @@ export default function TimeEntriesEnhancedPage() {
                                   no_time: 'No Time',
                                 };
                                 return (
-                                  <span data-testid="entry-status-badge" className={`px-1.5 py-0.5 text-[10px] font-medium rounded border ${styles[rs] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                                    {labels[rs] || rs}
+                                  <span data-testid="entry-status-badge" className={`px-1.5 py-0.5 text-[10px] font-medium rounded border ${styles[effectiveStatus] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                                    {labels[effectiveStatus] || effectiveStatus}
                                   </span>
                                 );
                               })()}
@@ -1825,8 +1829,10 @@ export default function TimeEntriesEnhancedPage() {
                             {/* Report Status Badge */}
                             {(() => {
                               const rs = getReportStatus(entry);
-                              if (!rs || rs === 'pending') return null;
+                              const effectiveStatus = rs || 'unbilled';
                               const styles: Record<string, string> = {
+                                unbilled: 'bg-gray-50 text-gray-500 border-gray-200',
+                                pending: 'bg-gray-50 text-gray-500 border-gray-200',
                                 sent: 'bg-blue-50 text-blue-600 border-blue-200',
                                 supplemental_sent: 'bg-blue-50 text-blue-600 border-blue-200',
                                 accepted: 'bg-green-50 text-green-600 border-green-200',
@@ -1834,6 +1840,8 @@ export default function TimeEntriesEnhancedPage() {
                                 no_time: 'bg-gray-50 text-gray-500 border-gray-200',
                               };
                               const labels: Record<string, string> = {
+                                unbilled: 'Unbilled',
+                                pending: 'Unbilled',
                                 sent: 'Report Sent',
                                 supplemental_sent: 'Supplemental',
                                 accepted: 'Accepted',
@@ -1841,8 +1849,8 @@ export default function TimeEntriesEnhancedPage() {
                                 no_time: 'No Time',
                               };
                               return (
-                                <span data-testid="entry-status-badge" className={`px-1.5 py-0.5 text-[10px] font-medium rounded border ${styles[rs] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                                  {labels[rs] || rs}
+                                <span data-testid="entry-status-badge" className={`px-1.5 py-0.5 text-[10px] font-medium rounded border ${styles[effectiveStatus] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                                  {labels[effectiveStatus] || effectiveStatus}
                                 </span>
                               );
                             })()}
