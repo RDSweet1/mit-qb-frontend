@@ -49,13 +49,15 @@ export function AppNav() {
                 key={item.href}
                 href={item.href}
                 data-testid={`nav-tab-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={item.label}
                 className={`relative flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors border-b-2 ${
                   isActive
                     ? 'border-blue-600 text-blue-700 bg-blue-50'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                <item.icon className="w-4 h-4" />
+                <item.icon className="w-4 h-4" aria-hidden="true" />
                 <span className="hidden sm:inline">{item.label}</span>
                 {showBadge && (
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">

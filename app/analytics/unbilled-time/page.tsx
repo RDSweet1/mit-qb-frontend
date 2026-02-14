@@ -329,13 +329,13 @@ export default function UnbilledTimePage() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Employee</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Service Item</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Hours</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Employee</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Service Item</th>
+                      <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Hours</th>
+                      <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                      <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">

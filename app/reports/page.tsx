@@ -5,6 +5,8 @@ import { Send, Calendar, FileText, Mail, CheckCircle, XCircle, Clock, AlertTrian
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import type { ReportPeriod } from '@/lib/types';
 
@@ -228,10 +230,7 @@ export default function ReportsPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Report Status (Last 8 Weeks)</h3>
 
           {statusLoading ? (
-            <div className="text-center py-8">
-              <div className="spinner w-6 h-6 border-2 mx-auto mb-2"></div>
-              <p className="text-sm text-gray-500">Loading report status...</p>
-            </div>
+            <LoadingSkeleton variant="table" rows={4} columns={4} />
           ) : Object.keys(periodsByWeek).length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-8">
               No report periods tracked yet. Reports will appear here after the next weekly send.
@@ -292,15 +291,16 @@ export default function ReportsPage() {
                     </div>
 
                     {/* Customer rows */}
+                    <ResponsiveTable>
                     <table className="w-full">
                       <thead>
                         <tr className="text-xs text-gray-500 border-b border-gray-100">
-                          <th className="text-left px-4 py-2 font-medium">Customer</th>
-                          <th className="text-center px-4 py-2 font-medium">Status</th>
-                          <th className="text-right px-4 py-2 font-medium">Hours</th>
-                          <th className="text-right px-4 py-2 font-medium">Entries</th>
-                          <th className="text-right px-4 py-2 font-medium">Late</th>
-                          <th className="text-right px-4 py-2 font-medium">Actions</th>
+                          <th scope="col" className="text-left px-4 py-2 font-medium">Customer</th>
+                          <th scope="col" className="text-center px-4 py-2 font-medium">Status</th>
+                          <th scope="col" className="text-right px-4 py-2 font-medium">Hours</th>
+                          <th scope="col" className="text-right px-4 py-2 font-medium">Entries</th>
+                          <th scope="col" className="text-right px-4 py-2 font-medium">Late</th>
+                          <th scope="col" className="text-right px-4 py-2 font-medium">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -389,6 +389,7 @@ export default function ReportsPage() {
                         ))}
                       </tbody>
                     </table>
+                    </ResponsiveTable>
                   </div>
                 );
               })}

@@ -40,6 +40,15 @@ export const serviceItemSchema = z.object({
   is_active: z.boolean().default(true)
 })
 
+export const clarificationAssignmentSchema = z.object({
+  assigneeEmail: z.string().email('Valid email required'),
+  assigneeName: z.string().min(1, 'Name is required'),
+  assigneeUserId: z.string().optional(),
+  question: z.string().min(1, 'Please enter a question'),
+  createUserIfMissing: z.boolean(),
+})
+
 export type TimeEntryFormData = z.infer<typeof timeEntrySchema>
 export type CustomerFormData = z.infer<typeof customerSchema>
 export type ServiceItemFormData = z.infer<typeof serviceItemSchema>
+export type ClarificationAssignmentData = z.infer<typeof clarificationAssignmentSchema>

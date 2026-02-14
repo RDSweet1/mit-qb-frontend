@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { X, Send, UserPlus, MessageSquare } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
+import { clarificationAssignmentSchema, type ClarificationAssignmentData } from '@/lib/validations';
 
 interface AppUser {
   id: string;
@@ -39,15 +42,27 @@ export function AssignClarificationDialog({
   onAssigned,
 }: AssignClarificationDialogProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [selectedEmail, setSelectedEmail] = useState('');
-  const [selectedName, setSelectedName] = useState('');
-  const [question, setQuestion] = useState('');
   const [showNewPerson, setShowNewPerson] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [newName, setNewName] = useState('');
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<ClarificationAssignmentData>({
+    resolver: zodResolver(clarificationAssignmentSchema),
+    defaultValues: {
+      assigneeEmail: '',
+      assigneeName: '',
+      assigneeUserId: '',
+      question: '',
+      createUserIfMissing: false,
+    },
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -56,15 +71,15 @@ export function AssignClarificationDialog({
   }, [isOpen]);
 
   const loadUsersAndPrefill = async () => {
-    // Reset form first (synchronous, before the await)
-    setSelectedUserId('');
-    setSelectedEmail('');
-    setSelectedName('');
-    setQuestion('');
+    reset({
+      assigneeEmail: '',
+      assigneeName: '',
+      assigneeUserId: '',
+      question: '',
+      createUserIfMissing: false,
+    });
     setShowNewPerson(false);
-    setNewEmail('');
-    setNewName('');
-    setError(null);
+    setSubmitError(null);
 
     const { data } = await supabase
       .from('app_users')
@@ -78,70 +93,61 @@ export function AssignClarificationDialog({
       const employeeName = entries[0].employee_name;
       const allSameEmployee = entries.every(e => e.employee_name === employeeName);
       if (allSameEmployee && employeeName) {
-        // Try to match to an existing app_user (case-insensitive)
         const match = loadedUsers.find(
           u => u.display_name.toLowerCase() === employeeName.toLowerCase()
         );
         if (match) {
-          setSelectedUserId(match.id);
-          setSelectedEmail(match.email);
-          setSelectedName(match.display_name);
+          setValue('assigneeUserId', match.id);
+          setValue('assigneeEmail', match.email);
+          setValue('assigneeName', match.display_name);
+          setValue('createUserIfMissing', false);
         } else {
-          // No app_user match — show invite form with name pre-filled, cursor on email
           setShowNewPerson(true);
-          setNewName(employeeName);
+          setValue('assigneeName', employeeName);
+          setValue('createUserIfMissing', true);
         }
       }
     }
   };
 
   const handleUserSelect = (userId: string) => {
-    setSelectedUserId(userId);
     setShowNewPerson(false);
     const user = users.find(u => u.id === userId);
     if (user) {
-      setSelectedEmail(user.email);
-      setSelectedName(user.display_name);
+      setValue('assigneeUserId', user.id);
+      setValue('assigneeEmail', user.email);
+      setValue('assigneeName', user.display_name);
+      setValue('createUserIfMissing', false);
     }
   };
 
-  const handleSend = async () => {
-    const email = showNewPerson ? newEmail.trim() : selectedEmail;
-    const name = showNewPerson ? newName.trim() : selectedName;
-
-    if (!email || !name) {
-      setError('Please select or enter an assignee');
-      return;
-    }
-    if (!question.trim()) {
-      setError('Please enter a question');
-      return;
-    }
-
+  const onSubmit = async (data: ClarificationAssignmentData) => {
     setSending(true);
-    setError(null);
+    setSubmitError(null);
 
     try {
       await callEdgeFunction('create-internal-assignment', {
         time_entry_ids: entries.map(e => e.id),
-        assignee_email: email,
-        assignee_name: name,
-        assignee_user_id: showNewPerson ? undefined : selectedUserId || undefined,
-        create_user_if_missing: showNewPerson,
-        question: question.trim(),
+        assignee_email: data.assigneeEmail,
+        assignee_name: data.assigneeName,
+        assignee_user_id: data.createUserIfMissing ? undefined : data.assigneeUserId || undefined,
+        create_user_if_missing: data.createUserIfMissing,
+        question: data.question.trim(),
         admin_email: adminEmail,
       });
 
       onAssigned();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to send clarification request');
+      setSubmitError(err.message || 'Failed to send clarification request');
     } finally {
       setSending(false);
     }
   };
 
   if (!isOpen) return null;
+
+  const fieldError = errors.assigneeEmail?.message || errors.assigneeName?.message || errors.question?.message;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -166,13 +172,13 @@ export function AssignClarificationDialog({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white">
+          <button onClick={onClose} className="text-white/80 hover:text-white" aria-label="Close dialog">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Scrollable content */}
-        <div className="overflow-y-auto flex-1 p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto flex-1 p-6">
           {/* Entry Summary */}
           {entries.length <= 3 && (
             <div className="mb-5">
@@ -206,11 +212,12 @@ export function AssignClarificationDialog({
 
           {/* Assignee Picker */}
           <div className="mb-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Assign To</label>
+            <label htmlFor="assignee-select" className="block text-sm font-semibold text-gray-700 mb-1">Assign To</label>
             {!showNewPerson ? (
               <>
                 <select
-                  value={selectedUserId}
+                  id="assignee-select"
+                  value={watch('assigneeUserId') || ''}
                   onChange={(e) => handleUserSelect(e.target.value)}
                   className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none"
                 >
@@ -223,9 +230,9 @@ export function AssignClarificationDialog({
                   type="button"
                   onClick={() => {
                     setShowNewPerson(true);
-                    // Pre-fill name from entry if available and not already set
-                    if (!newName && entries.length > 0) {
-                      setNewName(entries[0].employee_name);
+                    setValue('createUserIfMissing', true);
+                    if (!watch('assigneeName') && entries.length > 0) {
+                      setValue('assigneeName', entries[0].employee_name);
                     }
                   }}
                   className="mt-2 flex items-center gap-1.5 text-sm text-amber-700 hover:text-amber-900"
@@ -238,25 +245,24 @@ export function AssignClarificationDialog({
               <div className="space-y-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <input
                   type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
+                  {...register('assigneeName')}
                   placeholder="Full name"
                   className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none"
                 />
                 <input
                   type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
+                  {...register('assigneeEmail')}
                   placeholder="Email address"
                   className="w-full p-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none"
-                  autoFocus={!!newName && !newEmail}
+                  autoFocus={!!watch('assigneeName') && !watch('assigneeEmail')}
                 />
                 <button
                   type="button"
                   onClick={() => {
                     setShowNewPerson(false);
-                    setNewEmail('');
-                    setNewName('');
+                    setValue('assigneeEmail', '');
+                    setValue('assigneeName', '');
+                    setValue('createUserIfMissing', false);
                   }}
                   className="text-sm text-gray-500 hover:text-gray-700"
                 >
@@ -268,35 +274,36 @@ export function AssignClarificationDialog({
 
           {/* Question */}
           <div className="mb-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label htmlFor="clarification-question" className="block text-sm font-semibold text-gray-700 mb-1">
               Question <span className="text-red-500">*</span>
             </label>
             <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              id="clarification-question"
+              {...register('question')}
               placeholder="What additional detail do you need? E.g., 'What specific work was performed on this date?'"
               className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-vertical min-h-[80px] focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none"
             />
           </div>
 
-          {/* Error */}
-          {error && (
+          {/* Validation / Submit Error */}
+          {(fieldError || submitError) && (
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {error}
+              {submitError || fieldError}
             </div>
           )}
-        </div>
+        </form>
 
         {/* Footer */}
         <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 flex justify-end gap-3 flex-shrink-0">
           <button
             onClick={onClose}
+            type="button"
             className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
             Cancel
           </button>
           <button
-            onClick={handleSend}
+            onClick={handleSubmit(onSubmit)}
             disabled={sending}
             className="px-5 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >

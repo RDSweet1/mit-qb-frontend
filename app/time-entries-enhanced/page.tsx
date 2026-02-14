@@ -15,6 +15,8 @@ import { TrackingHistoryDialog } from '@/components/time-entries/TrackingHistory
 import { InlineNotesEditor } from '@/components/time-entries/InlineNotesEditor';
 import { EnhanceNotesDialog } from '@/components/time-entries/EnhanceNotesDialog';
 import { AssignClarificationDialog } from '@/components/time-entries/AssignClarificationDialog';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { DataTimestamp } from '@/components/DataTimestamp';
 
 export default function TimeEntriesEnhancedPage() {
   const { accounts } = useMsal();
@@ -26,6 +28,7 @@ export default function TimeEntriesEnhancedPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Filters - Default to last month for focused timesheet view
   const [datePreset, setDatePreset] = useState<DatePreset>('last_month');
@@ -156,6 +159,7 @@ export default function TimeEntriesEnhancedPage() {
 
       if (error) throw error;
       setEntries(data || []);
+      setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load time entries');
     } finally {
@@ -1057,14 +1061,21 @@ export default function TimeEntriesEnhancedPage() {
         subtitle="Production QuickBooks Data"
         icon={<Clock className="w-6 h-6 text-blue-600" />}
         actions={
-          <button
-            onClick={syncFromQuickBooks}
-            disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-            {syncing ? 'Syncing...' : 'Sync from QB'}
-          </button>
+          <div className="flex items-center gap-3">
+            <DataTimestamp
+              lastUpdated={lastUpdated}
+              onRefresh={() => { loadTimeEntries(); loadReportPeriods(); }}
+              isRefreshing={loading}
+            />
+            <button
+              onClick={syncFromQuickBooks}
+              disabled={syncing}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync from QB'}
+            </button>
+          </div>
         }
       />
 
@@ -1270,9 +1281,7 @@ export default function TimeEntriesEnhancedPage() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-          </div>
+          <LoadingSkeleton variant="table" rows={8} columns={6} />
         ) : entries.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
