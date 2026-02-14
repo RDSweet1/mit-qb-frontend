@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles, ChevronDown, ChevronRight, Send, MessageSquare } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
-import type { TimeEntry, Customer, ServiceItem, DatePreset } from '@/lib/types';
+import type { TimeEntry, Customer, ServiceItem, DatePreset, ReportPeriod } from '@/lib/types';
 import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
@@ -86,6 +86,9 @@ export default function TimeEntriesEnhancedPage() {
   const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
   const [serviceItemDescriptions, setServiceItemDescriptions] = useState<Record<string, string>>({});
 
+  // Report period status (customer-week level)
+  const [reportPeriods, setReportPeriods] = useState<ReportPeriod[]>([]);
+
   // Load customers
   const loadCustomers = async () => {
     try {
@@ -158,6 +161,26 @@ export default function TimeEntriesEnhancedPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Load report periods for status badges
+  const loadReportPeriods = async () => {
+    const { data } = await supabase
+      .from('report_periods')
+      .select('*')
+      .gte('week_end', startDate)
+      .lte('week_start', endDate);
+    setReportPeriods(data || []);
+  };
+
+  // Match a time entry to its report period status
+  const getReportStatus = (entry: TimeEntry): ReportPeriod['status'] | null => {
+    const match = reportPeriods.find(rp =>
+      rp.qb_customer_id === entry.qb_customer_id &&
+      entry.txn_date >= rp.week_start &&
+      entry.txn_date <= rp.week_end
+    );
+    return match?.status ?? null;
   };
 
   // Generate CSV Report
@@ -1024,6 +1047,7 @@ export default function TimeEntriesEnhancedPage() {
 
   useEffect(() => {
     loadTimeEntries();
+    loadReportPeriods();
   }, [startDate, endDate, selectedCustomer, selectedEmployee]);
 
   return (
@@ -1572,6 +1596,30 @@ export default function TimeEntriesEnhancedPage() {
                                 {entry.approval_status === 'read' && '📖 Read'}
                                 {!entry.approval_status && 'No Status'}
                               </span>
+                              {/* Report Status Badge */}
+                              {(() => {
+                                const rs = getReportStatus(entry);
+                                if (!rs || rs === 'pending') return null;
+                                const styles: Record<string, string> = {
+                                  sent: 'bg-blue-50 text-blue-600 border-blue-200',
+                                  supplemental_sent: 'bg-blue-50 text-blue-600 border-blue-200',
+                                  accepted: 'bg-green-50 text-green-600 border-green-200',
+                                  disputed: 'bg-red-50 text-red-600 border-red-200',
+                                  no_time: 'bg-gray-50 text-gray-500 border-gray-200',
+                                };
+                                const labels: Record<string, string> = {
+                                  sent: 'Report Sent',
+                                  supplemental_sent: 'Supplemental',
+                                  accepted: 'Accepted',
+                                  disputed: 'Disputed',
+                                  no_time: 'No Time',
+                                };
+                                return (
+                                  <span data-testid="entry-status-badge" className={`px-1.5 py-0.5 text-[10px] font-medium rounded border ${styles[rs] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                                    {labels[rs] || rs}
+                                  </span>
+                                );
+                              })()}
                               <LockIcon
                                 isLocked={entry.is_locked}
                                 unlockedBy={entry.unlocked_by}
@@ -1774,6 +1822,30 @@ export default function TimeEntriesEnhancedPage() {
                               {entry.approval_status === 'read' && '📖 Read'}
                               {!entry.approval_status && 'No Status'}
                             </span>
+                            {/* Report Status Badge */}
+                            {(() => {
+                              const rs = getReportStatus(entry);
+                              if (!rs || rs === 'pending') return null;
+                              const styles: Record<string, string> = {
+                                sent: 'bg-blue-50 text-blue-600 border-blue-200',
+                                supplemental_sent: 'bg-blue-50 text-blue-600 border-blue-200',
+                                accepted: 'bg-green-50 text-green-600 border-green-200',
+                                disputed: 'bg-red-50 text-red-600 border-red-200',
+                                no_time: 'bg-gray-50 text-gray-500 border-gray-200',
+                              };
+                              const labels: Record<string, string> = {
+                                sent: 'Report Sent',
+                                supplemental_sent: 'Supplemental',
+                                accepted: 'Accepted',
+                                disputed: 'Disputed',
+                                no_time: 'No Time',
+                              };
+                              return (
+                                <span data-testid="entry-status-badge" className={`px-1.5 py-0.5 text-[10px] font-medium rounded border ${styles[rs] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                                  {labels[rs] || rs}
+                                </span>
+                              );
+                            })()}
                             <LockIcon
                               isLocked={entry.is_locked}
                               unlockedBy={entry.unlocked_by}
