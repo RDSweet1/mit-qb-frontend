@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { RefreshCw, Calendar, Clock, User, Building2, FileText, Download, Mail, ArrowUp, ArrowDown, CheckCircle, X, History, Sparkles, ChevronDown, ChevronRight, Send, MessageSquare } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
-import { createClient } from '@supabase/supabase-js';
-import { callEdgeFunction } from '@/lib/supabaseClient';
+import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
+import type { TimeEntry, Customer, ServiceItem, DatePreset } from '@/lib/types';
 import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
@@ -15,58 +15,6 @@ import { TrackingHistoryDialog } from '@/components/time-entries/TrackingHistory
 import { InlineNotesEditor } from '@/components/time-entries/InlineNotesEditor';
 import { EnhanceNotesDialog } from '@/components/time-entries/EnhanceNotesDialog';
 import { AssignClarificationDialog } from '@/components/time-entries/AssignClarificationDialog';
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-interface TimeEntry {
-  id: number;
-  qb_time_id: string;
-  employee_name: string;
-  qb_customer_id: string;
-  txn_date: string;
-  start_time: string | null;
-  end_time: string | null;
-  hours: number;
-  minutes: number;
-  service_item_name: string;
-  cost_code: string;
-  qb_item_id: string | null;
-  description: string;
-  notes: string | null;
-  billable_status: string;
-  approval_status: string;
-  is_locked: boolean;
-  unlocked_by: string | null;
-  unlocked_at: string | null;
-  manually_edited: boolean;
-  edit_count: number;
-  updated_at: string | null;
-  updated_by: string | null;
-  sent_at?: string | null;
-  sent_to?: string | null;
-  change_reason?: string | null;
-  post_send_edit?: boolean;
-  amended_at?: string | null;
-  has_active_clarification?: boolean;
-}
-
-interface Customer {
-  qb_customer_id: string;
-  display_name: string;
-  email: string | null;
-}
-
-interface ServiceItem {
-  qb_item_id: string;
-  name: string;
-  code: string | null;
-}
-
-type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'all_time' | 'custom';
 
 export default function TimeEntriesEnhancedPage() {
   const { accounts } = useMsal();

@@ -6,21 +6,7 @@ import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { callEdgeFunction } from '@/lib/supabaseClient';
-
-interface AppUser {
-  id: string;
-  email: string;
-  display_name: string;
-  entra_id: string;
-  can_view: boolean;
-  can_send_reminders: boolean;
-  can_create_invoices: boolean;
-  is_admin: boolean;
-  can_edit_time: boolean;
-  can_manage_users: boolean;
-  last_login: string | null;
-  created_at: string;
-}
+import type { AppUser } from '@/lib/types';
 
 export default function AdminUsersPage() {
   const { accounts } = useMsal();

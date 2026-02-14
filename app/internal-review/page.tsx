@@ -6,6 +6,7 @@ import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
+import type { Customer } from '@/lib/types';
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface Assignment {
@@ -35,7 +36,7 @@ interface Message {
   created_at: string;
 }
 
-interface TimeEntry {
+interface ClarificationTimeEntry {
   id: number;
   txn_date: string;
   employee_name: string;
@@ -44,11 +45,6 @@ interface TimeEntry {
   description: string | null;
   hours: number;
   minutes: number;
-}
-
-interface Customer {
-  qb_customer_id: string;
-  display_name: string;
 }
 
 type StatusFilter = 'all' | 'pending' | 'responded' | 'cleared';
@@ -60,7 +56,7 @@ export default function InternalReviewPage() {
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [timeEntries, setTimeEntries] = useState<Record<number, TimeEntry>>({});
+  const [timeEntries, setTimeEntries] = useState<Record<number, ClarificationTimeEntry>>({});
   const [customers, setCustomers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -97,7 +93,7 @@ export default function InternalReviewPage() {
           .select('id, txn_date, employee_name, qb_customer_id, cost_code, description, hours, minutes')
           .in('id', entryIds);
 
-        const entryMap: Record<number, TimeEntry> = {};
+        const entryMap: Record<number, ClarificationTimeEntry> = {};
         (entryData || []).forEach(e => { entryMap[e.id] = e; });
         setTimeEntries(entryMap);
 

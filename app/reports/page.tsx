@@ -6,6 +6,7 @@ import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import type { ReportPeriod } from '@/lib/types';
 
 export default function ReportsPage() {
   const [sending, setSending] = useState(false);
@@ -16,23 +17,6 @@ export default function ReportsPage() {
     const lastWeek = subWeeks(new Date(), 1);
     return format(startOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   });
-
-  // Report status tracking
-  interface ReportPeriod {
-    id: number;
-    customer_name: string;
-    qb_customer_id: string;
-    week_start: string;
-    week_end: string;
-    status: 'pending' | 'sent' | 'supplemental_sent' | 'accepted' | 'disputed' | 'no_time';
-    total_hours: number;
-    entry_count: number;
-    late_entry_count: number;
-    late_entry_hours: number;
-    sent_at: string | null;
-    accepted_at: string | null;
-    report_number: string | null;
-  }
 
   const [reportPeriods, setReportPeriods] = useState<ReportPeriod[]>([]);
   const [statusLoading, setStatusLoading] = useState(true);

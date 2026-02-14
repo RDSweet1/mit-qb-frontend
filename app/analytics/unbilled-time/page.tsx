@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
+import type { ServiceItem } from '@/lib/types';
 
-interface TimeEntry {
+interface UnbilledTimeEntry {
   id: string;
   txn_date: string;
   employee_name: string;
@@ -17,11 +18,6 @@ interface TimeEntry {
   hours: number;
   minutes: number;
   qb_customer_id: string;
-}
-
-interface ServiceItem {
-  qb_item_id: string;
-  name: string;
 }
 
 type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
@@ -40,7 +36,7 @@ export default function UnbilledTimePage() {
   const [datePreset, setDatePreset] = useState<DatePreset>('last_month');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [entries, setEntries] = useState<UnbilledTimeEntry[]>([]);
   const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterEmployee, setFilterEmployee] = useState('all');
@@ -116,7 +112,7 @@ export default function UnbilledTimePage() {
   }, [serviceItems]);
 
   // Resolve service item — same logic as preview-invoices
-  function resolveItemId(entry: TimeEntry): string | null {
+  function resolveItemId(entry: UnbilledTimeEntry): string | null {
     if (entry.qb_item_id) return entry.qb_item_id;
     if (!entry.service_item_name) return null;
     const sName = entry.service_item_name;

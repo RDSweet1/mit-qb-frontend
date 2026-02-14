@@ -6,19 +6,7 @@ import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
-
-interface EmployeeRate {
-  id: number;
-  employee_name: string;
-  qb_employee_id: string | null;
-  base_hourly_rate: number;
-  burden_multiplier: number;
-  fully_loaded_rate: number;
-  role: string;
-  is_active: boolean;
-  notes: string | null;
-  updated_at: string;
-}
+import type { EmployeeRate } from '@/lib/types';
 
 export default function EmployeeRatesPage() {
 
