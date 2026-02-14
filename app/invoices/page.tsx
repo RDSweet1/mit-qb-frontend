@@ -15,7 +15,7 @@ import {
   Plus,
   RefreshCw,
 } from 'lucide-react';
-import { callEdgeFunction } from '@/lib/supabaseClient';
+import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { format, subMonths, endOfMonth } from 'date-fns';
@@ -61,6 +61,10 @@ export default function InvoicesPage() {
   const [executionResults, setExecutionResults] = useState<ExecutionResult[]>([]);
   const [executionSummary, setExecutionSummary] = useState<any>(null);
   const [executeError, setExecuteError] = useState<string | null>(null);
+
+  // Profitability context for preview cards
+  const [margins, setMargins] = useState<Record<string, number>>({});
+  const [disputedCustomers, setDisputedCustomers] = useState<Set<string>>(new Set());
 
   // Update action for a customer
   const handleActionChange = (stagingId: number, action: string) => {
@@ -122,6 +126,41 @@ export default function InvoicesPage() {
       setPreviews(response.customers);
       setSummary(response.summary);
       setStage('preview');
+
+      // Fetch profitability margins for the invoice period
+      const periodStart = format(monthStart, 'yyyy-MM-dd');
+      const periodEnd = format(monthEnd, 'yyyy-MM-dd');
+
+      const { data: snapshots } = await supabase
+        .from('profitability_snapshots')
+        .select('qb_customer_id, margin_percent')
+        .gte('week_start', periodStart)
+        .lte('week_start', periodEnd);
+
+      if (snapshots) {
+        const marginMap: Record<string, number[]> = {};
+        for (const s of snapshots) {
+          if (!marginMap[s.qb_customer_id]) marginMap[s.qb_customer_id] = [];
+          marginMap[s.qb_customer_id].push(s.margin_percent);
+        }
+        const avgMargins: Record<string, number> = {};
+        for (const [cid, vals] of Object.entries(marginMap)) {
+          avgMargins[cid] = vals.reduce((a, b) => a + b, 0) / vals.length;
+        }
+        setMargins(avgMargins);
+      }
+
+      // Check for disputed reports in the period
+      const { data: disputed } = await supabase
+        .from('report_periods')
+        .select('qb_customer_id')
+        .eq('status', 'disputed')
+        .gte('week_start', periodStart)
+        .lte('week_end', periodEnd);
+
+      if (disputed) {
+        setDisputedCustomers(new Set(disputed.map(d => d.qb_customer_id)));
+      }
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Failed to generate preview');
       setStage('config');
@@ -328,6 +367,8 @@ export default function InvoicesPage() {
                   key={preview.stagingId}
                   preview={preview}
                   onActionChange={handleActionChange}
+                  marginPercent={margins[preview.qbCustomerId] ?? null}
+                  hasDisputedReports={disputedCustomers.has(preview.qbCustomerId)}
                 />
               ))}
             </div>

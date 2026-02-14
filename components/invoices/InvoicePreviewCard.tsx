@@ -40,6 +40,8 @@ export interface CustomerPreview {
 interface Props {
   preview: CustomerPreview;
   onActionChange: (stagingId: number, action: string) => void;
+  marginPercent?: number | null;
+  hasDisputedReports?: boolean;
 }
 
 const STATUS_CONFIG = {
@@ -77,7 +79,7 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function InvoicePreviewCard({ preview, onActionChange }: Props) {
+export default function InvoicePreviewCard({ preview, onActionChange, marginPercent, hasDisputedReports }: Props) {
   const [expanded, setExpanded] = useState(preview.missingRateCount > 0);
   const config = STATUS_CONFIG[preview.comparisonStatus];
   const StatusIcon = config.icon;
@@ -112,6 +114,27 @@ export default function InvoicePreviewCard({ preview, onActionChange }: Props) {
                   <StatusIcon className="w-3 h-3" />
                   {config.label}
                 </span>
+                {marginPercent != null && (
+                  <span
+                    data-testid="margin-badge"
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      marginPercent < 20
+                        ? 'bg-red-100 text-red-800'
+                        : marginPercent < 40
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}
+                  >
+                    {marginPercent < 20 && <AlertTriangle className="w-3 h-3" />}
+                    {marginPercent.toFixed(0)}% margin
+                  </span>
+                )}
+                {hasDisputedReports && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    <AlertTriangle className="w-3 h-3" />
+                    Disputed
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
