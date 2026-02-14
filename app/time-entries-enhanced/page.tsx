@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { callEdgeFunction } from '@/lib/supabaseClient';
 import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { LockIcon } from '@/components/time-entries/LockIcon';
 import { UnlockWarningDialog } from '@/components/time-entries/UnlockWarningDialog';
 import { EditWarningBanner } from '@/components/time-entries/EditWarningBanner';
@@ -267,7 +268,6 @@ export default function TimeEntriesEnhancedPage() {
       link.click();
       document.body.removeChild(link);
 
-      console.log('✅ Report generated successfully');
     } catch (err) {
       console.error('❌ Report generation failed:', err);
       setError('Failed to generate report: ' + (err instanceof Error ? err.message : 'Unknown error'));
@@ -497,8 +497,6 @@ export default function TimeEntriesEnhancedPage() {
 
       if (updateError) throw updateError;
 
-      console.log(`✅ Approved ${updateData?.length ?? 0} entries in DB`);
-
       // Log approval action (non-blocking)
       supabase.from('approval_audit_log').insert(
         entryIds.map(id => ({
@@ -508,7 +506,7 @@ export default function TimeEntriesEnhancedPage() {
           performed_at: new Date().toISOString(),
           details: { method: 'bulk_approve' }
         }))
-      ).then(() => console.log('Audit logged'));
+      );
 
       // Update local state immediately so UI reflects the change
       setEntries(prev => prev.map(e =>
@@ -692,9 +690,7 @@ export default function TimeEntriesEnhancedPage() {
           notes: newNotes,
           user_email: userEmail,
         });
-        if (qbResult.success) {
-          console.log(`✅ Notes synced back to QB Time (${qbResult.qb_time_id})`);
-        } else {
+        if (!qbResult.success) {
           console.warn('⚠️ QB Time sync-back failed:', qbResult.error);
         }
       } catch (qbErr) {
@@ -758,9 +754,7 @@ export default function TimeEntriesEnhancedPage() {
           qb_item_id: newQbItemId,
           user_email: userEmail,
         });
-        if (qbResult.success) {
-          console.log(`✅ Service item synced back to QB Online`);
-        } else {
+        if (!qbResult.success) {
           console.warn('⚠️ QB Online sync-back failed:', qbResult.error);
         }
       } catch (qbErr) {
@@ -815,17 +809,11 @@ export default function TimeEntriesEnhancedPage() {
   // Sync from QuickBooks
   const syncFromQuickBooks = async () => {
     try {
-      console.log('🔄 QB Sync: Starting sync...');
-      console.log('📅 Date Range:', { startDate, endDate });
-
       setSyncing(true);
       setError(null);
 
       const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/qb-time-sync`;
-      console.log('🌐 QB Sync: Calling Edge Function:', url);
-
       const requestBody = { startDate, endDate, billableOnly: false };
-      console.log('📦 Request Body:', requestBody);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -836,11 +824,7 @@ export default function TimeEntriesEnhancedPage() {
         body: JSON.stringify(requestBody)
       });
 
-      console.log('📡 QB Sync: Response Status:', response.status);
-
-      // Parse response body
       const responseData = await response.json();
-      console.log('📄 QB Sync: Response Data:', responseData);
 
       if (!response.ok) {
         const errorMessage = responseData.error || 'Sync failed';
@@ -856,12 +840,6 @@ export default function TimeEntriesEnhancedPage() {
         }
         return;
       }
-
-      console.log('✅ QB Sync: Success!', {
-        synced: responseData.synced,
-        total: responseData.total,
-        customers: responseData.customers
-      });
 
       // Show success message
       setError(`✅ Success! Synced ${responseData.synced} time entries from ${responseData.customers} customers.`);
@@ -1102,20 +1080,21 @@ export default function TimeEntriesEnhancedPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Time Entries</h2>
-          <p className="text-sm text-gray-600">Production QuickBooks Data</p>
-        </div>
-        <button
-          onClick={syncFromQuickBooks}
-          disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-          {syncing ? 'Syncing...' : 'Sync from QB'}
-        </button>
-      </div>
+      <PageHeader
+        title="Time Entries"
+        subtitle="Production QuickBooks Data"
+        icon={<Clock className="w-6 h-6 text-blue-600" />}
+        actions={
+          <button
+            onClick={syncFromQuickBooks}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Sync from QB'}
+          </button>
+        }
+      />
 
       {/* Filters */}
       <div className="bg-white border-b border-gray-200">

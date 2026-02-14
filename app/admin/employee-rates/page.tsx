@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { DollarSign, Plus, Trash2, RefreshCw, Save } from 'lucide-react';
 import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 
 interface EmployeeRate {
@@ -209,13 +210,11 @@ export default function EmployeeRatesPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center gap-2 mb-6">
-        <DollarSign className="w-6 h-6 text-emerald-600" />
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Employee Cost Rates</h2>
-          <p className="text-sm text-gray-600">Manage labor cost rates and burden multipliers</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Employee Cost Rates"
+        subtitle="Manage labor cost rates and burden multipliers"
+        icon={<DollarSign className="w-6 h-6 text-emerald-600" />}
+      />
           {/* Messages */}
           {error && (
             <div className="mb-6 p-4 rounded-lg border bg-red-50 border-red-300 text-red-800">

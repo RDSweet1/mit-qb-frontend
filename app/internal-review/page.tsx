@@ -5,6 +5,7 @@ import { MessageSquare, CheckCircle, Clock, Send, ChevronDown, ChevronUp, X, Ref
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface Assignment {
@@ -189,19 +190,20 @@ export default function InternalReviewPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Internal Clarifications</h2>
-          <p className="text-sm text-gray-500">Manage clarification requests with field techs</p>
-        </div>
-        <button
-          onClick={loadData}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Internal Clarifications"
+        subtitle="Manage clarification requests with field techs"
+        icon={<MessageSquare className="w-6 h-6 text-amber-600" />}
+        actions={
+          <button
+            onClick={loadData}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        }
+      />
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <button

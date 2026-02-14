@@ -9,6 +9,7 @@ import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { ProfitabilitySummary } from '@/components/dashboard/ProfitabilitySummary';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function Home() {
@@ -29,15 +30,6 @@ export default function Home() {
       setIsMsalReady(true);
     }
   }, [instance, inProgress]);
-
-  // DEBUG: Log on mount and when accounts change
-  useEffect(() => {
-    console.log('🔍 DEBUG v2: Home component mounted/updated');
-    console.log('🔍 DEBUG v2: Is authenticated:', isAuthenticated);
-    console.log('🔍 DEBUG v2: Accounts:', accounts);
-    console.log('🔍 DEBUG v2: User:', user);
-    console.log('🔍 DEBUG v2: Build timestamp:', new Date().toISOString());
-  }, [isAuthenticated, accounts, user]);
 
   // Load clarification badge count
   useEffect(() => {
@@ -105,27 +97,15 @@ export default function Home() {
   };
 
   const handleLogin = async () => {
-    console.log('🔍 DEBUG: handleLogin called - button clicked!');
-
     setLoading(true);
     try {
       const loginHint = getLoginHint();
       const request = loginHint ? { ...loginRequest, loginHint } : loginRequest;
-      console.log('🔍 DEBUG: Calling loginPopup...', loginHint ? `(hint: ${loginHint})` : '');
-      const result = await instance.loginPopup(request);
-      console.log('✅ DEBUG: Login successful!', result);
+      await instance.loginPopup(request);
     } catch (error: any) {
-      console.error('❌ DEBUG: Login failed with error:', error);
-      console.error('❌ DEBUG: Error name:', error?.name);
-      console.error('❌ DEBUG: Error message:', error?.message);
-      console.error('❌ DEBUG: Error code:', error?.errorCode);
-      console.error('❌ DEBUG: Error description:', error?.errorMessage);
-      console.error('❌ DEBUG: Full error object:', JSON.stringify(error, null, 2));
-
-      // Show alert to user
-      alert(`Login Error:\n${error?.message || error}\n\nCheck console (F12) for details.`);
+      console.error('Login failed:', error?.message || error);
+      alert(`Login Error:\n${error?.message || error}`);
     } finally {
-      console.log('🔍 DEBUG: Login attempt finished, setting loading to false');
       setLoading(false);
     }
   };
@@ -221,10 +201,10 @@ export default function Home() {
         </div>
       )}
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h2>
-          <p className="text-gray-600">Manage timesheets, reports, and invoices</p>
-        </div>
+        <PageHeader
+          title="Dashboard"
+          subtitle="Manage timesheets, reports, and invoices"
+        />
 
         {/* Navigation Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

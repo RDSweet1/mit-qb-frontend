@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { callEdgeFunction } from '@/lib/supabaseClient';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { format, subMonths, endOfMonth } from 'date-fns';
 import InvoicePreviewCard, { type CustomerPreview } from '@/components/invoices/InvoicePreviewCard';
 
@@ -173,10 +174,11 @@ export default function InvoicesPage() {
 
   return (
     <AppShell>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Monthly Invoices</h2>
-        <p className="text-sm text-gray-600">Preview, compare, and create invoices in QuickBooks Online</p>
-      </div>
+      <PageHeader
+        title="Monthly Invoices"
+        subtitle="Preview, compare, and create invoices in QuickBooks Online"
+        icon={<DollarSign className="w-6 h-6 text-purple-600" />}
+      />
 
         {/* ===== STAGE: CONFIG ===== */}
         {stage === 'config' && (

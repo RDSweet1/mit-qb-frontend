@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Mail, Plus, Trash2 } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
 
 interface Recipient {
@@ -133,13 +134,11 @@ export default function ReportRecipientsPage() {
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto">
-      <div className="flex items-center gap-2 mb-6">
-        <Mail className="w-6 h-6 text-blue-600" />
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Report Recipients</h2>
-          <p className="text-sm text-gray-600">Configure who receives automated reports</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Report Recipients"
+        subtitle="Configure who receives automated reports"
+        icon={<Mail className="w-6 h-6 text-blue-600" />}
+      />
           {/* Messages */}
           {error && (
             <div className="mb-6 p-4 rounded-lg border bg-red-50 border-red-300 text-red-800">

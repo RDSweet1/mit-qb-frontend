@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Link as LinkIcon, RefreshCw, Database, Calendar, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function SettingsPage() {
   const [qbStatus, setQbStatus] = useState<'connected' | 'disconnected' | 'unknown'>('unknown');
@@ -65,10 +66,11 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-        <p className="text-sm text-gray-600">Configure integrations and automation</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Configure integrations and automation"
+        icon={<SettingsIcon className="w-6 h-6 text-gray-600" />}
+      />
         {/* QuickBooks Connection */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">

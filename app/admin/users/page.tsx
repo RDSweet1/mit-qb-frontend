@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Users, Plus, Trash2, Shield, Mail, Check } from 'lucide-react';
 import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { callEdgeFunction } from '@/lib/supabaseClient';
 
 interface AppUser {
@@ -180,13 +181,11 @@ export default function AdminUsersPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center gap-2 mb-6">
-        <Shield className="w-6 h-6 text-indigo-600" />
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-          <p className="text-sm text-gray-600">Manage app users and permissions</p>
-        </div>
-      </div>
+      <PageHeader
+        title="User Management"
+        subtitle="Manage app users and permissions"
+        icon={<Shield className="w-6 h-6 text-indigo-600" />}
+      />
           {error && (
             <div className={`mb-6 p-4 rounded-lg border ${
               error.startsWith('✅')

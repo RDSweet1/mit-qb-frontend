@@ -31,22 +31,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
           },
         };
 
-        console.log('🔍 MSAL: Initializing with redirectUri:', redirectUri);
-
         const instance = new PublicClientApplication(runtimeConfig);
         await instance.initialize();
 
         // Handle redirect promise (for redirect-based flows)
         const response = await instance.handleRedirectPromise();
         if (response) {
-          console.log('✅ MSAL: Handled redirect response for', response.account?.username);
           instance.setActiveAccount(response.account);
         } else {
           // Set active account from cache if available
           const accounts = instance.getAllAccounts();
           if (accounts.length > 0) {
             instance.setActiveAccount(accounts[0]);
-            console.log('✅ MSAL: Restored session for', accounts[0].username);
           }
         }
 
@@ -60,7 +56,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         });
 
-        console.log('✅ MSAL: Ready');
         setMsalInstance(instance);
       } catch (error: any) {
         console.error('❌ MSAL: Init failed:', error);

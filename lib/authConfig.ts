@@ -18,9 +18,3 @@ export const msalConfig: Configuration = {
 export const loginRequest: PopupRequest = {
   scopes: ['User.Read', 'email', 'profile', 'openid', 'Mail.Send', 'Mail.ReadWrite'],
 };
-
-// Additional scopes for Microsoft Graph API (for sending emails)
-export const graphConfig = {
-  graphMeEndpoint: 'https://graph.microsoft.com/v1.0/me',
-  graphMailEndpoint: 'https://graph.microsoft.com/v1.0/me/sendMail',
-};

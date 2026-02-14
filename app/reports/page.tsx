@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Send, Calendar, FileText, Mail, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { AppShell } from '@/components/AppShell';
+import { PageHeader } from '@/components/PageHeader';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 
 export default function ReportsPage() {
@@ -147,10 +148,11 @@ export default function ReportsPage() {
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Weekly Reports</h2>
-        <p className="text-sm text-gray-600">Generate and send time reports to clients</p>
-      </div>
+      <PageHeader
+        title="Weekly Reports"
+        subtitle="Generate and send time reports to clients"
+        icon={<FileText className="w-6 h-6 text-green-600" />}
+      />
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
