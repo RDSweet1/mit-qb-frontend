@@ -218,10 +218,11 @@ export default function ProfitabilityPage() {
   useEffect(() => {
     if (activeTab !== 'by-customer' || !startDate || !endDate) return;
     setCustomerLoading(true);
+    const rangeStart = fmt(getMonday(new Date(startDate + 'T00:00:00')));
     supabase
       .from('customer_profitability')
       .select('*')
-      .gte('week_start', startDate)
+      .gte('week_start', rangeStart)
       .lte('week_start', endDate)
       .order('week_start', { ascending: true })
       .then(({ data, error }) => {
@@ -367,7 +368,7 @@ export default function ProfitabilityPage() {
       const we = fmt(new Date(new Date(ws + 'T00:00:00').getTime() + 6 * 86400000));
       setGenerateProgress(`Generating week ${i + 1} of ${missingWeeks.length}: ${weekLabel(ws)}...`);
       try {
-        await callEdgeFunction('weekly-profitability-report', { weekStart: ws, weekEnd: we });
+        await callEdgeFunction('weekly-profitability-report', { weekStart: ws, weekEnd: we, manual: true });
       } catch (err) {
         console.error(`Failed to generate week ${ws}:`, err);
       }

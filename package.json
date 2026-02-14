@@ -10,7 +10,7 @@
     "test": "npx playwright test --project=e2e",
     "test:setup": "npx playwright test --project=auth-setup",
     "test:all": "npx playwright test",
-    "test:api": "npx playwright test --project=api"
+    "test:api": "npx playwright test --config=playwright.api.config.ts"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.7.1",
