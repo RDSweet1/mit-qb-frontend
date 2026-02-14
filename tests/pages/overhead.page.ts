@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class OverheadPage extends BasePage {
   readonly vendorTable: Locator;
@@ -10,7 +10,7 @@ export class OverheadPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/overhead');
+    await this.page.goto(BASE_PATH + '/overhead');
     await this.page.waitForLoadState('networkidle');
   }
 

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 const navTabs = [
   { label: 'Time Entries', slug: 'time-entries' },
@@ -14,7 +14,7 @@ const navTabs = [
 
 test.describe('Navigation', () => {
   test('all 8 nav tabs are visible', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(BASE_PATH + '/');
     await page.waitForLoadState('networkidle');
 
     const basePage = new BasePage(page);
@@ -26,20 +26,20 @@ test.describe('Navigation', () => {
   });
 
   test('clicking each tab navigates and highlights active', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(BASE_PATH + '/');
     await page.waitForLoadState('networkidle');
 
     const basePage = new BasePage(page);
 
     for (const tab of navTabs) {
       await basePage.navTab(tab.label).click();
-      await page.waitForLoadState('networkidle');
-      await basePage.verifyActiveNavTab(tab.label);
+      // Wait for client-side navigation to complete and React to re-render
+      await expect(basePage.navTab(tab.label)).toHaveClass(/border-blue-600/, { timeout: 10_000 });
     }
   });
 
   test('Admin tab shows red badge when automations are paused', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(BASE_PATH + '/');
     await page.waitForLoadState('networkidle');
 
     const adminTab = page.locator('[data-testid="nav-tab-admin"]');

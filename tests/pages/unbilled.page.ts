@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class UnbilledPage extends BasePage {
   readonly table: Locator;
@@ -10,7 +10,7 @@ export class UnbilledPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/analytics/unbilled-time');
+    await this.page.goto(BASE_PATH + '/analytics/unbilled-time');
     await this.page.waitForLoadState('networkidle');
   }
 

@@ -46,7 +46,8 @@ export default defineConfig({
 
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3000/mit-qb-frontend',
     reuseExistingServer: true,
+    timeout: 120_000,
   },
 });

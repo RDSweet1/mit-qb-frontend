@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class TimeEntriesPage extends BasePage {
   readonly syncButton: Locator;
@@ -14,7 +14,7 @@ export class TimeEntriesPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/time-entries-enhanced');
+    await this.page.goto(BASE_PATH + '/time-entries-enhanced');
     await this.page.waitForLoadState('networkidle');
   }
 

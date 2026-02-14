@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class DashboardPage extends BasePage {
   readonly dashboardCards: Locator;
@@ -10,7 +10,7 @@ export class DashboardPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/');
+    await this.page.goto(BASE_PATH + '/');
     await this.page.waitForLoadState('networkidle');
   }
 

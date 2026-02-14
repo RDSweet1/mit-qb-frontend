@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class ClarificationsPage extends BasePage {
   readonly filterButtons: Locator;
@@ -10,7 +10,7 @@ export class ClarificationsPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/internal-review');
+    await this.page.goto(BASE_PATH + '/internal-review');
     await this.page.waitForLoadState('networkidle');
   }
 

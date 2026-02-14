@@ -1,5 +1,8 @@
 import { Page, Locator, expect } from '@playwright/test';
 
+/** Next.js basePath — prepend to all goto() calls */
+export const BASE_PATH = '/mit-qb-frontend';
+
 export class BasePage {
   readonly page: Page;
   readonly appShell: Locator;

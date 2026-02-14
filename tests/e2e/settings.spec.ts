@@ -13,15 +13,15 @@ test.describe('Settings', () => {
     await settings.goto();
 
     // Automation section header
-    await expect(page.locator('text=Automation')).toBeVisible();
-    await expect(page.locator('text=Scheduled tasks and automation status')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Automation' })).toBeVisible();
+    await expect(page.getByText('Scheduled tasks and automation status')).toBeVisible();
 
     // Should show all 5 automation names from schedule_config
-    await expect(page.locator('text=Weekly Reports')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Follow-Up Reminders')).toBeVisible();
-    await expect(page.locator('text=Auto-Accept')).toBeVisible();
-    await expect(page.locator('text=Reconciliation')).toBeVisible();
-    await expect(page.locator('text=Profitability Report')).toBeVisible();
+    await expect(page.getByText('Weekly Reports', { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Follow-Up Reminders', { exact: true })).toBeVisible();
+    await expect(page.getByText('Auto-Accept', { exact: true })).toBeVisible();
+    await expect(page.getByText('Reconciliation', { exact: true })).toBeVisible();
+    await expect(page.getByText('Profitability Report', { exact: true })).toBeVisible();
   });
 
   test('each automation shows schedule day and time', async ({ page }) => {

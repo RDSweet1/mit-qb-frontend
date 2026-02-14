@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class ReportsPage extends BasePage {
   readonly weekSelector: Locator;
@@ -12,7 +12,7 @@ export class ReportsPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/reports');
+    await this.page.goto(BASE_PATH + '/reports');
     await this.page.waitForLoadState('networkidle');
   }
 

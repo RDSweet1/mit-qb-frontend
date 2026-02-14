@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class ProfitabilityPage extends BasePage {
   readonly tabs: Locator;
@@ -10,7 +10,7 @@ export class ProfitabilityPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/profitability');
+    await this.page.goto(BASE_PATH + '/profitability');
     await this.page.waitForLoadState('networkidle');
   }
 

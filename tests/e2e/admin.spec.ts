@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 test.describe('Admin', () => {
   test('consolidated admin page loads with correct header', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
     const basePage = new BasePage(page);
     await basePage.verifyAppShell();
@@ -12,7 +12,7 @@ test.describe('Admin', () => {
   });
 
   test('all 4 admin tabs are visible', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-testid="admin-tab-users"]')).toBeVisible();
     await expect(page.locator('[data-testid="admin-tab-rates"]')).toBeVisible();
@@ -21,7 +21,7 @@ test.describe('Admin', () => {
   });
 
   test('switching tabs shows correct content', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
 
     // Default tab is Users
@@ -41,7 +41,7 @@ test.describe('Admin', () => {
   });
 
   test('scheduling tab renders automation table with 5 rows', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
     await page.locator('[data-testid="admin-tab-scheduling"]').click();
 
@@ -54,15 +54,15 @@ test.describe('Admin', () => {
     await expect(rows).toHaveCount(5);
 
     // Verify all 5 automation names appear
-    await expect(page.locator('text=Weekly Reports')).toBeVisible();
-    await expect(page.locator('text=Follow-Up Reminders')).toBeVisible();
-    await expect(page.locator('text=Auto-Accept')).toBeVisible();
-    await expect(page.locator('text=Reconciliation')).toBeVisible();
-    await expect(page.locator('text=Profitability Report')).toBeVisible();
+    await expect(page.getByText('Weekly Reports', { exact: true })).toBeVisible();
+    await expect(page.getByText('Follow-Up Reminders', { exact: true })).toBeVisible();
+    await expect(page.getByText('Auto-Accept', { exact: true })).toBeVisible();
+    await expect(page.getByText('Reconciliation', { exact: true })).toBeVisible();
+    await expect(page.getByText('Profitability Report', { exact: true })).toBeVisible();
   });
 
   test('scheduling tab has day and time dropdowns per row', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
     await page.locator('[data-testid="admin-tab-scheduling"]').click();
     await expect(page.locator('table')).toBeVisible({ timeout: 10000 });
@@ -85,7 +85,7 @@ test.describe('Admin', () => {
   });
 
   test('scheduling tab has Pause All and Resume All buttons', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
     await page.locator('[data-testid="admin-tab-scheduling"]').click();
     await expect(page.locator('table')).toBeVisible({ timeout: 10000 });
@@ -98,7 +98,7 @@ test.describe('Admin', () => {
   });
 
   test('scheduling tab has per-row pause/resume buttons', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
     await page.locator('[data-testid="admin-tab-scheduling"]').click();
     await expect(page.locator('table')).toBeVisible({ timeout: 10000 });
@@ -116,7 +116,7 @@ test.describe('Admin', () => {
   });
 
   test('scheduling tab shows info note about changes', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
     await page.locator('[data-testid="admin-tab-scheduling"]').click();
     await expect(page.locator('table')).toBeVisible({ timeout: 10000 });
@@ -126,7 +126,7 @@ test.describe('Admin', () => {
   });
 
   test('old /admin/users route redirects to /admin', async ({ page }) => {
-    await page.goto('/admin/users');
+    await page.goto(BASE_PATH + '/admin/users');
     await page.waitForLoadState('networkidle');
     expect(page.url()).toContain('/admin');
   });
@@ -135,7 +135,7 @@ test.describe('Admin', () => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
 
-    await page.goto('/admin');
+    await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
 
     expect(errors).toHaveLength(0);

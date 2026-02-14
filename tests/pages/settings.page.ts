@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class SettingsPage extends BasePage {
   constructor(page: Page) {
@@ -7,7 +7,7 @@ export class SettingsPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/settings');
+    await this.page.goto(BASE_PATH + '/settings');
     await this.page.waitForLoadState('networkidle');
   }
 

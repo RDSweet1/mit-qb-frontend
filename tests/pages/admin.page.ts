@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { BasePage } from '../fixtures/base-page';
+import { BasePage, BASE_PATH } from '../fixtures/base-page';
 
 export class AdminPage extends BasePage {
   readonly usersTable: Locator;
@@ -10,7 +10,7 @@ export class AdminPage extends BasePage {
   }
 
   async goto() {
-    await this.page.goto('/admin');
+    await this.page.goto(BASE_PATH + '/admin');
     await this.page.waitForLoadState('networkidle');
   }
 
