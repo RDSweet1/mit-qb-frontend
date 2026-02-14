@@ -23,7 +23,7 @@ export function AppNav() {
   const normalizedPath = pathname?.replace(/^\/mit-qb-frontend/, '') || '/';
 
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className="bg-white border-b border-gray-200" data-testid="app-nav">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex gap-1 overflow-x-auto py-1 -mb-px">
           {navItems.map(item => {
@@ -34,6 +34,7 @@ export function AppNav() {
               <Link
                 key={item.href}
                 href={item.href}
+                data-testid={`nav-tab-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors border-b-2 ${
                   isActive
                     ? 'border-blue-600 text-blue-700 bg-blue-50'
