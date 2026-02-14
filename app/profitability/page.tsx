@@ -1,13 +1,17 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, DollarSign, Settings } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, DollarSign, Settings, Wrench } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { format, startOfWeek, endOfWeek, addWeeks, isBefore, isAfter } from 'date-fns';
 import PnlSummaryView from '@/components/profitability/PnlSummaryView';
 import OverheadView from '@/components/profitability/OverheadView';
+import OverheadSyncPanel from '@/components/overhead/OverheadSyncPanel';
+import VendorTransactionTable from '@/components/overhead/VendorTransactionTable';
+import CategoryManager from '@/components/overhead/CategoryManager';
 import {
   LineChart,
   Line,
@@ -96,8 +100,21 @@ function getWeeksInRange(start: string, end: string): string[] {
 // --- Component ---
 
 export default function ProfitabilityPage() {
-  type ActiveTab = 'profitability' | 'pnl' | 'overhead';
-  const [activeTab, setActiveTab] = useState<ActiveTab>('profitability');
+  type ActiveTab = 'profitability' | 'pnl' | 'overhead' | 'vendor-overhead';
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as ActiveTab | null;
+  const validTabs: ActiveTab[] = ['profitability', 'pnl', 'overhead', 'vendor-overhead'];
+  const [activeTab, setActiveTab] = useState<ActiveTab>(
+    tabParam && validTabs.includes(tabParam) ? tabParam : 'profitability'
+  );
+
+  // Vendor overhead state
+  const [vendorCategories, setVendorCategories] = useState<string[]>([]);
+  const [vendorRefreshKey, setVendorRefreshKey] = useState(0);
+  const vendorNow = new Date();
+  const vendorDefaultStart = new Date(vendorNow.getFullYear() - 1, vendorNow.getMonth(), 1);
+  const [vendorStartDate, setVendorStartDate] = useState(vendorDefaultStart.toISOString().split('T')[0]);
+  const [vendorEndDate, setVendorEndDate] = useState(vendorNow.toISOString().split('T')[0]);
   const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -110,9 +127,17 @@ export default function ProfitabilityPage() {
   const [sortCol, setSortCol] = useState<string>('week_start');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  // Initialize date range
+  // Initialize date range + load vendor categories
   useEffect(() => {
     applyPreset('this_month');
+    supabase
+      .from('overhead_categories')
+      .select('name')
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true })
+      .then(({ data }) => {
+        setVendorCategories((data || []).map(c => c.name));
+      });
   }, []);
 
   function applyPreset(preset: DatePreset) {
@@ -403,6 +428,7 @@ export default function ProfitabilityPage() {
               { key: 'profitability' as ActiveTab, label: 'Profitability', icon: TrendingUp },
               { key: 'pnl' as ActiveTab, label: 'P&L Summary', icon: DollarSign },
               { key: 'overhead' as ActiveTab, label: 'Overhead', icon: Settings },
+              { key: 'vendor-overhead' as ActiveTab, label: 'Vendor Overhead', icon: Wrench },
             ]).map(tab => (
               <button
                 key={tab.key}
@@ -431,6 +457,24 @@ export default function ProfitabilityPage() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <OverheadView />
             </div>
+          )}
+
+          {/* Vendor Overhead Tab */}
+          {activeTab === 'vendor-overhead' && (
+            <>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
+                <OverheadSyncPanel
+                  startDate={vendorStartDate}
+                  endDate={vendorEndDate}
+                  onStartDateChange={setVendorStartDate}
+                  onEndDateChange={setVendorEndDate}
+                  onSyncComplete={() => setVendorRefreshKey(k => k + 1)}
+                />
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <VendorTransactionTable categories={vendorCategories} refreshKey={vendorRefreshKey} />
+              </div>
+            </>
           )}
 
           {/* Profitability Tab (existing content) */}
