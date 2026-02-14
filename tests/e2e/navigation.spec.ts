@@ -6,7 +6,6 @@ const navTabs = [
   { label: 'Reports', slug: 'reports' },
   { label: 'Invoices', slug: 'invoices' },
   { label: 'Profitability', slug: 'profitability' },
-  { label: 'Overhead', slug: 'overhead' },
   { label: 'Unbilled', slug: 'unbilled' },
   { label: 'Clarifications', slug: 'clarifications' },
   { label: 'Settings', slug: 'settings' },
@@ -14,7 +13,7 @@ const navTabs = [
 ];
 
 test.describe('Navigation', () => {
-  test('all 9 nav tabs are visible', async ({ page }) => {
+  test('all 8 nav tabs are visible', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
