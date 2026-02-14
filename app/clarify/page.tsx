@@ -5,42 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { fmtDateTime } from '@/lib/utils';
 import { useAssignmentData } from '@/lib/hooks/useAssignmentData';
+import { COLORS, SERVICE_COLORS, MIT_LOGO, fmtShortDate } from '@/lib/public-page-constants';
 
 type PageState = 'loading' | 'not_found' | 'expired' | 'active' | 'submitted' | 'cleared';
-
-// ─── Colors ──────────────────────────────────────────────────────────
-const COLORS = {
-  amber: '#d97706',
-  amberDark: '#92400e',
-  amberBg: '#fffbeb',
-  amberBorder: '#f59e0b',
-  blue: '#2563eb',
-  blueDark: '#1e40af',
-  green: '#16a34a',
-  greenDark: '#166534',
-  greenBg: '#f0fdf4',
-  gray: '#6b7280',
-  grayLight: '#f9fafb',
-  grayBorder: '#e5e7eb',
-  red: '#dc2626',
-};
-
-const SERVICE_COLORS: Record<string, { bg: string; text: string }> = {
-  'Expert Analysis': { bg: '#ede9fe', text: '#5b21b6' },
-  'Site Inspection': { bg: '#dbeafe', text: '#1e40af' },
-  'Travel': { bg: '#fef3c7', text: '#92400e' },
-  'Report Writing': { bg: '#fce7f3', text: '#9d174d' },
-  'Consultation': { bg: '#d1fae5', text: '#065f46' },
-  'Project Management': { bg: '#e0e7ff', text: '#3730a3' },
-  'Administrative': { bg: '#f3f4f6', text: '#374151' },
-};
-
-const MIT_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAhklEQVR42u2WSw6AMAhE5zKezON7iLpyU+OAfCZGJd1BeC2UD5Z1az34AbWAcUglYFiSAhBHTgby0eCWKIk1sWeAQP5dAO6dq85a3L27qZ0MXglIVjIDmOn1FNekjQOuekYZIPKC9hzEarj4mz4ekGG4epGimyrmQftEU8xk0Vah2Is+v5vuGba66UdGBNoAAAAASUVORK5CYII=';
-
-function fmtDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
-}
 
 // ─── Main Component ─────────────────────────────────────────────────
 export default function ClarifyPage() {
@@ -244,7 +211,7 @@ export default function ClarifyPage() {
                       const sc = SERVICE_COLORS[entry.cost_code || ''] || { bg: '#f3f4f6', text: '#374151' };
                       return (
                         <tr key={entry.id} style={{ backgroundColor: i % 2 === 1 ? COLORS.grayLight : '#fff' }}>
-                          <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{fmtDate(entry.txn_date)}</td>
+                          <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{fmtShortDate(entry.txn_date)}</td>
                           <td style={tdStyle}>{entry.employee_name}</td>
                           <td style={tdStyle}>{customerNames[entry.qb_customer_id] || entry.qb_customer_id}</td>
                           <td style={tdStyle}>
