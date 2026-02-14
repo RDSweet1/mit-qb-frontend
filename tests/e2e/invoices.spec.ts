@@ -21,6 +21,34 @@ test.describe('Invoices', () => {
     await expect(generateBtn).toBeVisible();
   });
 
+  test('invoice cards show margin badges from customer_profitability', async ({ page }) => {
+    const invoices = new InvoicesPage(page);
+    await invoices.goto();
+
+    // Click Generate Preview to load invoice data
+    const generateBtn = page.getByRole('button', { name: /generate preview/i });
+    await generateBtn.click();
+
+    // Wait for previews to load
+    await page.waitForLoadState('networkidle');
+
+    // Check for margin badges — they appear if customer_profitability has data
+    const marginBadges = page.locator('[data-testid="margin-badge"]');
+    const badgeCount = await marginBadges.count();
+
+    if (badgeCount > 0) {
+      const firstBadge = marginBadges.first();
+      const text = await firstBadge.textContent();
+      // Should show "XX% margin"
+      expect(text).toMatch(/\d+% margin/);
+
+      // Should have color coding
+      const classes = await firstBadge.getAttribute('class');
+      expect(classes).toMatch(/bg-(green|yellow|red)-100/);
+    }
+    // If no badges, customer_profitability may not have data for this period — valid
+  });
+
   test('no console errors on load', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));

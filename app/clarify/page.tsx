@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
+import { fmtDateTime } from '@/lib/utils';
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface InternalReviewToken {
@@ -86,12 +87,6 @@ const MIT_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8
 function fmtDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
-}
-
-function fmtDateTime(isoStr: string): string {
-  return new Date(isoStr).toLocaleString('en-US', {
-    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-  });
 }
 
 // ─── Main Component ─────────────────────────────────────────────────

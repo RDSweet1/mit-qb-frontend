@@ -3,6 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Loader2, Search } from 'lucide-react';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
+import { fmtMoney as _fmtMoney } from '@/lib/utils';
+
+const fmtMoney = (n: number) => _fmtMoney(n, 2);
 
 interface Transaction {
   id: number;
@@ -25,10 +28,6 @@ interface VendorGroup {
   category: string | null;
   is_overhead: boolean;
   hasMapping: boolean;
-}
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtDate(d: string): string {

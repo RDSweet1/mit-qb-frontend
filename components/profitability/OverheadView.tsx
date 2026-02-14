@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { RefreshCw, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
+import { fmtMoney as _fmtMoney } from '@/lib/utils';
+
+const fmtMoney = (n: number) => _fmtMoney(n, 2);
 
 interface OverheadItem {
   id: number;
@@ -27,10 +30,6 @@ interface SyncResult {
   weekly_amount: number;
   items: Array<{ name: string; category: string; amount: number; action: string }>;
   error?: string;
-}
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function OverheadView() {

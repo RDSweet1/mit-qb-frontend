@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { X, TrendingUp, Users, Wrench, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import type { CustomerProfitability } from '@/lib/types';
+import { fmtMoney, fmtPct, weekLabel, marginColor, marginBg } from '@/lib/utils';
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -15,34 +16,6 @@ interface Props {
   startDate: string;
   endDate: string;
   onClose: () => void;
-}
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function fmtPct(n: number): string {
-  return n.toFixed(1) + '%';
-}
-
-function weekLabel(weekStart: string): string {
-  const d = new Date(weekStart + 'T00:00:00');
-  const end = new Date(d);
-  end.setDate(d.getDate() + 6);
-  const fmt = (dt: Date) => dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `${fmt(d)}\u2013${end.getDate()}`;
-}
-
-function marginColor(pct: number): string {
-  if (pct < 20) return 'text-red-700';
-  if (pct < 40) return 'text-amber-700';
-  return 'text-green-700';
-}
-
-function marginBg(pct: number): string {
-  if (pct < 20) return 'bg-red-50';
-  if (pct < 40) return 'bg-amber-50';
-  return 'bg-green-50';
 }
 
 export default function CustomerDrillDown({ customerId, customerName, startDate, endDate, onClose }: Props) {

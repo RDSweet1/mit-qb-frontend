@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { MessageSquare, CheckCircle, Clock, Send, ChevronDown, ChevronUp, X, RefreshCw } from 'lucide-react';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
+import { fmtDateTime } from '@/lib/utils';
 import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
@@ -175,12 +176,6 @@ export default function InternalReviewPage() {
   function fmtDate(dateStr: string): string {
     return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric',
-    });
-  }
-
-  function fmtDateTime(isoStr: string): string {
-    return new Date(isoStr).toLocaleString('en-US', {
-      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
     });
   }
 

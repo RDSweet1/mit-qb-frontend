@@ -6,7 +6,7 @@ import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, 
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
-import { format, startOfWeek, endOfWeek, addWeeks, isBefore, isAfter } from 'date-fns';
+import { addWeeks, isAfter } from 'date-fns';
 import PnlSummaryView from '@/components/profitability/PnlSummaryView';
 import OverheadView from '@/components/profitability/OverheadView';
 import CustomerDrillDown from '@/components/profitability/CustomerDrillDown';
@@ -14,6 +14,7 @@ import OverheadSyncPanel from '@/components/overhead/OverheadSyncPanel';
 import VendorTransactionTable from '@/components/overhead/VendorTransactionTable';
 import CategoryManager from '@/components/overhead/CategoryManager';
 import type { CustomerProfitability } from '@/lib/types';
+import { fmtMoney, fmtPct, weekLabel, getMonday, fmtIsoDate as fmt } from '@/lib/utils';
 import {
   LineChart,
   Line,
@@ -61,31 +62,6 @@ interface Snapshot {
 type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_quarter' | 'ytd' | 'last_year' | 'custom';
 
 // --- Helpers ---
-
-function getMonday(d: Date): Date {
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.getFullYear(), d.getMonth(), diff);
-}
-
-function fmt(d: Date): string {
-  return d.toISOString().split('T')[0];
-}
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function fmtPct(n: number): string {
-  return n.toFixed(1) + '%';
-}
-
-function weekLabel(weekStart: string): string {
-  const d = new Date(weekStart + 'T00:00:00');
-  const end = new Date(d);
-  end.setDate(d.getDate() + 6);
-  return `${format(d, 'MMM d')}\u2013${format(end, 'd')}`;
-}
 
 /** Generate all Monday-start weeks that overlap the given date range */
 function getWeeksInRange(start: string, end: string): string[] {

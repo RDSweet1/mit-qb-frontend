@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
+import { fmtMoney, getMonday, fmtIsoDate as fmt } from '@/lib/utils';
 
 interface WeekSnapshot {
   week_start: string;
@@ -13,20 +14,6 @@ interface WeekSnapshot {
   billable_hours: number;
   total_hours: number;
   utilization_percent: number;
-}
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function getMonday(d: Date): Date {
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.getFullYear(), d.getMonth(), diff);
-}
-
-function fmt(d: Date): string {
-  return d.toISOString().split('T')[0];
 }
 
 export function ProfitabilitySummary() {

@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { RefreshCw, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { callEdgeFunction } from '@/lib/supabaseClient';
+import { fmtMoney as _fmtMoney } from '@/lib/utils';
+
+const fmtMoney = (n: number) => _fmtMoney(n, 2);
 
 interface SyncResult {
   success: boolean;
@@ -13,10 +16,6 @@ interface SyncResult {
   weekly_amount?: number;
   materialize_only?: boolean;
   error?: string;
-}
-
-function fmtMoney(n: number): string {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 interface OverheadSyncPanelProps {

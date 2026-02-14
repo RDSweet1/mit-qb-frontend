@@ -4,12 +4,7 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 import { callEdgeFunction } from '@/lib/supabaseClient';
 import { parsePnlSummary, type PnlSection, type PnlLineItem } from '@/lib/qbReportParser';
-
-function fmtMoney(n: number): string {
-  const abs = Math.abs(n);
-  const formatted = abs.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return n < 0 ? `(${formatted})` : formatted;
-}
+import { fmtMoneyAccounting as fmtMoney } from '@/lib/utils';
 
 // Highlight bar styles by group
 const HIGHLIGHT_GROUPS: Record<string, { label: string; bgClass: string; textClass: string }> = {
