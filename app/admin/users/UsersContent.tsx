@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Users, Plus, Trash2, Mail, Check } from 'lucide-react';
 import { useMsal } from '@azure/msal-react';
 import { callEdgeFunction } from '@/lib/supabaseClient';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
 import type { AppUser } from '@/lib/types';
 
 export function UsersContent() {
@@ -236,23 +238,21 @@ export function UsersContent() {
 
       {/* Users Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        </div>
+        <LoadingSkeleton variant="table" rows={5} columns={9} />
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
                   {permissionFields.map(pf => (
-                    <th key={pf.key} className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+                    <th scope="col" key={pf.key} className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
                       {pf.label}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Last Login</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Last Login</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -321,7 +321,7 @@ export function UsersContent() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </div>
       )}
     </>

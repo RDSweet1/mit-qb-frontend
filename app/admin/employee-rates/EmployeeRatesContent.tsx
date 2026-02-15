@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
 import type { EmployeeRate } from '@/lib/types';
 
 export function EmployeeRatesContent() {
@@ -303,22 +305,20 @@ export function EmployeeRatesContent() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-        </div>
+        <LoadingSkeleton variant="table" rows={5} columns={7} />
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Employee</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Role</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Base Rate</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Multiplier</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Loaded Rate</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Active</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Employee</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Role</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Base Rate</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Multiplier</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Loaded Rate</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Active</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -429,7 +429,7 @@ export function EmployeeRatesContent() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </div>
       )}
     </>

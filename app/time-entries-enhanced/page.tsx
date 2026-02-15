@@ -17,15 +17,20 @@ import toast from 'react-hot-toast';
 import { EnhanceNotesDialog } from '@/components/time-entries/EnhanceNotesDialog';
 import { AssignClarificationDialog } from '@/components/time-entries/AssignClarificationDialog';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { useCustomers } from '@/lib/hooks/useCustomers';
+import { useServiceItems } from '@/lib/hooks/useServiceItems';
 import { DataTimestamp } from '@/components/DataTimestamp';
 
 export default function TimeEntriesEnhancedPage() {
   const { accounts } = useMsal();
   const user = accounts[0];
 
+  // Shared data hooks — customers and service items
+  const { customers } = useCustomers();
+  const { serviceItems, descriptionMap: serviceItemDescriptions } = useServiceItems();
+
   // State
   const [entries, setEntries] = useState<TimeEntry[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,55 +91,12 @@ export default function TimeEntriesEnhancedPage() {
   // Collapsed customer cards (cards with all entries sent auto-collapse)
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
 
-  // Service items list and descriptions keyed by cost code
-  const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
-  const [serviceItemDescriptions, setServiceItemDescriptions] = useState<Record<string, string>>({});
+  // (Service items and descriptions now come from useServiceItems hook above)
 
   // Report period status (customer-week level)
   const [reportPeriods, setReportPeriods] = useState<ReportPeriod[]>([]);
 
-  // Load customers
-  const loadCustomers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('qb_customer_id, display_name, email')
-        .eq('is_active', true)
-        .order('display_name');
-
-      if (error) throw error;
-      setCustomers(data || []);
-    } catch (err) {
-      console.error('Error loading customers:', err);
-    }
-  };
-
-  // Load service items (for cost code descriptions and inline editing dropdown)
-  const loadServiceItems = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('service_items')
-        .select('qb_item_id, code, name, description')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      const items = data || [];
-      setServiceItems(items.map((item: any) => ({ qb_item_id: item.qb_item_id, name: item.name, code: item.code })));
-      const descMap: Record<string, string> = {};
-      items.forEach((item: any) => {
-        if (item.code) {
-          descMap[item.code] = item.description || item.name || '';
-        }
-        if (item.name) {
-          descMap[item.name] = item.description || item.name || '';
-        }
-      });
-      setServiceItemDescriptions(descMap);
-    } catch (err) {
-      console.error('Error loading service items:', err);
-    }
-  };
+  // (Customers and service items are now loaded by hooks above)
 
   // Load time entries
   const loadTimeEntries = async () => {
@@ -1044,11 +1006,7 @@ export default function TimeEntriesEnhancedPage() {
     return `${hours}.${minutes.toString().padStart(2, '0')} hrs`;
   };
 
-  // Initialize
-  useEffect(() => {
-    loadCustomers();
-    loadServiceItems();
-  }, []);
+  // (Customers and service items initialization is handled by hooks)
 
   useEffect(() => {
     loadTimeEntries();

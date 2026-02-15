@@ -5,7 +5,10 @@ import { AlertTriangle, Download, ExternalLink, Search } from 'lucide-react';
 import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
 import { supabase } from '@/lib/supabaseClient';
+import { useServiceItems } from '@/lib/hooks/useServiceItems';
 import type { ServiceItem } from '@/lib/types';
 
 interface UnbilledTimeEntry {
@@ -37,7 +40,7 @@ export default function UnbilledTimePage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [entries, setEntries] = useState<UnbilledTimeEntry[]>([]);
-  const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
+  const { serviceItems } = useServiceItems();
   const [loading, setLoading] = useState(true);
   const [filterEmployee, setFilterEmployee] = useState('all');
   const [filterCustomer, setFilterCustomer] = useState('all');
@@ -81,15 +84,7 @@ export default function UnbilledTimePage() {
     setEndDate(fmt(end));
   }
 
-  // Load service items once
-  useEffect(() => {
-    supabase
-      .from('service_items')
-      .select('qb_item_id, name')
-      .then(({ data }) => {
-        if (data) setServiceItems(data);
-      });
-  }, []);
+  // (Service items loaded by useServiceItems hook above)
 
   // Build service item lookup
   const itemIdByName = useMemo(() => {
@@ -314,9 +309,7 @@ export default function UnbilledTimePage() {
 
           {/* Table */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
-            </div>
+            <LoadingSkeleton variant="table" rows={5} columns={7} />
           ) : filteredEntries.length === 0 ? (
             <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-200 text-center">
               <AlertTriangle className="w-12 h-12 text-green-500 mx-auto mb-4" />
@@ -325,7 +318,7 @@ export default function UnbilledTimePage() {
             </div>
           ) : (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
+              <ResponsiveTable>
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
@@ -374,7 +367,7 @@ export default function UnbilledTimePage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </ResponsiveTable>
             </div>
           )}
     </AppShell>

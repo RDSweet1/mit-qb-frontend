@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Clock, Pause, Play, Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
 import type { ScheduleConfig } from '@/lib/types';
 
 const DAY_OPTIONS = [
@@ -125,11 +127,7 @@ export function SchedulingContent() {
   const pausedCount = configs.filter(c => c.is_paused).length;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
-      </div>
-    );
+    return <LoadingSkeleton variant="table" rows={4} columns={6} />;
   }
 
   return (
@@ -166,15 +164,16 @@ export function SchedulingContent() {
 
       {/* Schedule Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <ResponsiveTable>
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Automation</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Day</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Time</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Last Run</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Automation</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Day</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Time</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Last Run</th>
+              <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -258,6 +257,7 @@ export function SchedulingContent() {
             ))}
           </tbody>
         </table>
+        </ResponsiveTable>
       </div>
 
       <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, DollarSign, Settings, Wrench, Users } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { addWeeks, isAfter } from 'date-fns';
 import PnlSummaryView from '@/components/profitability/PnlSummaryView';
@@ -541,9 +542,7 @@ export default function ProfitabilityPage() {
           {activeTab === 'by-customer' && (
             <>
               {customerLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                </div>
+                <LoadingSkeleton variant="table" rows={5} columns={6} />
               ) : customerAggregates.length === 0 ? (
                 <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-200 text-center">
                   <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -703,9 +702,7 @@ export default function ProfitabilityPage() {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            </div>
+            <LoadingSkeleton variant="table" rows={5} columns={8} />
           ) : snapshots.length === 0 ? (
             <div className="bg-white p-12 rounded-xl shadow-sm border border-gray-200 text-center">
               <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -810,7 +807,7 @@ export default function ProfitabilityPage() {
                   <table className="w-full">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-200">
-                        <th className="px-3 py-3 w-8"></th>
+                        <th scope="col" className="px-3 py-3 w-8"></th>
                         <SortHeader col="week_start" label="Week" />
                         <SortHeader col="total_hours" label="Hours" align="right" />
                         <SortHeader col="billable_hours" label="Billable" align="right" />
@@ -821,7 +818,7 @@ export default function ProfitabilityPage() {
                         <SortHeader col="total_cost" label="Total Cost" align="right" />
                         <SortHeader col="gross_margin" label="Margin" align="right" />
                         <SortHeader col="margin_percent" label="Margin%" align="right" />
-                        <th className="px-3 py-3 text-xs font-semibold text-gray-600 uppercase text-right">YTD Net</th>
+                        <th scope="col" className="px-3 py-3 text-xs font-semibold text-gray-600 uppercase text-right">YTD Net</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -862,12 +859,12 @@ export default function ProfitabilityPage() {
                     <table className="w-full">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Employee</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total Hours</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Billable Hours</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Revenue</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Labor Cost</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Margin</th>
+                          <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Employee</th>
+                          <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total Hours</th>
+                          <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Billable Hours</th>
+                          <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Revenue</th>
+                          <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Labor Cost</th>
+                          <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Margin</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -942,9 +939,9 @@ function SnapshotRow({ snapshot: s, totalCost, margin, marginPct, ytdNet, isExpa
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="py-1 text-left text-xs text-gray-500 uppercase">Category</th>
-                        <th className="py-1 text-right text-xs text-gray-500 uppercase">Hours</th>
-                        <th className="py-1 text-right text-xs text-gray-500 uppercase">Cost</th>
+                        <th scope="col" className="py-1 text-left text-xs text-gray-500 uppercase">Category</th>
+                        <th scope="col" className="py-1 text-right text-xs text-gray-500 uppercase">Hours</th>
+                        <th scope="col" className="py-1 text-right text-xs text-gray-500 uppercase">Cost</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -966,11 +963,11 @@ function SnapshotRow({ snapshot: s, totalCost, margin, marginPct, ytdNet, isExpa
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="py-1 text-left text-xs text-gray-500 uppercase">Employee</th>
-                        <th className="py-1 text-right text-xs text-gray-500 uppercase">Hours</th>
-                        <th className="py-1 text-right text-xs text-gray-500 uppercase">Billable</th>
-                        <th className="py-1 text-right text-xs text-gray-500 uppercase">Revenue</th>
-                        <th className="py-1 text-right text-xs text-gray-500 uppercase">Cost</th>
+                        <th scope="col" className="py-1 text-left text-xs text-gray-500 uppercase">Employee</th>
+                        <th scope="col" className="py-1 text-right text-xs text-gray-500 uppercase">Hours</th>
+                        <th scope="col" className="py-1 text-right text-xs text-gray-500 uppercase">Billable</th>
+                        <th scope="col" className="py-1 text-right text-xs text-gray-500 uppercase">Revenue</th>
+                        <th scope="col" className="py-1 text-right text-xs text-gray-500 uppercase">Cost</th>
                       </tr>
                     </thead>
                     <tbody>

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Mail, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
 
 interface Recipient {
   id: number;
@@ -205,19 +207,17 @@ export function ReportRecipientsContent() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
+        <LoadingSkeleton variant="table" rows={4} columns={4} />
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+          <ResponsiveTable>
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Recipient</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Report Type</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Active</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Recipient</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Report Type</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Active</th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -268,7 +268,7 @@ export function ReportRecipientsContent() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ResponsiveTable>
         </div>
       )}
     </div>
