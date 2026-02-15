@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowRight, RefreshCw, FileText, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
-import { fmtMoney, fmtPct, getMonday, fmtIsoDate as fmt } from '@/lib/utils';
+import { fmtMoney, fmtPct, getMonday, fmtIsoDate as fmt, formatHours, formatDate } from '@/lib/utils';
 import { startOfMonth, subMonths, startOfYear, subDays, startOfWeek } from 'date-fns';
 
 interface WeekSnapshot {
@@ -38,9 +38,13 @@ export function ProfitabilitySummary() {
   const [lastMonthStats, setLastMonthStats] = useState<PeriodStats | null>(null);
   const [ytdStats, setYtdStats] = useState<PeriodStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastSync, setLastSync] = useState<string | null>(null);
+  const [pendingReports, setPendingReports] = useState(0);
+  const [monthHours, setMonthHours] = useState(0);
 
   useEffect(() => {
     loadData();
+    loadQuickStats();
   }, []);
 
   async function loadData() {
@@ -92,6 +96,46 @@ export function ProfitabilitySummary() {
     }
   }
 
+  async function loadQuickStats() {
+    try {
+      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+      const monthStart = startOfMonth(new Date());
+      const monthStartStr = monthStart.toISOString().split('T')[0];
+
+      const [syncRes, reportsRes, hoursRes] = await Promise.all([
+        supabase
+          .from('time_entries')
+          .select('synced_at')
+          .not('synced_at', 'is', null)
+          .order('synced_at', { ascending: false })
+          .limit(1)
+          .single(),
+        supabase
+          .from('time_entries')
+          .select('qb_customer_id')
+          .gte('txn_date', weekStartStr)
+          .eq('billable_status', 'Billable'),
+        supabase
+          .from('time_entries')
+          .select('hours, minutes')
+          .gte('txn_date', monthStartStr),
+      ]);
+
+      if (syncRes.data) setLastSync(syncRes.data.synced_at);
+      if (reportsRes.data) {
+        const unique = new Set(reportsRes.data.map(e => e.qb_customer_id));
+        setPendingReports(unique.size);
+      }
+      if (hoursRes.data) {
+        const total = hoursRes.data.reduce((sum, e) => sum + (e.hours || 0) + ((e.minutes || 0) / 60), 0);
+        setMonthHours(Math.round(total * 100) / 100);
+      }
+    } catch (err) {
+      console.error('Error loading quick stats:', err);
+    }
+  }
+
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 animate-pulse">
@@ -112,6 +156,24 @@ export function ProfitabilitySummary() {
   if (!hasData) {
     return (
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        {/* Quick Stats Row */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-1.5 text-sm">
+            <RefreshCw className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-gray-500">Last Sync:</span>
+            <span className="font-medium text-gray-900">{lastSync ? formatDate(lastSync) : '--'}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-sm">
+            <FileText className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-gray-500">Customers This Week:</span>
+            <span className="font-medium text-gray-900">{pendingReports}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-sm">
+            <Clock className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-gray-500">This Month:</span>
+            <span className="font-medium text-gray-900">{formatHours(monthHours)}</span>
+          </div>
+        </div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-purple-600" />
@@ -128,6 +190,25 @@ export function ProfitabilitySummary() {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      {/* Quick Stats Row */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-5 pb-4 border-b border-gray-100">
+        <div className="flex items-center gap-1.5 text-sm">
+          <RefreshCw className="w-3.5 h-3.5 text-gray-400" />
+          <span className="text-gray-500">Last Sync:</span>
+          <span className="font-medium text-gray-900">{lastSync ? formatDate(lastSync) : '--'}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-sm">
+          <FileText className="w-3.5 h-3.5 text-gray-400" />
+          <span className="text-gray-500">Customers This Week:</span>
+          <span className="font-medium text-gray-900">{pendingReports}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-sm">
+          <Clock className="w-3.5 h-3.5 text-gray-400" />
+          <span className="text-gray-500">This Month:</span>
+          <span className="font-medium text-gray-900">{formatHours(monthHours)}</span>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between mb-5">
         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-purple-600" />

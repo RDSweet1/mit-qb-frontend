@@ -5,7 +5,6 @@ import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
 import { LogIn, Clock, FileText, DollarSign, Download, MonitorSmartphone, X, MessageSquare, BarChart3, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { ProfitabilitySummary } from '@/components/dashboard/ProfitabilitySummary';
 import { AppShell } from '@/components/AppShell';
@@ -60,13 +59,17 @@ export default function Home() {
       .then(({ count }) => { setUnbilledCount(count || 0); });
   }, [isAuthenticated]);
 
-  // Load pending approval count
+  // Load pending approval count — scoped to last 14 days to exclude old synced defaults
   useEffect(() => {
     if (!isAuthenticated) return;
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    const since = fourteenDaysAgo.toISOString().split('T')[0];
     supabase
       .from('time_entries')
       .select('id', { count: 'exact', head: true })
       .eq('approval_status', 'pending')
+      .gte('txn_date', since)
       .then(({ count }) => { setPendingApprovalCount(count || 0); });
   }, [isAuthenticated]);
 
@@ -308,12 +311,7 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Quick Stats */}
-        <div className="mt-6">
-          <DashboardStats />
-        </div>
-
-        {/* Profitability Summary */}
+        {/* Profitability Summary (includes quick stats row) */}
         <div className="mt-6">
           <ProfitabilitySummary />
         </div>
