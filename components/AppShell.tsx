@@ -6,6 +6,7 @@ import { Clock, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { ProtectedPage } from '@/components/ProtectedPage';
 import { AppNav } from '@/components/AppNav';
+import { CommandPalette } from '@/components/CommandPalette';
 
 interface AppShellProps {
   children: ReactNode;
@@ -51,6 +52,7 @@ export function AppShell({ children }: AppShellProps) {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {children}
         </main>
+        <CommandPalette />
       </div>
     </ProtectedPage>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { startOfMonth, subDays, format } from 'date-fns'
+import { startOfMonth, startOfWeek, subDays, subMonths, startOfYear, format } from 'date-fns'
 import {
   BarChart,
   Bar,
@@ -40,9 +40,48 @@ interface ServiceHours {
   hours: number
 }
 
+type TimeRange = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_3_months' | 'ytd';
+
+const TIME_RANGE_LABELS: Record<TimeRange, string> = {
+  this_week: 'This Week',
+  last_week: 'Last Week',
+  this_month: 'This Month',
+  last_month: 'Last Month',
+  last_3_months: 'Last 3 Months',
+  ytd: 'Year to Date',
+};
+
+function computeTimeRange(range: TimeRange): { start: string; end: string } {
+  const now = new Date();
+  const today = format(now, 'yyyy-MM-dd');
+  switch (range) {
+    case 'this_week': {
+      const mon = startOfWeek(now, { weekStartsOn: 1 });
+      return { start: format(mon, 'yyyy-MM-dd'), end: today };
+    }
+    case 'last_week': {
+      const thisMon = startOfWeek(now, { weekStartsOn: 1 });
+      const lastMon = subDays(thisMon, 7);
+      return { start: format(lastMon, 'yyyy-MM-dd'), end: format(subDays(thisMon, 1), 'yyyy-MM-dd') };
+    }
+    case 'this_month':
+      return { start: format(startOfMonth(now), 'yyyy-MM-dd'), end: today };
+    case 'last_month': {
+      const lastMonthStart = startOfMonth(subMonths(now, 1));
+      const lastMonthEnd = subDays(startOfMonth(now), 1);
+      return { start: format(lastMonthStart, 'yyyy-MM-dd'), end: format(lastMonthEnd, 'yyyy-MM-dd') };
+    }
+    case 'last_3_months':
+      return { start: format(startOfMonth(subMonths(now, 3)), 'yyyy-MM-dd'), end: today };
+    case 'ytd':
+      return { start: format(startOfYear(now), 'yyyy-MM-dd'), end: today };
+  }
+}
+
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
 
 export function AnalyticsCharts() {
+  const [timeRange, setTimeRange] = useState<TimeRange>('this_month');
   const [customerData, setCustomerData] = useState<CustomerHours[]>([])
   const [billableData, setBillableData] = useState<BillableData[]>([])
   const [dailyData, setDailyData] = useState<DailyHours[]>([])
@@ -51,7 +90,7 @@ export function AnalyticsCharts() {
 
   useEffect(() => {
     loadChartData()
-  }, [])
+  }, [timeRange])
 
   const loadChartData = async () => {
     try {
@@ -72,12 +111,13 @@ export function AnalyticsCharts() {
 
   const loadCustomerHours = async () => {
     try {
-      const monthStart = startOfMonth(new Date()).toISOString().split('T')[0]
+      const { start, end } = computeTimeRange(timeRange);
 
       const { data, error } = await supabase
         .from('time_entries')
         .select('qb_customer_id, hours, minutes, customers(display_name)')
-        .gte('txn_date', monthStart)
+        .gte('txn_date', start)
+        .lte('txn_date', end)
 
       if (error || !data) {
         console.error('Error loading customer hours:', error)
@@ -115,12 +155,13 @@ export function AnalyticsCharts() {
 
   const loadBillableBreakdown = async () => {
     try {
-      const monthStart = startOfMonth(new Date()).toISOString().split('T')[0]
+      const { start, end } = computeTimeRange(timeRange);
 
       const { data, error } = await supabase
         .from('time_entries')
         .select('billable_status, hours, minutes')
-        .gte('txn_date', monthStart)
+        .gte('txn_date', start)
+        .lte('txn_date', end)
 
       if (error || !data) return
 
@@ -155,12 +196,13 @@ export function AnalyticsCharts() {
 
   const loadDailyTrend = async () => {
     try {
-      const thirtyDaysAgo = subDays(new Date(), 30).toISOString().split('T')[0]
+      const { start, end } = computeTimeRange(timeRange);
 
       const { data, error } = await supabase
         .from('time_entries')
         .select('txn_date, hours, minutes')
-        .gte('txn_date', thirtyDaysAgo)
+        .gte('txn_date', start)
+        .lte('txn_date', end)
         .order('txn_date', { ascending: true })
 
       if (error || !data) return
@@ -192,12 +234,13 @@ export function AnalyticsCharts() {
 
   const loadServiceBreakdown = async () => {
     try {
-      const monthStart = startOfMonth(new Date()).toISOString().split('T')[0]
+      const { start, end } = computeTimeRange(timeRange);
 
       const { data, error } = await supabase
         .from('time_entries')
         .select('service_item_id, hours, minutes, service_items(name)')
-        .gte('txn_date', monthStart)
+        .gte('txn_date', start)
+        .lte('txn_date', end)
 
       if (error || !data) return
 
@@ -243,14 +286,33 @@ export function AnalyticsCharts() {
     )
   }
 
+  const rangeLabel = TIME_RANGE_LABELS[timeRange];
+
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-bold text-gray-900 mb-6">Analytics</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-gray-900">Analytics</h3>
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          {(Object.keys(TIME_RANGE_LABELS) as TimeRange[]).map(key => (
+            <button
+              key={key}
+              onClick={() => setTimeRange(key)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                timeRange === key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {TIME_RANGE_LABELS[key]}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hours by Customer */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Top Customers (This Month)</h4>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Top Customers ({rangeLabel})</h4>
           {customerData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={customerData}>
@@ -300,7 +362,7 @@ export function AnalyticsCharts() {
 
         {/* Daily Hours Trend */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Daily Hours (Last 30 Days)</h4>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Daily Hours ({rangeLabel})</h4>
           {dailyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={dailyData}>
@@ -320,7 +382,7 @@ export function AnalyticsCharts() {
 
         {/* Hours by Service Type */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Top Services (This Month)</h4>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Top Services ({rangeLabel})</h4>
           {serviceData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={serviceData}>

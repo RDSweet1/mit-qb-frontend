@@ -77,7 +77,7 @@ export function InlineNotesEditor({
       {!isLocked && (
         <button
           onClick={handleEdit}
-          className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
           title="Edit notes"
         >
           <Pencil className="w-3.5 h-3.5" />

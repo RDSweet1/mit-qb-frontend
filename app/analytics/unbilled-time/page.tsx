@@ -9,6 +9,8 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ResponsiveTable } from '@/components/ResponsiveTable';
 import { supabase } from '@/lib/supabaseClient';
 import { useServiceItems } from '@/lib/hooks/useServiceItems';
+import { DateRangePicker } from '@/components/DateRangePicker';
+import { STANDARD_PRESETS, computeDateRange } from '@/lib/datePresets';
 import type { ServiceItem } from '@/lib/types';
 
 interface UnbilledTimeEntry {
@@ -23,22 +25,11 @@ interface UnbilledTimeEntry {
   qb_customer_id: string;
 }
 
-type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
-
-function getMonday(d: Date): Date {
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.getFullYear(), d.getMonth(), diff);
-}
-
-function fmt(d: Date): string {
-  return d.toISOString().split('T')[0];
-}
-
 export default function UnbilledTimePage() {
-  const [datePreset, setDatePreset] = useState<DatePreset>('last_month');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const initialRange = computeDateRange('last_month');
+  const [datePreset, setDatePreset] = useState('last_month');
+  const [startDate, setStartDate] = useState(initialRange.startDate);
+  const [endDate, setEndDate] = useState(initialRange.endDate);
   const [entries, setEntries] = useState<UnbilledTimeEntry[]>([]);
   const { serviceItems } = useServiceItems();
   const [loading, setLoading] = useState(true);
@@ -47,41 +38,11 @@ export default function UnbilledTimePage() {
   const [sortBy, setSortBy] = useState<'date' | 'employee' | 'customer' | 'hours'>('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  // Initialize date range
-  useEffect(() => {
-    applyPreset('last_month');
-  }, []);
-
-  function applyPreset(preset: DatePreset) {
-    const now = new Date();
-    let start: Date;
-    let end: Date;
-    switch (preset) {
-      case 'this_week':
-        start = getMonday(now);
-        end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        break;
-      case 'last_week':
-        start = getMonday(now);
-        start.setDate(start.getDate() - 7);
-        end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        break;
-      case 'this_month':
-        start = new Date(now.getFullYear(), now.getMonth(), 1);
-        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        break;
-      case 'last_month':
-        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        end = new Date(now.getFullYear(), now.getMonth(), 0);
-        break;
-      default:
-        return;
-    }
+  function applyPreset(preset: string) {
     setDatePreset(preset);
-    setStartDate(fmt(start));
-    setEndDate(fmt(end));
+    const { startDate: s, endDate: e } = computeDateRange(preset);
+    setStartDate(s);
+    setEndDate(e);
   }
 
   // (Service items loaded by useServiceItems hook above)
@@ -202,34 +163,15 @@ export default function UnbilledTimePage() {
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium text-gray-700">Period:</span>
-              {(['this_week', 'last_week', 'this_month', 'last_month'] as DatePreset[]).map(preset => (
-                <button
-                  key={preset}
-                  onClick={() => applyPreset(preset)}
-                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                    datePreset === preset
-                      ? 'bg-amber-100 text-amber-800 font-semibold'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {preset.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                </button>
-              ))}
-              <div className="flex items-center gap-2 ml-2">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => { setStartDate(e.target.value); setDatePreset('custom'); }}
-                  className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
-                />
-                <span className="text-gray-400">to</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => { setEndDate(e.target.value); setDatePreset('custom'); }}
-                  className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
-                />
-              </div>
+              <DateRangePicker
+                presets={STANDARD_PRESETS.filter(p => p.key !== 'all_time')}
+                activePreset={datePreset}
+                startDate={startDate}
+                endDate={endDate}
+                onPresetChange={applyPreset}
+                onStartDateChange={(d) => { setStartDate(d); setDatePreset('custom'); }}
+                onEndDateChange={(d) => { setEndDate(d); setDatePreset('custom'); }}
+              />
             </div>
           </div>
 

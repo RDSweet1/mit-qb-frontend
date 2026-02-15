@@ -7,12 +7,16 @@ import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ResponsiveTable } from '@/components/ResponsiveTable';
+import { ReportPreviewModal } from '@/components/reports/ReportPreviewModal';
+import { DataTimestamp } from '@/components/DataTimestamp';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import type { ReportPeriod } from '@/lib/types';
 
 export default function ReportsPage() {
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedWeek, setSelectedWeek] = useState(() => {
@@ -197,21 +201,12 @@ export default function ReportsPage() {
           )}
 
           <button
-            onClick={sendWeeklyReports}
+            onClick={() => setPreviewOpen(true)}
             disabled={sending}
             className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {sending ? (
-              <>
-                <div className="spinner w-5 h-5 border-2"></div>
-                Sending reports...
-              </>
-            ) : (
-              <>
-                <Send className="w-5 h-5" />
-                Send Weekly Reports
-              </>
-            )}
+            <Send className="w-5 h-5" />
+            Preview & Send Weekly Reports
           </button>
 
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
@@ -397,6 +392,16 @@ export default function ReportsPage() {
           )}
         </div>
       </div>
+      <ReportPreviewModal
+        isOpen={previewOpen}
+        selectedWeek={selectedWeek}
+        sending={sending}
+        onSend={() => {
+          setPreviewOpen(false);
+          sendWeeklyReports();
+        }}
+        onClose={() => setPreviewOpen(false)}
+      />
     </AppShell>
   );
 }

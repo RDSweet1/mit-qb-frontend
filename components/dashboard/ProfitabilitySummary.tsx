@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
-import { fmtMoney, getMonday, fmtIsoDate as fmt } from '@/lib/utils';
+import { fmtMoney, fmtPct, getMonday, fmtIsoDate as fmt } from '@/lib/utils';
+import { startOfMonth, subMonths, startOfYear, subDays, startOfWeek } from 'date-fns';
 
 interface WeekSnapshot {
   week_start: string;
@@ -16,10 +17,26 @@ interface WeekSnapshot {
   utilization_percent: number;
 }
 
+interface PeriodStats {
+  revenue: number;
+  cost: number;
+  margin: number;
+  marginPct: number;
+  weeks: number;
+}
+
+function aggregateSnapshots(snapshots: WeekSnapshot[]): PeriodStats {
+  const revenue = snapshots.reduce((s, r) => s + Number(r.billable_revenue), 0);
+  const cost = snapshots.reduce((s, r) => s + Number(r.labor_cost) + Number(r.non_payroll_overhead || 0), 0);
+  const margin = revenue - cost;
+  const marginPct = revenue > 0 ? (margin / revenue) * 100 : 0;
+  return { revenue, cost, margin, marginPct, weeks: snapshots.length };
+}
+
 export function ProfitabilitySummary() {
-  const [thisWeek, setThisWeek] = useState<WeekSnapshot | null>(null);
-  const [lastWeek, setLastWeek] = useState<WeekSnapshot | null>(null);
-  const [monthSnapshots, setMonthSnapshots] = useState<WeekSnapshot[]>([]);
+  const [lastWeekStats, setLastWeekStats] = useState<PeriodStats | null>(null);
+  const [lastMonthStats, setLastMonthStats] = useState<PeriodStats | null>(null);
+  const [ytdStats, setYtdStats] = useState<PeriodStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,14 +49,14 @@ export function ProfitabilitySummary() {
       const monday = getMonday(now);
       const lastMonday = new Date(monday);
       lastMonday.setDate(monday.getDate() - 7);
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const [thisWeekResult, lastWeekResult, monthResult] = await Promise.all([
-        supabase
-          .from('profitability_snapshots')
-          .select('week_start,billable_revenue,labor_cost,non_payroll_overhead,billable_hours,total_hours,utilization_percent')
-          .eq('week_start', fmt(monday))
-          .single(),
+      // Last month = previous calendar month
+      const lastMonthStart = startOfMonth(subMonths(now, 1));
+      const lastMonthEnd = subDays(startOfMonth(now), 1);
+      // YTD
+      const yearStart = startOfYear(now);
+
+      const [lastWeekResult, lastMonthResult, ytdResult] = await Promise.all([
         supabase
           .from('profitability_snapshots')
           .select('week_start,billable_revenue,labor_cost,non_payroll_overhead,billable_hours,total_hours,utilization_percent')
@@ -48,14 +65,26 @@ export function ProfitabilitySummary() {
         supabase
           .from('profitability_snapshots')
           .select('week_start,billable_revenue,labor_cost,non_payroll_overhead,billable_hours,total_hours,utilization_percent')
-          .gte('week_start', fmt(monthStart))
+          .gte('week_start', fmt(lastMonthStart))
+          .lte('week_start', fmt(lastMonthEnd))
+          .order('week_start', { ascending: true }),
+        supabase
+          .from('profitability_snapshots')
+          .select('week_start,billable_revenue,labor_cost,non_payroll_overhead,billable_hours,total_hours,utilization_percent')
+          .gte('week_start', fmt(yearStart))
           .lte('week_start', fmt(now))
           .order('week_start', { ascending: true }),
       ]);
 
-      if (thisWeekResult.data) setThisWeek(thisWeekResult.data as WeekSnapshot);
-      if (lastWeekResult.data) setLastWeek(lastWeekResult.data as WeekSnapshot);
-      if (monthResult.data) setMonthSnapshots(monthResult.data as WeekSnapshot[]);
+      if (lastWeekResult.data) {
+        setLastWeekStats(aggregateSnapshots([lastWeekResult.data as WeekSnapshot]));
+      }
+      if (lastMonthResult.data && lastMonthResult.data.length > 0) {
+        setLastMonthStats(aggregateSnapshots(lastMonthResult.data as WeekSnapshot[]));
+      }
+      if (ytdResult.data && ytdResult.data.length > 0) {
+        setYtdStats(aggregateSnapshots(ytdResult.data as WeekSnapshot[]));
+      }
     } catch (err) {
       console.error('Error loading profitability summary:', err);
     } finally {
@@ -67,8 +96,8 @@ export function ProfitabilitySummary() {
     return (
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 animate-pulse">
         <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-        <div className="grid grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => (
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
             <div key={i}>
               <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
               <div className="h-8 bg-gray-200 rounded w-full"></div>
@@ -79,9 +108,8 @@ export function ProfitabilitySummary() {
     );
   }
 
-  // Use last week's data as primary (current week is usually incomplete)
-  const primary = lastWeek || thisWeek;
-  if (!primary) {
+  const hasData = lastWeekStats || lastMonthStats || ytdStats;
+  if (!hasData) {
     return (
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <div className="flex items-center justify-between mb-4">
@@ -98,21 +126,9 @@ export function ProfitabilitySummary() {
     );
   }
 
-  const revenue = Number(primary.billable_revenue);
-  const totalCost = Number(primary.labor_cost) + Number(primary.non_payroll_overhead || 0);
-  const margin = revenue - totalCost;
-  const marginPct = revenue > 0 ? (margin / revenue) * 100 : 0;
-  const util = Number(primary.utilization_percent);
-
-  // Month aggregates
-  const monthRevenue = monthSnapshots.reduce((s, r) => s + Number(r.billable_revenue), 0);
-  const monthCost = monthSnapshots.reduce((s, r) => s + Number(r.labor_cost) + Number(r.non_payroll_overhead || 0), 0);
-  const monthMargin = monthRevenue - monthCost;
-  const monthMarginPct = monthRevenue > 0 ? (monthMargin / monthRevenue) * 100 : 0;
-
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-purple-600" />
           Profitability
@@ -122,84 +138,70 @@ export function ProfitabilitySummary() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Last Week Revenue */}
-        <div>
-          <p className="text-xs text-gray-500 uppercase mb-1">Last Week Revenue</p>
-          <p className="text-xl font-bold text-green-600">{fmtMoney(revenue)}</p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* Last Week */}
+        <PeriodCard label="Last Week" stats={lastWeekStats} />
 
-        {/* Last Week Margin */}
-        <div>
-          <p className="text-xs text-gray-500 uppercase mb-1">Last Week Margin</p>
+        {/* Last Month */}
+        <PeriodCard label="Last Month" stats={lastMonthStats} />
+
+        {/* Year to Date */}
+        <PeriodCard label="Year to Date" stats={ytdStats} />
+      </div>
+    </div>
+  );
+}
+
+function PeriodCard({ label, stats }: { label: string; stats: PeriodStats | null }) {
+  if (!stats) {
+    return (
+      <div className="bg-gray-50 rounded-lg p-4">
+        <p className="text-xs text-gray-500 uppercase font-semibold mb-2">{label}</p>
+        <p className="text-sm text-gray-400">No data</p>
+      </div>
+    );
+  }
+
+  const isPositive = stats.margin >= 0;
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-4">
+      <p className="text-xs text-gray-500 uppercase font-semibold mb-3">{label}</p>
+      <div className="space-y-2">
+        <div className="flex justify-between items-baseline">
+          <span className="text-xs text-gray-500">Revenue</span>
+          <span className="text-sm font-semibold text-green-600">{fmtMoney(stats.revenue)}</span>
+        </div>
+        <div className="flex justify-between items-baseline">
+          <span className="text-xs text-gray-500">Total Cost</span>
+          <span className="text-sm font-semibold text-red-600">{fmtMoney(stats.cost)}</span>
+        </div>
+        <div className="border-t border-gray-200 pt-2 flex justify-between items-baseline">
+          <span className="text-xs text-gray-500">Net Margin</span>
           <div className="flex items-center gap-1.5">
-            <p className={`text-xl font-bold ${margin >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              {fmtMoney(margin)}
-            </p>
-            {margin >= 0
-              ? <TrendingUp className="w-4 h-4 text-blue-500" />
-              : <TrendingDown className="w-4 h-4 text-red-500" />
+            <span className={`text-base font-bold ${isPositive ? 'text-blue-600' : 'text-red-600'}`}>
+              {fmtMoney(stats.margin)}
+            </span>
+            {isPositive
+              ? <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+              : <TrendingDown className="w-3.5 h-3.5 text-red-500" />
             }
           </div>
-          <p className={`text-xs ${marginPct >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
-            {marginPct.toFixed(1)}% margin
-          </p>
         </div>
-
-        {/* Month Revenue */}
-        <div>
-          <p className="text-xs text-gray-500 uppercase mb-1">Month Revenue</p>
-          <p className="text-xl font-bold text-green-600">{fmtMoney(monthRevenue)}</p>
-          <p className="text-xs text-gray-400">{monthSnapshots.length} week{monthSnapshots.length !== 1 ? 's' : ''}</p>
+        <div className="flex justify-between items-baseline">
+          <span className="text-xs text-gray-500">Margin %</span>
+          <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+            stats.marginPct >= 30 ? 'bg-green-100 text-green-800' :
+            stats.marginPct >= 15 ? 'bg-amber-100 text-amber-800' :
+            'bg-red-100 text-red-800'
+          }`}>
+            {fmtPct(stats.marginPct)}
+          </span>
         </div>
-
-        {/* Month Margin */}
-        <div>
-          <p className="text-xs text-gray-500 uppercase mb-1">Month Margin</p>
-          <div className="flex items-center gap-1.5">
-            <p className={`text-xl font-bold ${monthMargin >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              {fmtMoney(monthMargin)}
-            </p>
-          </div>
-          <p className={`text-xs ${monthMarginPct >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
-            {monthMarginPct.toFixed(1)}% margin
-          </p>
-        </div>
+        {stats.weeks > 1 && (
+          <p className="text-xs text-gray-400 pt-1">{stats.weeks} weeks</p>
+        )}
       </div>
-
-      {/* Mini weekly bars */}
-      {monthSnapshots.length > 1 && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs text-gray-500 uppercase mb-2">Weekly Margin Trend</p>
-          <div className="flex items-end gap-1 h-12">
-            {monthSnapshots.map((s, i) => {
-              const rev = Number(s.billable_revenue);
-              const cost = Number(s.labor_cost) + Number(s.non_payroll_overhead || 0);
-              const m = rev - cost;
-              const maxAbs = Math.max(...monthSnapshots.map(snap => {
-                const r = Number(snap.billable_revenue);
-                const c = Number(snap.labor_cost) + Number(snap.non_payroll_overhead || 0);
-                return Math.abs(r - c);
-              }));
-              const height = maxAbs > 0 ? Math.max(4, Math.abs(m) / maxAbs * 48) : 4;
-              const isPositive = m >= 0;
-
-              return (
-                <div
-                  key={i}
-                  className="flex-1 flex flex-col justify-end items-center"
-                  title={`${s.week_start}: ${fmtMoney(m)}`}
-                >
-                  <div
-                    className={`w-full rounded-sm ${isPositive ? 'bg-blue-400' : 'bg-red-400'}`}
-                    style={{ height: `${height}px` }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

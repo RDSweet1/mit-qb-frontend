@@ -3,7 +3,7 @@
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
-import { LogIn, Clock, FileText, DollarSign, Settings, Users, Download, MonitorSmartphone, X, MessageSquare, BarChart3, TrendingUp } from 'lucide-react';
+import { LogIn, Clock, FileText, DollarSign, Download, MonitorSmartphone, X, MessageSquare, BarChart3, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
@@ -24,6 +24,9 @@ export default function Home() {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [clarificationCount, setClarificationCount] = useState(0);
   const [unbilledCount, setUnbilledCount] = useState(0);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
+  const [unsentReportsCount, setUnsentReportsCount] = useState(0);
+  const [invoiceReadyCount, setInvoiceReadyCount] = useState(0);
 
   // Check if MSAL is ready before using it
   useEffect(() => {
@@ -42,14 +45,49 @@ export default function Home() {
       .then(({ count }) => { setClarificationCount(count || 0); });
   }, [isAuthenticated]);
 
-  // Load unbilled entries count (entries with no qb_item_id)
+  // Load unbilled entries count (entries with no cost code at all — no qb_item_id AND no service_item_name)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const since = thirtyDaysAgo.toISOString().split('T')[0];
+    supabase
+      .from('time_entries')
+      .select('id', { count: 'exact', head: true })
+      .is('qb_item_id', null)
+      .is('service_item_name', null)
+      .gte('txn_date', since)
+      .then(({ count }) => { setUnbilledCount(count || 0); });
+  }, [isAuthenticated]);
+
+  // Load pending approval count
   useEffect(() => {
     if (!isAuthenticated) return;
     supabase
       .from('time_entries')
       .select('id', { count: 'exact', head: true })
-      .is('qb_item_id', null)
-      .then(({ count }) => { setUnbilledCount(count || 0); });
+      .eq('approval_status', 'pending')
+      .then(({ count }) => { setPendingApprovalCount(count || 0); });
+  }, [isAuthenticated]);
+
+  // Load unsent reports count (pending report periods for current week)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    supabase
+      .from('report_periods')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending')
+      .then(({ count }) => { setUnsentReportsCount(count || 0); });
+  }, [isAuthenticated]);
+
+  // Load invoice-ready count (accepted reports not yet invoiced)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    supabase
+      .from('report_periods')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'accepted')
+      .then(({ count }) => { setInvoiceReadyCount(count || 0); });
   }, [isAuthenticated]);
 
   // Register service worker + capture PWA install prompt
@@ -207,96 +245,92 @@ export default function Home() {
           subtitle="Manage timesheets, reports, and invoices"
         />
 
-        {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Primary Workflow Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           <Link href="/time-entries-enhanced" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
-                <Clock className="w-6 h-6 text-blue-600" />
+            <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200 h-full">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
+                <Clock className="w-5 h-5 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Time Entries</h3>
-              <p className="text-sm text-gray-600">
-                View time entries with filters and generate weekly reports
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/reports" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-green-300 transition-all duration-200">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
-                <FileText className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Weekly Reports</h3>
-              <p className="text-sm text-gray-600">
-                Generate and send weekly time reports to clients
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/invoices" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-300 transition-all duration-200">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
-                <DollarSign className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Invoices</h3>
-              <p className="text-sm text-gray-600">
-                Create monthly invoices in QuickBooks Online
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/settings" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-gray-200 transition-colors">
-                <Settings className="w-6 h-6 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Settings</h3>
-              <p className="text-sm text-gray-600">
-                Configure QuickBooks connection and automation
-              </p>
-            </div>
-          </Link>
-
-          <Link href="/admin" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 transition-all duration-200">
-              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-indigo-200 transition-colors">
-                <Users className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
-              <p className="text-sm text-gray-600">
-                Manage users, roles, and permissions
-              </p>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Time Entries</h3>
+              <p className="text-sm text-gray-600">Review, approve, and edit time</p>
+              {pendingApprovalCount > 0 && (
+                <span className="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {pendingApprovalCount} pending
+                </span>
+              )}
             </div>
           </Link>
 
           <Link href="/internal-review" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-amber-300 transition-all duration-200 relative">
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-amber-200 transition-colors">
-                <MessageSquare className="w-6 h-6 text-amber-600" />
+            <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-amber-300 transition-all duration-200 h-full">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-amber-200 transition-colors">
+                <MessageSquare className="w-5 h-5 text-amber-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Internal Clarifications</h3>
-              <p className="text-sm text-gray-600">
-                Request and track time entry clarifications
-              </p>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Clarifications</h3>
+              <p className="text-sm text-gray-600">Track time entry questions</p>
               {clarificationCount > 0 && (
-                <span className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="absolute top-3 right-3 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {clarificationCount}
                 </span>
               )}
             </div>
           </Link>
 
-          <Link href="/analytics/unbilled-time" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-300 transition-all duration-200 relative">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors">
-                <BarChart3 className="w-6 h-6 text-orange-600" />
+          <Link href="/reports" className="group">
+            <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-green-300 transition-all duration-200 h-full">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-green-200 transition-colors">
+                <FileText className="w-5 h-5 text-green-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Unbilled Time</h3>
-              <p className="text-sm text-gray-600">
-                Find time entries missing cost codes
-              </p>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Weekly Reports</h3>
+              <p className="text-sm text-gray-600">Send time reports to clients</p>
+              {unsentReportsCount > 0 && (
+                <span className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {unsentReportsCount} unsent
+                </span>
+              )}
+            </div>
+          </Link>
+
+          <Link href="/invoices" className="group">
+            <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-300 transition-all duration-200 h-full">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-purple-200 transition-colors">
+                <DollarSign className="w-5 h-5 text-purple-600" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Invoices</h3>
+              <p className="text-sm text-gray-600">Create invoices in QuickBooks</p>
+              {invoiceReadyCount > 0 && (
+                <span className="absolute top-3 right-3 bg-purple-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {invoiceReadyCount} ready
+                </span>
+              )}
+            </div>
+          </Link>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="mt-6">
+          <DashboardStats />
+        </div>
+
+        {/* Profitability Summary */}
+        <div className="mt-6">
+          <ProfitabilitySummary />
+        </div>
+
+        {/* Analytics Section — with quick links to deep-dive pages */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link href="/analytics/unbilled-time" className="group">
+            <div className="relative bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-300 transition-all duration-200 flex items-center gap-4">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-orange-200 transition-colors">
+                <BarChart3 className="w-5 h-5 text-orange-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-gray-900">Unbilled Time</h3>
+                <p className="text-xs text-gray-500">Entries missing cost codes</p>
+              </div>
               {unbilledCount > 0 && (
-                <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">
                   {unbilledCount}
                 </span>
               )}
@@ -304,38 +338,16 @@ export default function Home() {
           </Link>
 
           <Link href="/profitability" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-300 transition-all duration-200">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-purple-300 transition-all duration-200 flex items-center gap-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 transition-colors">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Profitability</h3>
-              <p className="text-sm text-gray-600">
-                Weekly P&L, overhead, and margin analysis
-              </p>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-gray-900">Profitability</h3>
+                <p className="text-xs text-gray-500">P&L, overhead, and margins</p>
+              </div>
             </div>
           </Link>
-
-          <Link href="/admin?tab=rates" className="group">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-emerald-300 transition-all duration-200">
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors">
-                <DollarSign className="w-6 h-6 text-emerald-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Employee Rates</h3>
-              <p className="text-sm text-gray-600">
-                Manage labor cost rates and profitability
-              </p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="mt-8">
-          <DashboardStats />
-        </div>
-
-        {/* Profitability Summary */}
-        <div className="mt-6">
-          <ProfitabilitySummary />
         </div>
 
         {/* Analytics Charts */}

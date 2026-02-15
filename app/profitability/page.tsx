@@ -8,6 +8,8 @@ import { PageHeader } from '@/components/PageHeader';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { addWeeks, isAfter } from 'date-fns';
+import { DateRangePicker } from '@/components/DateRangePicker';
+import { EXTENDED_PRESETS, computeDateRange } from '@/lib/datePresets';
 import PnlSummaryView from '@/components/profitability/PnlSummaryView';
 import OverheadView from '@/components/profitability/OverheadView';
 import CustomerDrillDown from '@/components/profitability/CustomerDrillDown';
@@ -60,7 +62,7 @@ interface Snapshot {
   unbilled_hours: number;
 }
 
-type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_quarter' | 'ytd' | 'last_year' | 'custom';
+// DatePreset type now comes from shared lib/datePresets
 
 // --- Helpers ---
 
@@ -94,9 +96,10 @@ export default function ProfitabilityPage() {
   const vendorDefaultStart = new Date(vendorNow.getFullYear() - 1, vendorNow.getMonth(), 1);
   const [vendorStartDate, setVendorStartDate] = useState(vendorDefaultStart.toISOString().split('T')[0]);
   const [vendorEndDate, setVendorEndDate] = useState(vendorNow.toISOString().split('T')[0]);
-  const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const initialRange = computeDateRange('this_month');
+  const [datePreset, setDatePreset] = useState('this_month');
+  const [startDate, setStartDate] = useState(initialRange.startDate);
+  const [endDate, setEndDate] = useState(initialRange.endDate);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
@@ -113,9 +116,8 @@ export default function ProfitabilityPage() {
   const [customerSortDir, setCustomerSortDir] = useState<'asc' | 'desc'>('desc');
   const [drillDownCustomer, setDrillDownCustomer] = useState<{ id: string; name: string } | null>(null);
 
-  // Initialize date range + load vendor categories
+  // Load vendor categories
   useEffect(() => {
-    applyPreset('this_month');
     supabase
       .from('overhead_categories')
       .select('name')
@@ -126,50 +128,11 @@ export default function ProfitabilityPage() {
       });
   }, []);
 
-  function applyPreset(preset: DatePreset) {
-    const now = new Date();
-    let start: Date;
-    let end: Date;
-    switch (preset) {
-      case 'this_week':
-        start = getMonday(now);
-        end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        break;
-      case 'last_week':
-        start = getMonday(now);
-        start.setDate(start.getDate() - 7);
-        end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        break;
-      case 'this_month':
-        start = new Date(now.getFullYear(), now.getMonth(), 1);
-        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        break;
-      case 'last_month':
-        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        end = new Date(now.getFullYear(), now.getMonth(), 0);
-        break;
-      case 'this_quarter': {
-        const q = Math.floor(now.getMonth() / 3);
-        start = new Date(now.getFullYear(), q * 3, 1);
-        end = new Date(now.getFullYear(), q * 3 + 3, 0);
-        break;
-      }
-      case 'ytd':
-        start = new Date(now.getFullYear(), 0, 1);
-        end = now;
-        break;
-      case 'last_year':
-        start = new Date(now.getFullYear() - 1, 0, 1);
-        end = new Date(now.getFullYear() - 1, 11, 31);
-        break;
-      default:
-        return;
-    }
+  function applyPreset(preset: string) {
     setDatePreset(preset);
-    setStartDate(fmt(start));
-    setEndDate(fmt(end));
+    const { startDate: s, endDate: e } = computeDateRange(preset);
+    setStartDate(s);
+    setEndDate(e);
   }
 
   // Load snapshots when dates change
@@ -419,15 +382,7 @@ export default function ProfitabilityPage() {
     </th>
   );
 
-  const presets: { key: DatePreset; label: string }[] = [
-    { key: 'this_week', label: 'This Week' },
-    { key: 'last_week', label: 'Last Week' },
-    { key: 'this_month', label: 'This Month' },
-    { key: 'last_month', label: 'Last Month' },
-    { key: 'this_quarter', label: 'This Quarter' },
-    { key: 'ytd', label: 'YTD' },
-    { key: 'last_year', label: 'Last Year' },
-  ];
+  // Presets now come from shared EXTENDED_PRESETS
 
   return (
     <AppShell>
@@ -441,34 +396,15 @@ export default function ProfitabilityPage() {
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium text-gray-700">Period:</span>
-              {presets.map(p => (
-                <button
-                  key={p.key}
-                  onClick={() => applyPreset(p.key)}
-                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                    datePreset === p.key
-                      ? 'bg-purple-100 text-purple-800 font-semibold'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-              <div className="flex items-center gap-2 ml-2">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => { setStartDate(e.target.value); setDatePreset('custom'); }}
-                  className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
-                />
-                <span className="text-gray-400">to</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => { setEndDate(e.target.value); setDatePreset('custom'); }}
-                  className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
-                />
-              </div>
+              <DateRangePicker
+                presets={EXTENDED_PRESETS}
+                activePreset={datePreset}
+                startDate={startDate}
+                endDate={endDate}
+                onPresetChange={applyPreset}
+                onStartDateChange={(d) => { setStartDate(d); setDatePreset('custom'); }}
+                onEndDateChange={(d) => { setEndDate(d); setDatePreset('custom'); }}
+              />
               <div className="ml-auto">
                 <button
                   onClick={exportCsv}
