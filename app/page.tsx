@@ -327,11 +327,11 @@ export default function Home() {
                 <h3 className="text-sm font-semibold text-gray-900">Unbilled Time</h3>
                 <p className="text-xs text-gray-500">Entries missing cost codes</p>
               </div>
-              {unbilledCount > 0 && (
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">
-                  {unbilledCount}
-                </span>
-              )}
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                unbilledCount > 0 ? 'bg-red-500 text-white' : 'bg-green-100 text-green-700'
+              }`}>
+                {unbilledCount > 0 ? unbilledCount : '0'}
+              </span>
             </div>
           </Link>
 
