@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "test": "npx playwright test --project=e2e",
+    "test:e2e": "npx playwright test --project=e2e",
     "test:setup": "npx playwright test --project=auth-setup",
-    "test:all": "npx playwright test",
-    "test:api": "npx playwright test --config=playwright.api.config.ts"
+    "test:api": "npx playwright test --config=playwright.api.config.ts",
+    "test:health": "npx playwright test --config=playwright.api.config.ts health-checks",
+    "test:all": "npm run test:api && npm run test:e2e"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.7.1",

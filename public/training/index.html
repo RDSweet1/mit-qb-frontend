@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT Consulting - Weekly Time Billing Guide</title>
+  <style>
+    :root {
+      --mit-blue: #1e40af;
+      --mit-blue-light: #3b82f6;
+      --mit-blue-bg: #eff6ff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --green-600: #059669;
+      --amber-600: #d97706;
+      --red-600: #dc2626;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--gray-800);
+      line-height: 1.6;
+      background: var(--gray-50);
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--mit-blue), var(--mit-blue-light));
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .header p { opacity: 0.9; font-size: 0.95rem; }
+
+    /* Layout */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    /* Table of Contents */
+    .toc {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .toc h2 {
+      font-size: 1.1rem;
+      color: var(--mit-blue);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--mit-blue-bg);
+    }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: 0.4rem; }
+    .toc a {
+      color: var(--mit-blue-light);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    /* Sections */
+    .section {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      transition: background 0.15s;
+    }
+    .section-header:hover { background: var(--mit-blue-bg); }
+
+    .section-header .icon {
+      font-size: 1.5rem;
+      width: 2rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 1.15rem;
+      color: var(--gray-900);
+      flex: 1;
+    }
+
+    .section-header .chevron {
+      font-size: 1.25rem;
+      color: var(--gray-500);
+      transition: transform 0.2s;
+    }
+    .section.open .section-header .chevron { transform: rotate(90deg); }
+
+    .section-body {
+      display: none;
+      padding: 1.25rem;
+    }
+    .section.open .section-body { display: block; }
+
+    .section-body h3 {
+      font-size: 1rem;
+      color: var(--mit-blue);
+      margin: 1.25rem 0 0.5rem 0;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .section-body h3:first-child { margin-top: 0; }
+
+    .section-body p { margin-bottom: 0.75rem; color: var(--gray-700); }
+
+    .section-body ul, .section-body ol {
+      padding-left: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .section-body li { margin-bottom: 0.35rem; color: var(--gray-700); }
+
+    /* Steps */
+    .steps {
+      counter-reset: step;
+      padding-left: 0;
+      list-style: none;
+    }
+    .steps li {
+      counter-increment: step;
+      padding: 0.5rem 0 0.5rem 2.5rem;
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: var(--mit-blue);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* Callout boxes */
+    .callout {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .callout-info {
+      background: var(--mit-blue-bg);
+      border-left: 3px solid var(--mit-blue-light);
+    }
+    .callout-warning {
+      background: #fffbeb;
+      border-left: 3px solid var(--amber-600);
+    }
+    .callout-success {
+      background: #ecfdf5;
+      border-left: 3px solid var(--green-600);
+    }
+    .callout-danger {
+      background: #fef2f2;
+      border-left: 3px solid var(--red-600);
+    }
+    .callout strong { display: block; margin-bottom: 0.25rem; }
+
+    /* Keyboard shortcut badges */
+    kbd {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      font-size: 0.8rem;
+      font-family: monospace;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: 3px;
+      box-shadow: 0 1px 0 var(--gray-300);
+    }
+
+    /* Status badges */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-gray { background: #f3f4f6; color: #374151; }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    th {
+      background: var(--gray-50);
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--gray-500);
+      font-size: 0.85rem;
+    }
+
+    /* Print */
+    @media print {
+      .header { position: static; }
+      .section-body { display: block !important; }
+      .section-header .chevron { display: none; }
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .header h1 { font-size: 1.35rem; }
+      .container { padding: 1rem; }
+      .section-header h2 { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>MIT Consulting &mdash; Weekly Time Billing</h1>
+  <p>Training Guide &amp; Reference</p>
+</div>
+
+<div class="container">
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#getting-started">Getting Started</a></li>
+      <li><a href="#time-entries">Time Entries</a></li>
+      <li><a href="#reports">Reports &amp; Reminders</a></li>
+      <li><a href="#customer-review">Customer Review Portal</a></li>
+      <li><a href="#invoices">Invoices</a></li>
+      <li><a href="#admin">Admin &amp; Settings</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1: Getting Started -->
+  <div class="section open" id="getting-started">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128640;</span>
+      <h2>1. Getting Started</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Logging In</h3>
+      <ol class="steps">
+        <li>Open the app at <strong>https://rdsweet1.github.io/mit-qb-frontend/</strong></li>
+        <li>Click <strong>"Sign in with Microsoft"</strong></li>
+        <li>Enter your MIT Consulting Microsoft 365 email and password</li>
+        <li>You'll be taken to the Dashboard</li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>First-time users</strong>
+        Your account is automatically created when you first sign in. You'll start with view-only permissions. Ask an admin to grant additional permissions if needed.
+      </div>
+
+      <h3>Navigating the Dashboard</h3>
+      <p>The dashboard shows quick-access cards for the areas you use most. The top navigation bar has these tabs:</p>
+      <table>
+        <tr><th>Tab</th><th>Purpose</th></tr>
+        <tr><td>Time Entries</td><td>View, edit, lock/unlock time entries from QB Workforce</td></tr>
+        <tr><td>Reports</td><td>Weekly reports by customer, send reminders</td></tr>
+        <tr><td>Invoices</td><td>Preview and generate QB invoices</td></tr>
+        <tr><td>Profitability</td><td>Revenue, cost, and margin analysis</td></tr>
+        <tr><td>Overhead</td><td>Overhead expense categorization</td></tr>
+        <tr><td>Unbilled</td><td>Find time entries not yet billed</td></tr>
+        <tr><td>Clarifications</td><td>Internal Q&amp;A with field technicians</td></tr>
+        <tr><td>Settings</td><td>Automation schedules, employee rates</td></tr>
+        <tr><td>Admin</td><td>User management (admin only)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Time Entries -->
+  <div class="section" id="time-entries">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#9200;</span>
+      <h2>2. Time Entries</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Where does the data come from?</h3>
+      <p>Field technicians clock in and out using the <strong>QuickBooks Workforce</strong> mobile app. This data syncs to QuickBooks Online and is pulled into our system automatically.</p>
+
+      <h3>Viewing entries</h3>
+      <p>The Time Entries page has two views:</p>
+      <ul>
+        <li><strong>Grouped by Customer</strong> &mdash; entries organized under each customer heading</li>
+        <li><strong>Flat List</strong> &mdash; all entries in a single sortable table</li>
+      </ul>
+      <p>Use the date picker at the top to change the week you're viewing.</p>
+
+      <h3>Editing notes</h3>
+      <ol class="steps">
+        <li>Find the time entry you want to edit</li>
+        <li>Click the <strong>pencil icon</strong> next to the notes field</li>
+        <li>Type your changes in the text area</li>
+        <li>Click <strong>Save</strong></li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>What happens when you save?</strong>
+        Edited notes are written back to QuickBooks Online (the billing system). The entry is marked as <span class="badge badge-blue">Manually Edited</span> and will not be overwritten by future syncs.
+      </div>
+
+      <h3>Locking &amp; Unlocking</h3>
+      <p>Entries are <strong>locked by default</strong> to prevent accidental changes. To edit:</p>
+      <ol class="steps">
+        <li>Click the <strong>lock icon</strong> on the entry to unlock it</li>
+        <li>Make your edits</li>
+        <li>Click the <strong>lock icon</strong> again to re-lock when finished</li>
+      </ol>
+
+      <div class="callout callout-warning">
+        <strong>Permissions</strong>
+        You need the <em>can_edit_time</em> permission or admin access to unlock entries. If the lock icon is grayed out, ask an admin to grant you access.
+      </div>
+
+      <h3>Status badges</h3>
+      <table>
+        <tr><th>Badge</th><th>Meaning</th></tr>
+        <tr><td><span class="badge badge-gray">Unbilled</span></td><td>Entry not yet included in a report</td></tr>
+        <tr><td><span class="badge badge-blue">Report Sent</span></td><td>Included in a report sent to the customer</td></tr>
+        <tr><td><span class="badge badge-amber">Supplemental</span></td><td>Changed after initial report; supplemental report sent</td></tr>
+        <tr><td><span class="badge badge-green">Accepted</span></td><td>Customer accepted the report</td></tr>
+        <tr><td><span class="badge badge-red">Disputed</span></td><td>Customer disputed the report</td></tr>
+      </table>
+
+      <h3>Requesting clarification</h3>
+      <p>If a time entry needs clarification from the field tech:</p>
+      <ol class="steps">
+        <li>Click the <strong>Clarify</strong> button on the entry (or select multiple and click <strong>Clarify</strong> in the action bar)</li>
+        <li>Type your question and assign it to the technician</li>
+        <li>The tech receives an email with a link to respond</li>
+        <li>Their response appears in the Clarifications tab</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Reports -->
+  <div class="section" id="reports">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128202;</span>
+      <h2>3. Reports &amp; Reminders</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Weekly reports</h3>
+      <p>The Reports page shows one card per customer per week. Each card displays:</p>
+      <ul>
+        <li>Customer name and week date range</li>
+        <li>Total hours and number of entries</li>
+        <li>Current status (Pending, Sent, Accepted, Disputed)</li>
+      </ul>
+
+      <h3>Sending reports</h3>
+      <ol class="steps">
+        <li>Navigate to the <strong>Reports</strong> tab</li>
+        <li>Select the week using the date picker</li>
+        <li>Click <strong>Send Reminder</strong> for individual customers, or use the batch send button</li>
+        <li>The customer receives an email with a summary and a "Review &amp; Accept" button</li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>Follow-up reminders</strong>
+        If a customer hasn't responded within 3 days, the system automatically sends follow-up reminders (up to 3). This runs on weekdays at 9 AM.
+      </div>
+
+      <h3>Supplemental reports</h3>
+      <p>If you edit time entries <em>after</em> a report has been sent, the changes are tracked. You can then send a <strong>Supplemental Report</strong> that highlights only what changed.</p>
+
+      <h3>Report statuses</h3>
+      <table>
+        <tr><th>Status</th><th>Meaning</th></tr>
+        <tr><td><span class="badge badge-gray">Pending</span></td><td>Report not yet sent</td></tr>
+        <tr><td><span class="badge badge-blue">Sent</span></td><td>Report emailed to customer</td></tr>
+        <tr><td><span class="badge badge-amber">Supplemental Sent</span></td><td>Updated report sent after edits</td></tr>
+        <tr><td><span class="badge badge-green">Accepted</span></td><td>Customer approved the report</td></tr>
+        <tr><td><span class="badge badge-red">Disputed</span></td><td>Customer flagged an issue</td></tr>
+        <tr><td><span class="badge badge-gray">No Time</span></td><td>No billable time for this customer/week</td></tr>
+      </table>
+
+      <h3>Auto-accept</h3>
+      <p>Reports that go 14 days without a response are automatically accepted. This runs at 5 PM on weekdays.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Customer Review Portal -->
+  <div class="section" id="customer-review">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#9989;</span>
+      <h2>4. Customer Review Portal</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>How it works (customer's perspective)</h3>
+      <ol class="steps">
+        <li>Customer receives an email with a time activity summary</li>
+        <li>They click <strong>"Review &amp; Accept"</strong> to open the review portal</li>
+        <li>The portal shows all time entries for that week with details</li>
+        <li>Customer clicks <strong>Accept</strong> or <strong>Dispute</strong></li>
+      </ol>
+
+      <div class="callout callout-success">
+        <strong>No login required</strong>
+        The review portal uses secure UUID tokens. Customers don't need an account &mdash; they just click the link in their email.
+      </div>
+
+      <h3>What happens after acceptance?</h3>
+      <ul>
+        <li>The report status changes to <span class="badge badge-green">Accepted</span></li>
+        <li>Sharon receives a confirmation email</li>
+        <li>The entries can now be invoiced</li>
+      </ul>
+
+      <h3>What happens after a dispute?</h3>
+      <ul>
+        <li>The report status changes to <span class="badge badge-red">Disputed</span></li>
+        <li>Sharon receives a notification with the customer's comments</li>
+        <li>The issue should be resolved and a supplemental report sent if needed</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Invoices -->
+  <div class="section" id="invoices">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128176;</span>
+      <h2>5. Invoices</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Previewing invoices</h3>
+      <ol class="steps">
+        <li>Go to the <strong>Invoices</strong> tab</li>
+        <li>Select the week and customer(s)</li>
+        <li>Click <strong>Preview</strong> to see a draft invoice with line items</li>
+        <li>Review the service items, hours, and rates</li>
+      </ol>
+
+      <h3>Generating invoices in QuickBooks</h3>
+      <ol class="steps">
+        <li>After previewing, click <strong>Generate Invoice</strong></li>
+        <li>The system creates the invoice directly in QuickBooks Online</li>
+        <li>Time entries are marked as <span class="badge badge-blue">Invoiced</span></li>
+      </ol>
+
+      <div class="callout callout-danger">
+        <strong>Invoiced entries are locked</strong>
+        Once an entry is invoiced, it cannot be unlocked or edited. If corrections are needed, void the invoice in QB first.
+      </div>
+
+      <h3>Service items &amp; rates</h3>
+      <p>Invoice line items come from <strong>service items</strong> synced from QuickBooks. Each service item has a rate that determines the line item amount. Manage rates in <strong>Settings &gt; Service Items</strong>.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Admin & Settings -->
+  <div class="section" id="admin">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#9881;</span>
+      <h2>6. Admin &amp; Settings</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>User management</h3>
+      <p>Admins can manage users from the <strong>Admin</strong> tab:</p>
+      <table>
+        <tr><th>Permission</th><th>What it allows</th></tr>
+        <tr><td>can_view</td><td>Basic read access to the app</td></tr>
+        <tr><td>can_edit_time</td><td>Edit notes and unlock time entries</td></tr>
+        <tr><td>can_send_reminders</td><td>Send weekly reports to customers</td></tr>
+        <tr><td>can_create_invoices</td><td>Generate invoices in QuickBooks</td></tr>
+        <tr><td>can_manage_users</td><td>Add, edit, and remove users</td></tr>
+        <tr><td>is_admin</td><td>Full access to all features</td></tr>
+      </table>
+
+      <h3>Automation schedules</h3>
+      <p>The system runs several automated tasks. Configure them in <strong>Settings</strong>:</p>
+      <table>
+        <tr><th>Automation</th><th>Default schedule</th><th>What it does</th></tr>
+        <tr><td>Send Reminder</td><td>Friday 5 PM</td><td>Emails weekly reports to customers</td></tr>
+        <tr><td>Follow-up Reminders</td><td>Weekdays 9 AM</td><td>Re-sends to non-responders (3-day intervals)</td></tr>
+        <tr><td>Auto-accept</td><td>Weekdays 5 PM</td><td>Accepts reports older than 14 days</td></tr>
+        <tr><td>Reconciliation</td><td>Monday 8 AM</td><td>Syncs report statuses</td></tr>
+        <tr><td>Profitability Report</td><td>Monday 9 AM</td><td>Calculates weekly profitability metrics</td></tr>
+      </table>
+
+      <div class="callout callout-warning">
+        <strong>Pausing automations</strong>
+        You can pause any automation from the Settings page. Paused automations show a yellow badge. Remember to resume them when you're ready.
+      </div>
+
+      <h3>Employee rates</h3>
+      <p>Employee cost rates are used for profitability calculations. Set them in <strong>Settings &gt; Employee Rates</strong>. These rates are internal and not shown to customers.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 7: Troubleshooting -->
+  <div class="section" id="troubleshooting">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128295;</span>
+      <h2>7. Troubleshooting</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Common issues</h3>
+
+      <table>
+        <tr><th>Problem</th><th>Likely cause</th><th>Solution</th></tr>
+        <tr>
+          <td>Can't sign in</td>
+          <td>Not a MIT Microsoft 365 account</td>
+          <td>Use your @mitigationconsulting.com email. Personal Microsoft accounts won't work.</td>
+        </tr>
+        <tr>
+          <td>Time entries look stale</td>
+          <td>QB sync hasn't run recently</td>
+          <td>Click the <strong>Sync</strong> button on the Time Entries page to trigger a manual sync.</td>
+        </tr>
+        <tr>
+          <td>Edits don't save</td>
+          <td>Entry is locked, or missing permissions</td>
+          <td>Unlock the entry first. If lock icon is grayed out, ask an admin for <em>can_edit_time</em> access.</td>
+        </tr>
+        <tr>
+          <td>Changes revert after saving</td>
+          <td>RLS policy issue</td>
+          <td>Contact the system administrator. The database may need an RLS policy update.</td>
+        </tr>
+        <tr>
+          <td>Customer didn't get email</td>
+          <td>Email went to spam, or wrong contact email</td>
+          <td>Check the customer's contact email in QuickBooks. Ask them to check spam/junk folders.</td>
+        </tr>
+        <tr>
+          <td>Invoice generation fails</td>
+          <td>QB token expired</td>
+          <td>Contact the system administrator to refresh the QuickBooks Online token.</td>
+        </tr>
+        <tr>
+          <td>Lock icon grayed out</td>
+          <td>Insufficient permissions</td>
+          <td>Ask an admin to grant you <em>can_edit_time</em> permission.</td>
+        </tr>
+        <tr>
+          <td>Automation not running</td>
+          <td>Automation is paused</td>
+          <td>Check <strong>Settings</strong> page. Look for yellow "Paused" badges and resume the automation.</td>
+        </tr>
+      </table>
+
+      <h3>Getting help</h3>
+      <div class="callout callout-info">
+        <strong>Contact</strong>
+        For technical issues, contact the system administrator. For billing/process questions, contact Sharon.
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2026 Mitigation Information Technologies. All rights reserved.</p>
+    <p style="margin-top: 0.25rem;">Last updated: February 2026</p>
+  </div>
+
+</div>
+
+<script>
+  function toggleSection(header) {
+    const section = header.parentElement;
+    section.classList.toggle('open');
+  }
+
+  // Open section if navigated to via anchor
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash);
+      if (target && target.classList.contains('section')) {
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
+
+  // Handle anchor clicks
+  document.querySelectorAll('.toc a').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const hash = this.getAttribute('href');
+      const target = document.querySelector(hash);
+      if (target) {
+        // Close all sections first
+        document.querySelectorAll('.section').forEach(function(s) {
+          s.classList.remove('open');
+        });
+        // Open the target
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.pushState(null, '', hash);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
