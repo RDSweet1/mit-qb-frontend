@@ -13,6 +13,7 @@ import { UnlockWarningDialog } from '@/components/time-entries/UnlockWarningDial
 import { EditWarningBanner } from '@/components/time-entries/EditWarningBanner';
 import { TrackingHistoryDialog } from '@/components/time-entries/TrackingHistoryDialog';
 import { InlineNotesEditor } from '@/components/time-entries/InlineNotesEditor';
+import toast from 'react-hot-toast';
 import { EnhanceNotesDialog } from '@/components/time-entries/EnhanceNotesDialog';
 import { AssignClarificationDialog } from '@/components/time-entries/AssignClarificationDialog';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -926,7 +927,7 @@ export default function TimeEntriesEnhancedPage() {
         e.id === entry.id ? { ...e, ...updatedFields } : e
       ));
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
@@ -935,7 +936,7 @@ export default function TimeEntriesEnhancedPage() {
     if (!changeReasonEntry) return;
     const reason = changeReason === 'custom' ? changeReasonCustom : changeReason;
     if (!reason.trim()) {
-      alert('Please select or enter a reason for the change.');
+      toast.error('Please select or enter a reason for the change.');
       return;
     }
     setChangeReasonDialogOpen(false);

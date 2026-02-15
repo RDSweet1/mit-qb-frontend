@@ -6,6 +6,7 @@ import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { fmtDateTime } from '@/lib/utils';
 import { useAssignmentData } from '@/lib/hooks/useAssignmentData';
 import { COLORS, SERVICE_COLORS, MIT_LOGO, fmtShortDate } from '@/lib/public-page-constants';
+import toast from 'react-hot-toast';
 
 type PageState = 'loading' | 'not_found' | 'expired' | 'active' | 'submitted' | 'cleared';
 
@@ -73,7 +74,7 @@ export default function ClarifyPage() {
 
       setPageState('submitted');
     } catch (err: any) {
-      alert('Error submitting response: ' + (err.message || 'Please try again.'));
+      toast.error('Error submitting response: ' + (err.message || 'Please try again.'));
     } finally {
       setSubmitting(false);
     }

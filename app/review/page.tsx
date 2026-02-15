@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { COLORS, SERVICE_COLORS, MIT_LOGO, fmtDate, fmtShortDate } from '@/lib/public-page-constants';
+import toast from 'react-hot-toast';
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface ReviewToken {
@@ -251,7 +252,7 @@ export default function ReviewPage() {
       setSubmittedAction('accepted');
       setPageState('submitted');
     } catch (err: any) {
-      alert('Error submitting acceptance: ' + (err.message || 'Please try again.'));
+      toast.error('Error submitting acceptance: ' + (err.message || 'Please try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -262,7 +263,7 @@ export default function ReviewPage() {
     if (!reviewToken || !reportPeriod || submitting) return;
     const notes = buildCombinedNotes();
     if (!notes.trim()) {
-      alert('Please flag at least one entry, reassign an entry, or enter general comments before submitting.');
+      toast.error('Please flag at least one entry, reassign an entry, or enter general comments before submitting.');
       return;
     }
     setSubmitting(true);
@@ -277,7 +278,7 @@ export default function ReviewPage() {
       setSubmittedAction('disputed');
       setPageState('submitted');
     } catch (err: any) {
-      alert('Error submitting comments: ' + (err.message || 'Please try again.'));
+      toast.error('Error submitting comments: ' + (err.message || 'Please try again.'));
     } finally {
       setSubmitting(false);
     }

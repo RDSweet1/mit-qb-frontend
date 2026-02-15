@@ -11,6 +11,7 @@ import { ProfitabilitySummary } from '@/components/dashboard/ProfitabilitySummar
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
+import toast from 'react-hot-toast';
 
 export default function Home() {
   const { instance, accounts, inProgress } = useMsal();
@@ -104,7 +105,7 @@ export default function Home() {
       await instance.loginPopup(request);
     } catch (error: any) {
       console.error('Login failed:', error?.message || error);
-      alert(`Login Error:\n${error?.message || error}`);
+      toast.error('Login failed: ' + (error?.message || 'Please try again'));
     } finally {
       setLoading(false);
     }

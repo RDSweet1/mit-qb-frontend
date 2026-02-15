@@ -8,6 +8,7 @@ import { useMsal } from '@azure/msal-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { useAssignmentData } from '@/lib/hooks/useAssignmentData';
+import toast from 'react-hot-toast';
 
 type StatusFilter = 'all' | 'pending' | 'responded' | 'cleared';
 
@@ -52,7 +53,7 @@ export default function InternalReviewPage() {
       setReplyText('');
       await loadData();
     } catch (err: any) {
-      alert('Error sending reply: ' + (err.message || 'Please try again'));
+      toast.error('Error sending reply: ' + (err.message || 'Please try again'));
     } finally {
       setReplying(false);
     }
@@ -70,7 +71,7 @@ export default function InternalReviewPage() {
       await loadData();
       setExpandedId(null);
     } catch (err: any) {
-      alert('Error clearing assignment: ' + (err.message || 'Please try again'));
+      toast.error('Error clearing assignment: ' + (err.message || 'Please try again'));
     } finally {
       setClearing(null);
     }
