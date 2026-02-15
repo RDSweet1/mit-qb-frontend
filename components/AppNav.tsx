@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare } from 'lucide-react';
+import { Home, Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 const navItems = [
+  { href: '/', label: 'Home', icon: Home, color: 'blue' },
   { href: '/time-entries-enhanced', label: 'Time Entries', icon: Clock, color: 'blue' },
   { href: '/reports', label: 'Reports', icon: FileText, color: 'green' },
   { href: '/invoices', label: 'Invoices', icon: DollarSign, color: 'purple' },
@@ -86,8 +87,9 @@ export function AppNav() {
         <div className="flex items-center gap-1 py-1 -mb-px">
           <div className="flex gap-1 overflow-x-auto">
             {navItems.map(item => {
-              const isActive = normalizedPath === item.href ||
-                (item.href !== '/' && normalizedPath.startsWith(item.href));
+              const isActive = item.href === '/'
+                ? normalizedPath === '/'
+                : normalizedPath === item.href || normalizedPath.startsWith(item.href);
 
               const badge = getBadge(item.href);
 
