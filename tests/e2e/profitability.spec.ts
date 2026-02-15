@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/test';
 import { ProfitabilityPage } from '../pages/profitability.page';
 
 test.describe('Profitability', () => {

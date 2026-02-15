@@ -15,6 +15,7 @@ import {
   Plus,
   RefreshCw,
 } from 'lucide-react';
+import { useMsal } from '@azure/msal-react';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
@@ -35,6 +36,8 @@ interface ExecutionResult {
 }
 
 export default function InvoicesPage() {
+  const { accounts } = useMsal();
+
   // Stage management
   const [stage, setStage] = useState<Stage>('config');
 
@@ -109,7 +112,7 @@ export default function InvoicesPage() {
       const response = await callEdgeFunction('preview-invoices', {
         periodStart: format(monthStart, 'yyyy-MM-dd'),
         periodEnd: format(monthEnd, 'yyyy-MM-dd'),
-        createdBy: 'sharon', // TODO: use actual user from MSAL
+        createdBy: accounts[0]?.username || accounts[0]?.name || 'unknown',
       });
 
       if (!response.success) {

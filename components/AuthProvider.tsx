@@ -5,6 +5,44 @@ import { MsalProvider } from '@azure/msal-react';
 import { PublicClientApplication, EventType } from '@azure/msal-browser';
 import { msalConfig } from '@/lib/authConfig';
 
+// Mock network client for E2E tests — prevents MSAL from making real HTTP calls
+function buildTestNetworkClient() {
+  const tenantId = process.env.NEXT_PUBLIC_AZURE_TENANT_ID || '';
+  const oidcMetadata = {
+    token_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    token_endpoint_auth_methods_supported: ['client_secret_post', 'private_key_jwt', 'client_secret_basic'],
+    jwks_uri: `https://login.microsoftonline.com/${tenantId}/discovery/v2.0/keys`,
+    response_modes_supported: ['query', 'fragment', 'form_post'],
+    subject_types_supported: ['pairwise'],
+    id_token_signing_alg_values_supported: ['RS256'],
+    response_types_supported: ['code', 'id_token', 'code id_token', 'id_token token'],
+    scopes_supported: ['openid', 'profile', 'email', 'offline_access'],
+    issuer: `https://login.microsoftonline.com/${tenantId}/v2.0`,
+    request_uri_parameter_supported: false,
+    userinfo_endpoint: 'https://graph.microsoft.com/oidc/userinfo',
+    authorization_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`,
+    device_authorization_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/devicecode`,
+    end_session_endpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/logout`,
+    claims_supported: ['sub', 'iss', 'aud', 'exp', 'iat', 'nonce', 'preferred_username', 'name', 'tid', 'ver', 'email'],
+    cloud_instance_name: 'microsoftonline.com',
+    msgraph_host: 'graph.microsoft.com',
+  };
+  return {
+    sendGetRequestAsync: async (url: string) => {
+      if (url.includes('openid-configuration')) {
+        return { headers: {}, body: oidcMetadata, status: 200 };
+      }
+      if (url.includes('/keys')) {
+        return { headers: {}, body: { keys: [] }, status: 200 };
+      }
+      return { headers: {}, body: {}, status: 200 };
+    },
+    sendPostRequestAsync: async () => {
+      return { headers: {}, body: { access_token: 'mock', token_type: 'Bearer', expires_in: 3600 }, status: 200 };
+    },
+  };
+}
+
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -18,17 +56,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initMsal = async () => {
       try {
+        const isTestMode = localStorage.getItem('__E2E_TEST__') === 'true';
+
         // Build runtime config with correct redirect URI for this environment
         const redirectUri = window.location.origin +
           (window.location.pathname.includes('/mit-qb-frontend') ? '/mit-qb-frontend/' : '/');
 
-        const runtimeConfig = {
+        const runtimeConfig: any = {
           ...msalConfig,
           auth: {
             ...msalConfig.auth,
             redirectUri,
             navigateToLoginRequestUrl: true,
           },
+          // In test mode, use a mock network client so MSAL never makes real HTTP calls
+          ...(isTestMode ? { system: { networkClient: buildTestNetworkClient() } } : {}),
         };
 
         const instance = new PublicClientApplication(runtimeConfig);
