@@ -1,45 +1,51 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Check } from 'lucide-react';
+import { Loader2, Check, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 export function EmailSettingsContent() {
   const [gentle, setGentle] = useState(false);
+  const [autoInvoice, setAutoInvoice] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
 
   useEffect(() => {
-    loadSetting();
+    loadSettings();
   }, []);
 
-  const loadSetting = async () => {
+  const loadSettings = async () => {
     setLoading(true);
     const { data } = await supabase
       .from('app_settings')
-      .select('value')
-      .eq('key', 'gentle_review_language')
-      .single();
-    setGentle(data?.value === 'true');
+      .select('key, value')
+      .in('key', ['gentle_review_language', 'auto_send_invoices']);
+
+    if (data) {
+      for (const row of data) {
+        if (row.key === 'gentle_review_language') setGentle(row.value === 'true');
+        if (row.key === 'auto_send_invoices') setAutoInvoice(row.value === 'true');
+      }
+    }
     setLoading(false);
   };
 
-  const toggleSetting = async () => {
-    const newValue = !gentle;
-    setSaving(true);
-    setSaved(false);
+  const toggleSetting = async (key: string, currentValue: boolean, setter: (v: boolean) => void) => {
+    const newValue = !currentValue;
+    setSaving(key);
+    setSaved(null);
     const { error } = await supabase
       .from('app_settings')
       .update({ value: String(newValue), updated_at: new Date().toISOString() })
-      .eq('key', 'gentle_review_language');
+      .eq('key', key);
 
     if (!error) {
-      setGentle(newValue);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setter(newValue);
+      setSaved(key);
+      setTimeout(() => setSaved(null), 2000);
     }
-    setSaving(false);
+    setSaving(null);
   };
 
   if (loading) {
@@ -52,7 +58,7 @@ export function EmailSettingsContent() {
 
   return (
     <div className="space-y-6">
-      {/* Toggle Card */}
+      {/* Review Language Toggle Card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -62,11 +68,11 @@ export function EmailSettingsContent() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {saving && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
-            {saved && <Check className="w-4 h-4 text-green-500" />}
+            {saving === 'gentle_review_language' && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+            {saved === 'gentle_review_language' && <Check className="w-4 h-4 text-green-500" />}
             <button
-              onClick={toggleSetting}
-              disabled={saving}
+              onClick={() => toggleSetting('gentle_review_language', gentle, setGentle)}
+              disabled={saving !== null}
               className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
                 gentle ? 'bg-blue-600' : 'bg-gray-300'
               }`}
@@ -122,10 +128,55 @@ export function EmailSettingsContent() {
         </div>
       </div>
 
+      {/* Auto-Send Monthly Invoices Toggle Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Auto-Send Monthly Invoices</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              When enabled, invoices are automatically created and sent via QuickBooks on the 1st of each month for customers whose weekly time reports have all been accepted.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {saving === 'auto_send_invoices' && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+            {saved === 'auto_send_invoices' && <Check className="w-4 h-4 text-green-500" />}
+            <button
+              onClick={() => toggleSetting('auto_send_invoices', autoInvoice, setAutoInvoice)}
+              disabled={saving !== null}
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                autoInvoice ? 'bg-purple-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${
+                  autoInvoice ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 mb-4">
+          <span className={`text-sm font-medium ${!autoInvoice ? 'text-gray-900' : 'text-gray-400'}`}>Off</span>
+          <span className="text-gray-300">/</span>
+          <span className={`text-sm font-medium ${autoInvoice ? 'text-purple-700' : 'text-gray-400'}`}>On</span>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-800">
+              Only customers with <strong>ALL</strong> weeks in the billing month marked as &ldquo;accepted&rdquo; (no disputes or pending reviews) will be invoiced automatically.
+              Customers without email addresses or with any unresolved weeks will be skipped.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Info */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-xs text-blue-800">
-          <strong>Note:</strong> This setting affects all customer-facing emails: weekly reports, supplemental reports, follow-up reminders, and auto-accept confirmations.
+          <strong>Note:</strong> The review language setting affects all customer-facing emails: weekly reports, supplemental reports, follow-up reminders, auto-accept confirmations, and invoice courtesy notifications.
           The auto-accept behavior (3 business days) remains the same regardless of which language tone is selected.
         </p>
       </div>
