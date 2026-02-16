@@ -2,19 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Shield, Users, DollarSign, Mail, Clock } from 'lucide-react';
+import { Shield, Users, DollarSign, Mail, Clock, MailCheck } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { UsersContent } from './users/UsersContent';
 import { EmployeeRatesContent } from './employee-rates/EmployeeRatesContent';
 import { ReportRecipientsContent } from './report-recipients/ReportRecipientsContent';
 import { SchedulingContent } from './scheduling/SchedulingContent';
+import { EmailSettingsContent } from './email-settings/EmailSettingsContent';
 
 const tabs = [
   { id: 'users', label: 'Users', icon: Users },
   { id: 'rates', label: 'Employee Rates', icon: DollarSign },
   { id: 'recipients', label: 'Report Recipients', icon: Mail },
   { id: 'scheduling', label: 'Scheduling', icon: Clock },
+  { id: 'email', label: 'Email Settings', icon: MailCheck },
 ] as const;
 
 type TabId = typeof tabs[number]['id'];
@@ -34,7 +36,7 @@ export default function AdminPage() {
     <AppShell>
       <PageHeader
         title="Administration"
-        subtitle="Manage users, cost rates, report recipients, and scheduling"
+        subtitle="Manage users, cost rates, report recipients, scheduling, and email settings"
         icon={<Shield className="w-6 h-6 text-indigo-600" />}
       />
 
@@ -67,6 +69,7 @@ export default function AdminPage() {
       {activeTab === 'rates' && <EmployeeRatesContent />}
       {activeTab === 'recipients' && <ReportRecipientsContent />}
       {activeTab === 'scheduling' && <SchedulingContent />}
+      {activeTab === 'email' && <EmailSettingsContent />}
     </AppShell>
   );
 }

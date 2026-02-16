@@ -25,10 +25,12 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [schedules, setSchedules] = useState<ScheduleConfig[]>([]);
+  const [gentleLanguage, setGentleLanguage] = useState<boolean | null>(null);
 
   useEffect(() => {
     checkQuickBooksConnection();
     loadSchedules();
+    loadEmailSetting();
   }, []);
 
   const checkQuickBooksConnection = async () => {
@@ -76,6 +78,15 @@ export default function SettingsPage() {
       .select('*')
       .order('id', { ascending: true });
     setSchedules((data || []) as ScheduleConfig[]);
+  };
+
+  const loadEmailSetting = async () => {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'gentle_review_language')
+      .single();
+    setGentleLanguage(data?.value === 'true');
   };
 
   const connectToQuickBooks = () => {
@@ -288,6 +299,27 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <span className="text-sm font-medium text-gray-900">From Address</span>
               <span className="text-sm text-gray-600">accounting@mitigationconsulting.com</span>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <span className="text-sm font-medium text-gray-900">Review Language</span>
+                <p className="text-xs text-gray-500">Tone used in customer-facing review notices</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {gentleLanguage === null ? (
+                  <span className="text-sm text-gray-400">Loading...</span>
+                ) : gentleLanguage ? (
+                  <span className="text-sm font-medium text-blue-600">Gentle</span>
+                ) : (
+                  <span className="text-sm font-medium text-amber-600">Standard</span>
+                )}
+                <a
+                  href="/mit-qb-frontend/admin?tab=email"
+                  className="text-xs text-indigo-600 hover:text-indigo-800 underline ml-2"
+                >
+                  Change
+                </a>
+              </div>
             </div>
           </div>
         </div>
