@@ -116,6 +116,7 @@ export function EmailSettingsContent() {
             </div>
             <p className="text-xs text-gray-700 leading-relaxed">
               We kindly request that you review the time entries and detailed notes above. If you have any concerns or questions, we would appreciate a response within <strong>three business days</strong>.
+              Please respond directly using the link below.
             </p>
           </div>
         </div>
