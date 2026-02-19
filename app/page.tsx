@@ -7,6 +7,7 @@ import { LogIn, Clock, FileText, DollarSign, Download, MonitorSmartphone, X, Mes
 import Link from 'next/link';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { ProfitabilitySummary } from '@/components/dashboard/ProfitabilitySummary';
+import { CashPositionSummary } from '@/components/dashboard/CashPositionSummary';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
@@ -314,6 +315,11 @@ export default function Home() {
         {/* Profitability Summary (includes quick stats row) */}
         <div className="mt-6">
           <ProfitabilitySummary />
+        </div>
+
+        {/* Cash Position Summary */}
+        <div className="mt-4">
+          <CashPositionSummary />
         </div>
 
         {/* Analytics Section — with quick links to deep-dive pages */}

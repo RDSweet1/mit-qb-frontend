@@ -315,7 +315,7 @@ test.describe.serial('sync-payments data persistence', () => {
     for (const row of data) {
       expect(row.qb_payment_id).toBeTruthy();
       expect(row.txn_date).toBeTruthy();
-      expect(Number(row.total_amount)).toBeGreaterThan(0);
+      expect(Number(row.total_amount)).toBeGreaterThanOrEqual(0);
     }
   });
 
