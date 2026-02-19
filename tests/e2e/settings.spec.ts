@@ -27,12 +27,13 @@ test.describe('Settings', () => {
   test('each automation shows schedule day and time', async ({ page }) => {
     const settings = new SettingsPage(page);
     await settings.goto();
+    await page.waitForLoadState('networkidle');
 
-    // Wait for schedule data to load
-    await expect(page.locator('text=Weekly Reports')).toBeVisible({ timeout: 10000 });
+    // Wait for all 5 automation cards to render with day @ time format
+    await expect(page.locator('text=Profitability Report')).toBeVisible({ timeout: 15000 });
 
-    // Each automation card should show day @ time format
     const automationCards = page.locator('.rounded-lg').filter({ hasText: /@ \d+:\d+ [AP]M/ });
+    await expect(automationCards.first()).toBeVisible({ timeout: 10000 });
     const cardCount = await automationCards.count();
     expect(cardCount).toBeGreaterThanOrEqual(5);
   });
