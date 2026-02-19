@@ -199,6 +199,7 @@ test.describe('Edge function deployment', () => {
     'qb-time-sync',
     'qb-online-sync',
     'sync-payments',
+    'qb-health',
   ];
 
   for (const fn of coreFunctions) {
