@@ -115,16 +115,73 @@ test.describe('customers table', () => {
     expect(res.ok()).toBeFalsy();
   });
 
-  test('anon cannot UPDATE customers', async ({ request }) => {
-    const res = await request.patch(
-      `${SUPABASE_URL}/rest/v1/customers?id=eq.1`,
+  test('anon UPDATE of display_name is silently blocked by trigger guard', async ({ request }) => {
+    // First, get a real customer to test against
+    const listRes = await request.get(
+      `${SUPABASE_URL}/rest/v1/customers?limit=1&select=id,display_name`,
+      { headers }
+    );
+    const customers = await listRes.json();
+    if (customers.length === 0) return;
+
+    const original = customers[0];
+
+    // Attempt to change display_name — the trigger should silently revert it
+    await request.patch(
+      `${SUPABASE_URL}/rest/v1/customers?id=eq.${original.id}`,
       {
         headers: { ...headers, Prefer: 'return=representation' },
         data: { display_name: 'Hacked Name' },
       }
     );
-    const data = await res.json();
-    expect(Array.isArray(data) ? data.length : 0).toBe(0);
+
+    // Re-read — display_name should be unchanged
+    const verifyRes = await request.get(
+      `${SUPABASE_URL}/rest/v1/customers?id=eq.${original.id}&select=display_name`,
+      { headers }
+    );
+    const after = await verifyRes.json();
+    expect(after[0].display_name).toBe(original.display_name);
+  });
+
+  test('anon CAN update skip_acceptance_gate (invoice override toggle)', async ({ request }) => {
+    // Get a customer and read current skip_acceptance_gate value
+    const listRes = await request.get(
+      `${SUPABASE_URL}/rest/v1/customers?limit=1&select=id,skip_acceptance_gate`,
+      { headers }
+    );
+    const customers = await listRes.json();
+    if (customers.length === 0) return;
+
+    const original = customers[0];
+    const flipped = !original.skip_acceptance_gate;
+
+    // Toggle skip_acceptance_gate
+    const updateRes = await request.patch(
+      `${SUPABASE_URL}/rest/v1/customers?id=eq.${original.id}`,
+      {
+        headers: { ...headers, Prefer: 'return=representation' },
+        data: { skip_acceptance_gate: flipped },
+      }
+    );
+    expect(updateRes.ok()).toBeTruthy();
+
+    // Verify it changed
+    const verifyRes = await request.get(
+      `${SUPABASE_URL}/rest/v1/customers?id=eq.${original.id}&select=skip_acceptance_gate`,
+      { headers }
+    );
+    const after = await verifyRes.json();
+    expect(after[0].skip_acceptance_gate).toBe(flipped);
+
+    // Restore original value
+    await request.patch(
+      `${SUPABASE_URL}/rest/v1/customers?id=eq.${original.id}`,
+      {
+        headers: { ...headers, Prefer: 'return=representation' },
+        data: { skip_acceptance_gate: original.skip_acceptance_gate },
+      }
+    );
   });
 
   test('anon cannot DELETE from customers', async ({ request }) => {
