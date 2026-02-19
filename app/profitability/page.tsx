@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, DollarSign, Settings, Wrench, Users } from 'lucide-react';
+import { TrendingUp, Download, AlertCircle, ChevronDown, ChevronRight, Loader2, DollarSign, Settings, Wrench, Users, Wallet } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -16,6 +16,7 @@ import CustomerDrillDown from '@/components/profitability/CustomerDrillDown';
 import OverheadSyncPanel from '@/components/overhead/OverheadSyncPanel';
 import VendorTransactionTable from '@/components/overhead/VendorTransactionTable';
 import CategoryManager from '@/components/overhead/CategoryManager';
+import CashPositionView from '@/components/profitability/CashPositionView';
 import type { CustomerProfitability } from '@/lib/types';
 import { fmtMoney, fmtPct, weekLabel, getMonday, fmtIsoDate as fmt } from '@/lib/utils';
 import {
@@ -81,10 +82,10 @@ function getWeeksInRange(start: string, end: string): string[] {
 // --- Component ---
 
 export default function ProfitabilityPage() {
-  type ActiveTab = 'profitability' | 'pnl' | 'overhead' | 'vendor-overhead' | 'by-customer';
+  type ActiveTab = 'profitability' | 'pnl' | 'overhead' | 'vendor-overhead' | 'by-customer' | 'cash-position';
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab') as ActiveTab | null;
-  const validTabs: ActiveTab[] = ['profitability', 'pnl', 'overhead', 'vendor-overhead', 'by-customer'];
+  const validTabs: ActiveTab[] = ['profitability', 'pnl', 'overhead', 'vendor-overhead', 'by-customer', 'cash-position'];
   const [activeTab, setActiveTab] = useState<ActiveTab>(
     tabParam && validTabs.includes(tabParam) ? tabParam : 'profitability'
   );
@@ -426,6 +427,7 @@ export default function ProfitabilityPage() {
               { key: 'pnl' as ActiveTab, label: 'P&L Summary', icon: DollarSign },
               { key: 'overhead' as ActiveTab, label: 'Overhead', icon: Settings },
               { key: 'vendor-overhead' as ActiveTab, label: 'Vendor Overhead', icon: Wrench },
+              { key: 'cash-position' as ActiveTab, label: 'Cash Position', icon: Wallet },
             ]).map(tab => (
               <button
                 key={tab.key}
@@ -472,6 +474,11 @@ export default function ProfitabilityPage() {
                 <VendorTransactionTable categories={vendorCategories} refreshKey={vendorRefreshKey} />
               </div>
             </>
+          )}
+
+          {/* Cash Position Tab */}
+          {activeTab === 'cash-position' && (
+            <CashPositionView startDate={startDate} endDate={endDate} />
           )}
 
           {/* By Customer Tab */}

@@ -180,3 +180,62 @@ export interface InternalReviewToken {
 }
 
 export type DatePreset = 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'all_time' | 'custom';
+
+// --- Cash Position ---
+
+export interface QBPayment {
+  id: number;
+  qb_payment_id: string;
+  txn_date: string;
+  qb_customer_id: string | null;
+  customer_name: string | null;
+  total_amount: number;
+  payment_method: string | null;
+  payment_ref_num: string | null;
+  deposit_to_account: string | null;
+  unapplied_amount: number;
+  linked_invoices: Array<{ invoiceId: string; amount: number }>;
+  sync_token: string | null;
+  synced_at: string;
+}
+
+export interface QBDeposit {
+  id: number;
+  qb_deposit_id: string;
+  txn_date: string;
+  total_amount: number;
+  deposit_to_account: string | null;
+  line_items: any[];
+  memo: string | null;
+  synced_at: string;
+}
+
+export interface QBInvoiceBalance {
+  id: number;
+  qb_invoice_id: string;
+  invoice_number: string | null;
+  qb_customer_id: string | null;
+  customer_name: string | null;
+  txn_date: string | null;
+  due_date: string | null;
+  total_amount: number;
+  balance: number;
+  status: 'Paid' | 'Partial' | 'Open' | 'Overdue';
+  synced_at: string;
+}
+
+export interface CashPositionWeek {
+  weekStart: string;
+  billed: number;
+  received: number;
+  labor: number;
+  overhead: number;
+  expenses: number;
+  net: number;
+  ytdBilled: number;
+  ytdReceived: number;
+  ytdExpenses: number;
+  ytdNet: number;
+  collectionPct: number;
+  expenseRatioPct: number;
+}
