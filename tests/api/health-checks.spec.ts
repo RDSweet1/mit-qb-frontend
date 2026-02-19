@@ -198,6 +198,7 @@ test.describe('Edge function deployment', () => {
     'weekly-profitability-report',
     'qb-time-sync',
     'qb-online-sync',
+    'sync-payments',
   ];
 
   for (const fn of coreFunctions) {

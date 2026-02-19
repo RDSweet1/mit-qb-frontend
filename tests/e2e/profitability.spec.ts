@@ -8,7 +8,7 @@ test.describe('Profitability', () => {
     await profitability.verify();
   });
 
-  test('has 5 tabs including By Customer and vendor overhead', async ({ page }) => {
+  test('has 6 tabs including By Customer, vendor overhead, and cash position', async ({ page }) => {
     const profitability = new ProfitabilityPage(page);
     await profitability.goto();
     await expect(page.getByRole('button', { name: /profitability/i })).toBeVisible();
@@ -16,6 +16,7 @@ test.describe('Profitability', () => {
     await expect(page.getByRole('button', { name: /p&l summary/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /^overhead$/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /vendor overhead/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /cash position/i })).toBeVisible();
   });
 
   test('By Customer tab renders table or empty state', async ({ page }) => {
