@@ -239,3 +239,43 @@ export interface CashPositionWeek {
   collectionPct: number;
   expenseRatioPct: number;
 }
+
+// --- Daily Financial Review ---
+
+export interface QBLineItem {
+  Id?: string;
+  LineNum?: number;
+  DetailType: string;
+  Amount: number;
+  Description?: string | null;
+  AccountRef?: { value: string; name: string } | null;
+  CustomerRef?: { value: string; name: string } | null;
+  ItemRef?: { value: string; name: string } | null;
+}
+
+export interface DailyReviewTransaction {
+  id: number;
+  qb_entity_type: 'Purchase' | 'Bill' | 'Payment' | 'Deposit';
+  qb_entity_id: string;
+  qb_sync_token: string | null;
+  txn_class: 'expense' | 'revenue';
+  txn_date: string;
+  total_amount: number;
+  vendor_name: string | null;
+  customer_name: string | null;
+  qb_customer_id: string | null;
+  memo: string | null;
+  payment_type: string | null;
+  qb_account_name: string | null;
+  qb_account_id: string | null;
+  line_items: QBLineItem[];
+  review_status: 'pending' | 'reviewed' | 'auto_approved' | 'flagged';
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  category: string | null;
+  category_source: 'auto' | 'vendor' | 'manual' | 'recurring';
+  is_overhead: boolean;
+  recurring_rule_id: number | null;
+  synced_at: string;
+  updated_at: string;
+}

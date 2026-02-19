@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare } from 'lucide-react';
+import { Home, Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare, ClipboardCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/time-entries-enhanced', label: 'Time Entries', icon: Clock, color: 'blue' },
   { href: '/reports', label: 'Reports', icon: FileText, color: 'green' },
   { href: '/invoices', label: 'Invoices', icon: DollarSign, color: 'purple' },
+  { href: '/daily-review', label: 'Daily Review', icon: ClipboardCheck, color: 'teal' },
   { href: '/profitability', label: 'Profitability', icon: TrendingUp, color: 'purple' },
   { href: '/analytics/unbilled-time', label: 'Unbilled', icon: BarChart3, color: 'orange' },
   { href: '/internal-review', label: 'Clarifications', icon: MessageSquare, color: 'amber' },
@@ -24,6 +25,7 @@ export function AppNav() {
   const [qbConnected, setQbConnected] = useState<boolean | null>(null);
   const [unbilledCount, setUnbilledCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [dailyReviewPending, setDailyReviewPending] = useState(0);
 
   // Normalize path — strip basePath prefix if present
   const normalizedPath = pathname?.replace(/^\/mit-qb-frontend/, '') || '/';
@@ -61,7 +63,12 @@ export function AppNav() {
         .select('id', { count: 'exact', head: true })
         .eq('approval_status', 'pending')
         .gte('txn_date', since14),
-    ]).then(([pausedRes, qbRes, unbilledRes, pendingRes]) => {
+      // Daily review pending
+      supabase
+        .from('daily_review_transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('review_status', 'pending'),
+    ]).then(([pausedRes, qbRes, unbilledRes, pendingRes, dailyReviewRes]) => {
       setPausedCount(pausedRes.count || 0);
       setQbConnected(
         qbRes.data && !qbRes.error
@@ -70,6 +77,7 @@ export function AppNav() {
       );
       setUnbilledCount(unbilledRes.count || 0);
       setPendingCount(pendingRes.count || 0);
+      setDailyReviewPending(dailyReviewRes.count || 0);
     });
   }, []);
 
@@ -78,6 +86,7 @@ export function AppNav() {
     if (href === '/admin' && pausedCount > 0) return { count: pausedCount, color: 'bg-red-500' };
     if (href === '/analytics/unbilled-time' && unbilledCount > 0) return { count: unbilledCount, color: 'bg-red-500' };
     if (href === '/time-entries-enhanced' && pendingCount > 0) return { count: pendingCount, color: 'bg-blue-500' };
+    if (href === '/daily-review' && dailyReviewPending > 0) return { count: dailyReviewPending, color: 'bg-teal-500' };
     return null;
   }
 

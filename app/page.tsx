@@ -3,7 +3,7 @@
 import { useMsal } from '@azure/msal-react';
 import { loginRequest } from '@/lib/authConfig';
 import { useEffect, useState } from 'react';
-import { LogIn, Clock, FileText, DollarSign, Download, MonitorSmartphone, X, MessageSquare, BarChart3, TrendingUp } from 'lucide-react';
+import { LogIn, Clock, FileText, DollarSign, Download, MonitorSmartphone, X, MessageSquare, BarChart3, TrendingUp, ClipboardCheck } from 'lucide-react';
 import Link from 'next/link';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { ProfitabilitySummary } from '@/components/dashboard/ProfitabilitySummary';
@@ -27,6 +27,7 @@ export default function Home() {
   const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
   const [unsentReportsCount, setUnsentReportsCount] = useState(0);
   const [invoiceReadyCount, setInvoiceReadyCount] = useState(0);
+  const [dailyReviewPending, setDailyReviewPending] = useState(0);
 
   // Check if MSAL is ready before using it
   useEffect(() => {
@@ -92,6 +93,16 @@ export default function Home() {
       .select('id', { count: 'exact', head: true })
       .eq('status', 'accepted')
       .then(({ count }) => { setInvoiceReadyCount(count || 0); });
+  }, [isAuthenticated]);
+
+  // Load daily review pending count
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    supabase
+      .from('daily_review_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('review_status', 'pending')
+      .then(({ count }) => { setDailyReviewPending(count || 0); });
   }, [isAuthenticated]);
 
   // Register service worker + capture PWA install prompt
@@ -250,7 +261,7 @@ export default function Home() {
         />
 
         {/* Primary Workflow Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
           <Link href="/time-entries-enhanced" className="group">
             <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200 h-full">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
@@ -306,6 +317,21 @@ export default function Home() {
               {invoiceReadyCount > 0 && (
                 <span className="absolute top-3 right-3 bg-purple-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {invoiceReadyCount} ready
+                </span>
+              )}
+            </div>
+          </Link>
+
+          <Link href="/daily-review" className="group">
+            <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-teal-300 transition-all duration-200 h-full">
+              <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center mb-3 group-hover:bg-teal-200 transition-colors">
+                <ClipboardCheck className="w-5 h-5 text-teal-600" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Daily Review</h3>
+              <p className="text-sm text-gray-600">Review financial transactions</p>
+              {dailyReviewPending > 0 && (
+                <span className="absolute top-3 right-3 bg-teal-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {dailyReviewPending} pending
                 </span>
               )}
             </div>
