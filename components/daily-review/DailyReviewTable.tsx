@@ -20,10 +20,13 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 const TYPE_STYLES: Record<string, { bg: string; text: string }> = {
-  Purchase: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
-  Bill:     { bg: 'bg-violet-100', text: 'text-violet-700' },
-  Payment:  { bg: 'bg-green-100',  text: 'text-green-700' },
-  Deposit:  { bg: 'bg-teal-100',   text: 'text-teal-700' },
+  Purchase:     { bg: 'bg-indigo-100',  text: 'text-indigo-700' },
+  Bill:         { bg: 'bg-violet-100',  text: 'text-violet-700' },
+  BillPayment:  { bg: 'bg-orange-100',  text: 'text-orange-700' },
+  Transfer:     { bg: 'bg-sky-100',     text: 'text-sky-700' },
+  VendorCredit: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  Payment:      { bg: 'bg-green-100',   text: 'text-green-700' },
+  Deposit:      { bg: 'bg-teal-100',    text: 'text-teal-700' },
 };
 
 interface DailyReviewTableProps {

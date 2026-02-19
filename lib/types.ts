@@ -255,7 +255,7 @@ export interface QBLineItem {
 
 export interface DailyReviewTransaction {
   id: number;
-  qb_entity_type: 'Purchase' | 'Bill' | 'Payment' | 'Deposit';
+  qb_entity_type: 'Purchase' | 'Bill' | 'BillPayment' | 'Transfer' | 'VendorCredit' | 'Payment' | 'Deposit';
   qb_entity_id: string;
   qb_sync_token: string | null;
   txn_class: 'expense' | 'revenue';

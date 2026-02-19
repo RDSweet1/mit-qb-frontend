@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ClipboardCheck, RefreshCw, Loader2, Search, Filter } from 'lucide-react';
+import { ClipboardCheck, RefreshCw, Loader2, Search, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { useMsal } from '@azure/msal-react';
 import DailyReviewTable from '@/components/daily-review/DailyReviewTable';
 import type { DailyReviewTransaction } from '@/lib/types';
+import toast from 'react-hot-toast';
 
 export default function DailyReviewPage() {
   const { accounts } = useMsal();
@@ -18,6 +19,10 @@ export default function DailyReviewPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
+
+  // Completion tracking
+  const [completionData, setCompletionData] = useState<Record<string, { completed: boolean; completed_by?: string; completed_at?: string }>>({});
+  const [markingComplete, setMarkingComplete] = useState<string | null>(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
@@ -35,7 +40,7 @@ export default function DailyReviewPage() {
   // Load data
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [txnResult, catResult] = await Promise.all([
+    const [txnResult, catResult, completionResult] = await Promise.all([
       supabase
         .from('daily_review_transactions')
         .select('*')
@@ -47,11 +52,15 @@ export default function DailyReviewPage() {
         .from('overhead_categories')
         .select('name')
         .order('display_order'),
+      supabase
+        .from('daily_review_completion')
+        .select('*')
+        .gte('review_date', dateRange.start)
+        .lte('review_date', dateRange.end),
     ]);
 
     if (txnResult.data) {
       setTransactions(txnResult.data);
-      // Get last synced time
       const synced = txnResult.data.reduce((latest: string | null, t) => {
         if (!latest || (t.synced_at && t.synced_at > latest)) return t.synced_at;
         return latest;
@@ -61,6 +70,14 @@ export default function DailyReviewPage() {
 
     if (catResult.data) {
       setCategories(catResult.data.map(c => c.name));
+    }
+
+    if (completionResult.data) {
+      const map: Record<string, any> = {};
+      for (const row of completionResult.data) {
+        map[row.review_date] = row;
+      }
+      setCompletionData(map);
     }
 
     setLoading(false);
@@ -77,8 +94,16 @@ export default function DailyReviewPage() {
         endDate: dateRange.end,
       });
       if (result?.success) {
+        const parts = [];
+        if (result.purchases_count) parts.push(`${result.purchases_count} purchases`);
+        if (result.bills_count) parts.push(`${result.bills_count} bills`);
+        if (result.bill_payments_count) parts.push(`${result.bill_payments_count} bill payments`);
+        if (result.transfers_count) parts.push(`${result.transfers_count} transfers`);
+        if (result.vendor_credits_count) parts.push(`${result.vendor_credits_count} vendor credits`);
+        toast.success(`Synced ${result.total_upserted} transactions: ${parts.join(', ')}`);
         await loadData();
       } else {
+        toast.error('Sync failed: ' + (result?.error || 'Unknown error'));
         console.error('Sync failed:', result?.error);
       }
     } catch (err) {
@@ -99,6 +124,84 @@ export default function DailyReviewPage() {
 
     return { pending, reviewed, flagged, todayTotal, total: transactions.length };
   }, [transactions]);
+
+  // Per-day breakdown for completion tracking
+  const dayBreakdown = useMemo(() => {
+    const days: Record<string, { total: number; pending: number; reviewed: number; flagged: number; amount: number }> = {};
+    for (const t of transactions) {
+      if (!days[t.txn_date]) {
+        days[t.txn_date] = { total: 0, pending: 0, reviewed: 0, flagged: 0, amount: 0 };
+      }
+      days[t.txn_date].total++;
+      days[t.txn_date].amount += Number(t.total_amount);
+      if (t.review_status === 'pending') days[t.txn_date].pending++;
+      else if (t.review_status === 'reviewed' || t.review_status === 'auto_approved') days[t.txn_date].reviewed++;
+      else if (t.review_status === 'flagged') days[t.txn_date].flagged++;
+    }
+    return Object.entries(days)
+      .sort(([a], [b]) => b.localeCompare(a)) // newest first
+      .map(([date, counts]) => ({ date, ...counts }));
+  }, [transactions]);
+
+  // Mark a day as complete
+  async function markDayComplete(date: string) {
+    setMarkingComplete(date);
+    try {
+      const dayTxns = transactions.filter(t => t.txn_date === date);
+      const pending = dayTxns.filter(t => t.review_status === 'pending').length;
+      const total = dayTxns.length;
+
+      const { error } = await supabase
+        .from('daily_review_completion')
+        .upsert({
+          review_date: date,
+          completed: true,
+          completed_by: userEmail,
+          completed_at: new Date().toISOString(),
+          pending_count: pending,
+          total_count: total,
+        }, { onConflict: 'review_date' });
+
+      if (error) {
+        console.error('Failed to mark day complete:', error);
+        return;
+      }
+
+      // Also mark all pending items for that day as reviewed
+      if (pending > 0) {
+        const pendingIds = dayTxns
+          .filter(t => t.review_status === 'pending')
+          .map(t => t.id);
+
+        await supabase
+          .from('daily_review_transactions')
+          .update({
+            review_status: 'reviewed',
+            reviewed_by: userEmail,
+            reviewed_at: new Date().toISOString(),
+          })
+          .in('id', pendingIds);
+      }
+
+      await loadData();
+    } finally {
+      setMarkingComplete(null);
+    }
+  }
+
+  // Reopen a completed day
+  async function reopenDay(date: string) {
+    setMarkingComplete(date);
+    try {
+      await supabase
+        .from('daily_review_completion')
+        .update({ completed: false, completed_by: null, completed_at: null })
+        .eq('review_date', date);
+      await loadData();
+    } finally {
+      setMarkingComplete(null);
+    }
+  }
 
   // Unique account names for filter
   const accountNames = useMemo(() => {
@@ -212,6 +315,84 @@ export default function DailyReviewPage() {
           />
         </div>
       </div>
+
+      {/* Day-by-day completion tracker */}
+      {!loading && dayBreakdown.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 mb-4 overflow-hidden">
+          <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-700">Daily Completion</h3>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {dayBreakdown.map(day => {
+              const isComplete = completionData[day.date]?.completed;
+              const reviewedPct = day.total > 0 ? Math.round(((day.reviewed) / day.total) * 100) : 0;
+              const isMarking = markingComplete === day.date;
+              const dayLabel = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', {
+                weekday: 'short', month: 'short', day: 'numeric',
+              });
+
+              return (
+                <div key={day.date} className="flex items-center gap-4 px-4 py-2">
+                  {/* Status icon */}
+                  {isComplete ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  ) : day.pending === 0 ? (
+                    <CheckCircle2 className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                  )}
+
+                  {/* Day label */}
+                  <span className="text-sm font-medium text-gray-800 w-28 flex-shrink-0">{dayLabel}</span>
+
+                  {/* Progress bar */}
+                  <div className="flex-1 min-w-0">
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${isComplete ? 'bg-green-500' : 'bg-teal-500'}`}
+                        style={{ width: `${reviewedPct}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Counts */}
+                  <span className="text-xs text-gray-500 w-32 text-right flex-shrink-0">
+                    {day.reviewed}/{day.total} reviewed
+                    {day.flagged > 0 && <span className="text-red-500 ml-1">({day.flagged} flagged)</span>}
+                  </span>
+
+                  {/* Amount */}
+                  <span className="text-xs font-medium text-gray-700 w-24 text-right tabular-nums flex-shrink-0">
+                    ${Number(day.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+
+                  {/* Action button */}
+                  <div className="w-32 flex-shrink-0 text-right">
+                    {isComplete ? (
+                      <button
+                        onClick={() => reopenDay(day.date)}
+                        disabled={isMarking}
+                        className="text-xs text-gray-500 hover:text-gray-700 underline disabled:opacity-50"
+                      >
+                        Reopen
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => markDayComplete(day.date)}
+                        disabled={isMarking}
+                        className="flex items-center gap-1 ml-auto px-2.5 py-1 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
+                      >
+                        {isMarking ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                        Mark Complete
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main table */}
       {loading ? (
