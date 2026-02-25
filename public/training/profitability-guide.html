@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT Consulting &mdash; Profitability Analysis</title>
+  <style>
+    :root {
+      --mit-blue: #1e40af;
+      --mit-blue-light: #3b82f6;
+      --mit-blue-bg: #eff6ff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --green-600: #059669;
+      --amber-600: #d97706;
+      --red-600: #dc2626;
+      --purple-600: #9333ea;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--gray-800);
+      line-height: 1.6;
+      background: var(--gray-50);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--mit-blue), var(--mit-blue-light));
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .header p { opacity: 0.9; font-size: 0.95rem; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    .toc {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .toc h2 {
+      font-size: 1.1rem;
+      color: var(--mit-blue);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--mit-blue-bg);
+    }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: 0.4rem; }
+    .toc a {
+      color: var(--mit-blue-light);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    .section {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      transition: background 0.15s;
+    }
+    .section-header:hover { background: var(--mit-blue-bg); }
+
+    .section-header .icon {
+      font-size: 1.5rem;
+      width: 2rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 1.15rem;
+      color: var(--gray-900);
+      flex: 1;
+    }
+
+    .section-header .chevron {
+      font-size: 1.25rem;
+      color: var(--gray-500);
+      transition: transform 0.2s;
+    }
+    .section.open .section-header .chevron { transform: rotate(90deg); }
+
+    .section-body {
+      display: none;
+      padding: 1.25rem;
+    }
+    .section.open .section-body { display: block; }
+
+    .section-body h3 {
+      font-size: 1rem;
+      color: var(--mit-blue);
+      margin: 1.25rem 0 0.5rem 0;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .section-body h3:first-child { margin-top: 0; }
+
+    .section-body p { margin-bottom: 0.75rem; color: var(--gray-700); }
+
+    .section-body ul, .section-body ol {
+      padding-left: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .section-body li { margin-bottom: 0.35rem; color: var(--gray-700); }
+
+    .steps {
+      counter-reset: step;
+      padding-left: 0;
+      list-style: none;
+    }
+    .steps li {
+      counter-increment: step;
+      padding: 0.5rem 0 0.5rem 2.5rem;
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: var(--mit-blue);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .callout {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .callout-info {
+      background: var(--mit-blue-bg);
+      border-left: 3px solid var(--mit-blue-light);
+    }
+    .callout-warning {
+      background: #fffbeb;
+      border-left: 3px solid var(--amber-600);
+    }
+    .callout-success {
+      background: #ecfdf5;
+      border-left: 3px solid var(--green-600);
+    }
+    .callout-danger {
+      background: #fef2f2;
+      border-left: 3px solid var(--red-600);
+    }
+    .callout strong { display: block; margin-bottom: 0.25rem; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-purple { background: #f3e8ff; color: #6b21a8; }
+    .badge-gray { background: #f3f4f6; color: #374151; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    th {
+      background: var(--gray-50);
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .formula-box {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      text-align: center;
+      margin: 1rem 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+    .formula-box .green { color: var(--green-600); }
+    .formula-box .red { color: var(--red-600); }
+    .formula-box .blue { color: var(--mit-blue-light); }
+    .formula-box .amber { color: var(--amber-600); }
+
+    .footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--gray-500);
+      font-size: 0.85rem;
+    }
+
+    @media print {
+      .header { position: static; }
+      .section-body { display: block !important; }
+      .section-header .chevron { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .header h1 { font-size: 1.35rem; }
+      .container { padding: 1rem; }
+      .section-header h2 { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Profitability Analysis</h1>
+  <p>Training Guide &amp; Reference</p>
+</div>
+
+<div class="container">
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <p style="margin-bottom: 0.75rem;"><a href="index.html">&larr; Back to Main Training Guide</a></p>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#summary">Profitability Summary</a></li>
+      <li><a href="#by-customer">By Customer</a></li>
+      <li><a href="#pnl">P&amp;L Summary</a></li>
+      <li><a href="#overhead">Overhead</a></li>
+      <li><a href="#vendor-overhead">Vendor Overhead</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1: Overview -->
+  <div class="section open" id="overview">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128200;</span>
+      <h2>1. Overview</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>The <strong>Profitability</strong> page provides financial analysis across multiple dimensions, giving you a complete picture of how the business is performing week over week.</p>
+
+      <h3>Sub-tabs</h3>
+      <p>The Profitability page is organized into 6 sub-tabs:</p>
+      <table>
+        <tr><th>Tab</th><th>Purpose</th></tr>
+        <tr><td><strong>Summary</strong></td><td>Company-wide weekly metrics (hours, revenue, margin)</td></tr>
+        <tr><td><strong>By Customer</strong></td><td>Per-customer profitability breakdown with drill-down</td></tr>
+        <tr><td><strong>P&amp;L Summary</strong></td><td>Profit &amp; Loss combining revenue and all costs</td></tr>
+        <tr><td><strong>Overhead</strong></td><td>Overhead expenses categorized by type</td></tr>
+        <tr><td><strong>Vendor Overhead</strong></td><td>Overhead expenses broken down by vendor</td></tr>
+        <tr><td><strong>Cash Position</strong></td><td>Live bank balances, A/R, A/P, and net position</td></tr>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>Cash Position has its own guide</strong>
+        The Cash Position tab is covered in a separate, dedicated training guide. See the <a href="cash-position-guide.html">Cash Position Guide</a> for full details.
+      </div>
+
+      <h3>Data sources</h3>
+      <table>
+        <tr><th>Data</th><th>Source</th></tr>
+        <tr><td>Labor hours &amp; cost</td><td>Time entries &times; employee cost rates</td></tr>
+        <tr><td>Billable revenue</td><td>Customer invoices (synced from QB)</td></tr>
+        <tr><td>Overhead expenses</td><td>Overhead transactions (categorized from QB expenses)</td></tr>
+        <tr><td>Employee cost rates</td><td>Configured in Settings &gt; Employee Rates</td></tr>
+      </table>
+
+      <h3>When data updates</h3>
+      <p>The automated weekly profitability report runs every <strong>Monday at 9 AM</strong>. It calculates all metrics for the prior week and stores results in the database. You can also trigger a manual calculation from the Settings page if needed.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Profitability Summary -->
+  <div class="section" id="summary">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128202;</span>
+      <h2>2. Profitability Summary</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>The <strong>Summary</strong> tab shows company-wide metrics for the selected week, giving you a high-level view of overall performance.</p>
+
+      <h3>Week selector</h3>
+      <p>Use the week selector at the top to change the reporting period. The page defaults to the most recent completed week.</p>
+
+      <h3>Key metrics</h3>
+      <table>
+        <tr><th>Metric</th><th>What it means</th></tr>
+        <tr><td><strong>Total Hours</strong></td><td>All hours logged by all employees for the week</td></tr>
+        <tr><td><strong>Billable Hours</strong></td><td>Hours billed to external customers</td></tr>
+        <tr><td><strong>Utilization %</strong></td><td>Billable Hours &divide; Total Hours &times; 100</td></tr>
+        <tr><td><strong>Billable Revenue</strong></td><td>Total revenue from billable time entries</td></tr>
+        <tr><td><strong>Labor Cost</strong></td><td>Total labor cost based on employee cost rates</td></tr>
+        <tr><td><strong>Gross Margin</strong></td><td>Billable Revenue &minus; Labor Cost</td></tr>
+        <tr><td><strong>Margin %</strong></td><td>Gross Margin &divide; Billable Revenue &times; 100</td></tr>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>Employee cost rates matter</strong>
+        Metrics are calculated from time entries multiplied by employee cost rates. If cost rates are missing for any employee, their labor cost will show as $0 and the overall labor cost will be underestimated.
+      </div>
+
+      <h3>Week-over-week trends</h3>
+      <p>Summary cards show week-over-week trends with up/down arrows. A green up arrow indicates improvement over the prior week; a red down arrow indicates a decline. This makes it easy to spot positive or negative trends at a glance.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3: By Customer -->
+  <div class="section" id="by-customer">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128101;</span>
+      <h2>3. By Customer</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>The <strong>By Customer</strong> tab shows a profitability breakdown for each customer, making it easy to identify your most and least profitable accounts.</p>
+
+      <h3>Customer table</h3>
+      <table>
+        <tr><th>Column</th><th>Description</th></tr>
+        <tr><td><strong>Customer Name</strong></td><td>The customer account name</td></tr>
+        <tr><td><strong>Hours</strong></td><td>Total hours billed to this customer</td></tr>
+        <tr><td><strong>Revenue</strong></td><td>Total billable revenue for this customer</td></tr>
+        <tr><td><strong>Labor Cost</strong></td><td>Cost of labor assigned to this customer</td></tr>
+        <tr><td><strong>Margin</strong></td><td>Revenue &minus; Labor Cost</td></tr>
+        <tr><td><strong>Margin %</strong></td><td>Margin &divide; Revenue &times; 100</td></tr>
+      </table>
+
+      <h3>Margin badges</h3>
+      <p>The Margin % column uses color-coded badges for quick identification:</p>
+      <table>
+        <tr><th>Badge</th><th>Threshold</th><th>Meaning</th></tr>
+        <tr>
+          <td><span class="badge badge-green">Healthy</span></td>
+          <td>&gt; 30%</td>
+          <td>Strong margin &mdash; customer is profitable</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-amber">Watch</span></td>
+          <td>10% &ndash; 30%</td>
+          <td>Moderate margin &mdash; monitor for changes</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-red">Low</span></td>
+          <td>&lt; 10%</td>
+          <td>Low margin &mdash; investigate and address</td>
+        </tr>
+      </table>
+
+      <h3>Customer drill-down</h3>
+      <p>Click any customer row to open a drill-down modal showing detailed breakdowns:</p>
+      <ul>
+        <li><strong>By Employee</strong> &mdash; Name, hours worked, labor cost, and revenue attributed</li>
+        <li><strong>By Service Item</strong> &mdash; Service type, hours, revenue, and transaction count</li>
+      </ul>
+
+      <h3>How to use</h3>
+      <ol class="steps">
+        <li>Select the week using the week selector at the top</li>
+        <li>Review the customer table &mdash; customers are sorted by revenue by default</li>
+        <li>Click a customer row to see the detail breakdown by employee and service item</li>
+        <li>Check the Margin % column to identify underperforming accounts that need attention</li>
+      </ol>
+
+      <div class="callout callout-warning">
+        <strong>0% margin customers</strong>
+        Customers showing 0% margin may have missing service item rates rather than truly zero profitability. Check <strong>Settings &gt; Service Items</strong> to ensure all items have rates configured.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: P&L Summary -->
+  <div class="section" id="pnl">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128176;</span>
+      <h2>4. P&amp;L Summary</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>The <strong>P&amp;L Summary</strong> tab provides a Profit &amp; Loss overview that combines revenue with all costs &mdash; both labor and non-payroll overhead &mdash; for a complete financial picture.</p>
+
+      <h3>Key metrics</h3>
+      <table>
+        <tr><th>Metric</th><th>Description</th></tr>
+        <tr><td><strong>Billable Revenue</strong></td><td>Total revenue from customer-billable time entries</td></tr>
+        <tr><td><strong>Total Labor Cost</strong></td><td>All employee labor costs (billable + overhead hours)</td></tr>
+        <tr><td><strong>Non-Payroll Overhead</strong></td><td>Categorized overhead expenses from the Overhead tab</td></tr>
+        <tr><td><strong>Total Cost</strong></td><td>Labor Cost + Non-Payroll Overhead</td></tr>
+        <tr><td><strong>Gross Margin</strong></td><td>Billable Revenue &minus; Total Cost</td></tr>
+        <tr><td><strong>Margin %</strong></td><td>Gross Margin &divide; Billable Revenue &times; 100</td></tr>
+      </table>
+
+      <div class="formula-box">
+        <span class="green">Billable Revenue</span>
+        &minus;
+        <span class="red">Labor Cost</span>
+        &minus;
+        <span class="amber">Non-Payroll Overhead</span>
+        =
+        <strong>Gross Margin</strong>
+      </div>
+
+      <h3>Utilization metrics</h3>
+      <p>The P&amp;L tab also includes utilization breakdowns:</p>
+      <ul>
+        <li><strong>Total Hours</strong> &mdash; all hours logged across the company</li>
+        <li><strong>Billable Hours</strong> &mdash; hours billed to external customers</li>
+        <li><strong>Overhead Hours</strong> &mdash; hours spent on internal/non-billable work</li>
+      </ul>
+
+      <h3>Unbilled entries</h3>
+      <p>Unbilled entries count and hours are shown separately so you can see how much work has been performed but not yet invoiced.</p>
+
+      <div class="callout callout-info">
+        <strong>Where does non-payroll overhead come from?</strong>
+        Non-payroll overhead is pulled from the Overhead tab's categorized expenses. If overhead expenses haven't been categorized yet, this number may be incomplete.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Overhead -->
+  <div class="section" id="overhead">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#127959;</span>
+      <h2>5. Overhead</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>The <strong>Overhead</strong> tab shows overhead expenses categorized by type. These expenses are synced from QuickBooks accounts and mapped to overhead categories in the app.</p>
+
+      <h3>How overhead works</h3>
+      <p>QB expense accounts are mapped to overhead categories using the configurable mapping UI. The <code>overhead_line_items</code> table stores the categorized results, which feed into the P&amp;L as "Non-Payroll Overhead."</p>
+
+      <h3>Overhead table</h3>
+      <table>
+        <tr><th>Column</th><th>Description</th></tr>
+        <tr><td><strong>Category</strong></td><td>The overhead category (e.g., Rent, Utilities, Insurance, Supplies)</td></tr>
+        <tr><td><strong>Amount</strong></td><td>Total dollar amount for that category</td></tr>
+        <tr><td><strong>Percentage</strong></td><td>This category's share of total overhead</td></tr>
+      </table>
+
+      <h3>How to use</h3>
+      <ol class="steps">
+        <li>Go to the <strong>Overhead</strong> tab on the Profitability page</li>
+        <li>Review the categorized expenses &mdash; ensure all major cost areas are represented</li>
+        <li>Check for <strong>Uncategorized</strong> items that need to be assigned</li>
+        <li>Use the mapping UI to assign QB expense accounts to the appropriate overhead categories</li>
+      </ol>
+
+      <div class="callout callout-warning">
+        <strong>Uncategorized overhead</strong>
+        Expenses that haven't been mapped to a category appear as <strong>"Uncategorized."</strong> Assign these to the correct overhead category to ensure your profitability numbers are accurate. Uncategorized items still count toward total overhead, but they make it harder to analyze where money is going.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Vendor Overhead -->
+  <div class="section" id="vendor-overhead">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#127970;</span>
+      <h2>6. Vendor Overhead</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>The <strong>Vendor Overhead</strong> tab shows overhead expenses broken down by vendor, helping you understand which vendors contribute most to your overhead costs.</p>
+
+      <h3>Vendor table</h3>
+      <table>
+        <tr><th>Column</th><th>Description</th></tr>
+        <tr><td><strong>Vendor Name</strong></td><td>The vendor or supplier name from QuickBooks</td></tr>
+        <tr><td><strong>Category</strong></td><td>The overhead category assigned to this vendor's expenses</td></tr>
+        <tr><td><strong>Amount</strong></td><td>Total dollar amount paid to this vendor</td></tr>
+        <tr><td><strong>Transaction Count</strong></td><td>Number of individual transactions with this vendor</td></tr>
+      </table>
+
+      <h3>Why it matters</h3>
+      <ul>
+        <li><strong>Cost control</strong> &mdash; Identify your highest-spend vendors at a glance</li>
+        <li><strong>Contract negotiation</strong> &mdash; Use vendor spend data to negotiate better rates</li>
+        <li><strong>Cost-saving opportunities</strong> &mdash; Spot vendors with high transaction counts that might benefit from consolidated billing or alternative suppliers</li>
+      </ul>
+
+      <h3>Vendor mapping</h3>
+      <p>You can assign default overhead categories to vendors so that future transactions from those vendors are automatically categorized. This reduces the amount of manual categorization needed on the Overhead tab.</p>
+
+      <div class="callout callout-info">
+        <strong>Vendor defaults save time</strong>
+        Once a default category is assigned to a vendor, all new transactions from that vendor will automatically inherit that category. You only need to manually categorize one-off or unusual expenses.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: FAQ -->
+  <div class="section" id="faq">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#10067;</span>
+      <h2>7. FAQ</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <table>
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr>
+          <td>How often is profitability data updated?</td>
+          <td>The weekly profitability report runs automatically every <strong>Monday at 9 AM</strong>. You can also trigger a manual calculation from the Settings page.</td>
+        </tr>
+        <tr>
+          <td>Why does margin show 0% for a customer?</td>
+          <td>This usually means service item rates are not configured for that customer's work. Check <strong>Settings &gt; Service Items</strong> to ensure all items have rates set.</td>
+        </tr>
+        <tr>
+          <td>What counts as "overhead hours"?</td>
+          <td>Hours logged to internal or overhead service items that are not billable to external customers. These include administrative time, training, and internal meetings.</td>
+        </tr>
+        <tr>
+          <td>Where do overhead expenses come from?</td>
+          <td>From QB expenses synced by the Daily Review sync, then categorized on the Overhead page. If you haven't run the Daily Review sync or categorized expenses, overhead data may be incomplete.</td>
+        </tr>
+        <tr>
+          <td>How is utilization calculated?</td>
+          <td><strong>Utilization % = Billable Hours &divide; Total Hours &times; 100.</strong> A higher utilization means more of your team's time is being billed to customers.</td>
+        </tr>
+        <tr>
+          <td>What about Cash Position?</td>
+          <td>Cash Position has its own detailed training guide. See the <a href="cash-position-guide.html">Cash Position Guide</a> for full instructions on live balances, net position, A/R aging, and more.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2026 Mitigation Information Technologies. All rights reserved.</p>
+    <p style="margin-top: 0.25rem;">Last updated: February 2026</p>
+    <p style="margin-top: 0.25rem;"><a href="index.html" style="color: var(--mit-blue-light);">&larr; Back to main training guide</a></p>
+  </div>
+
+</div>
+
+<script>
+  function toggleSection(header) {
+    const section = header.parentElement;
+    section.classList.toggle('open');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash);
+      if (target && target.classList.contains('section')) {
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
+
+  document.querySelectorAll('.toc a').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      var hash = this.getAttribute('href');
+      var target = document.querySelector(hash);
+      if (target) {
+        document.querySelectorAll('.section').forEach(function(s) {
+          s.classList.remove('open');
+        });
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.pushState(null, '', hash);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

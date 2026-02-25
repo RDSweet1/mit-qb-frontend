@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ProtectedPage } from '@/components/ProtectedPage';
 import { AppNav } from '@/components/AppNav';
 import { CommandPalette } from '@/components/CommandPalette';
+import { TalkToMe } from '@/components/TalkToMe';
 
 interface AppShellProps {
   children: ReactNode;
@@ -53,6 +54,7 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </main>
         <CommandPalette />
+        <TalkToMe />
       </div>
     </ProtectedPage>
   );

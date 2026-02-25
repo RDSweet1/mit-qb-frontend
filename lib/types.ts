@@ -327,3 +327,23 @@ export interface DailyReviewTransaction {
   synced_at: string;
   updated_at: string;
 }
+
+// --- AI Assistant (Talk to Me) ---
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AskAssistantRequest {
+  question: string;
+  conversationId?: string;
+}
+
+export interface AskAssistantResponse {
+  success: boolean;
+  answer: string;
+  sources: string[];
+  error?: string;
+}

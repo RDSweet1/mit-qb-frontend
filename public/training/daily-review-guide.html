@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT Consulting - Daily Financial Review</title>
+  <style>
+    :root {
+      --mit-blue: #1e40af;
+      --mit-blue-light: #3b82f6;
+      --mit-blue-bg: #eff6ff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --green-600: #059669;
+      --amber-600: #d97706;
+      --red-600: #dc2626;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--gray-800);
+      line-height: 1.6;
+      background: var(--gray-50);
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--mit-blue), var(--mit-blue-light));
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .header p { opacity: 0.9; font-size: 0.95rem; }
+
+    /* Layout */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    /* Table of Contents */
+    .toc {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .toc h2 {
+      font-size: 1.1rem;
+      color: var(--mit-blue);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--mit-blue-bg);
+    }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: 0.4rem; }
+    .toc a {
+      color: var(--mit-blue-light);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    /* Sections */
+    .section {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      transition: background 0.15s;
+    }
+    .section-header:hover { background: var(--mit-blue-bg); }
+
+    .section-header .icon {
+      font-size: 1.5rem;
+      width: 2rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 1.15rem;
+      color: var(--gray-900);
+      flex: 1;
+    }
+
+    .section-header .chevron {
+      font-size: 1.25rem;
+      color: var(--gray-500);
+      transition: transform 0.2s;
+    }
+    .section.open .section-header .chevron { transform: rotate(90deg); }
+
+    .section-body {
+      display: none;
+      padding: 1.25rem;
+    }
+    .section.open .section-body { display: block; }
+
+    .section-body h3 {
+      font-size: 1rem;
+      color: var(--mit-blue);
+      margin: 1.25rem 0 0.5rem 0;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .section-body h3:first-child { margin-top: 0; }
+
+    .section-body p { margin-bottom: 0.75rem; color: var(--gray-700); }
+
+    .section-body ul, .section-body ol {
+      padding-left: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .section-body li { margin-bottom: 0.35rem; color: var(--gray-700); }
+
+    /* Steps */
+    .steps {
+      counter-reset: step;
+      padding-left: 0;
+      list-style: none;
+    }
+    .steps li {
+      counter-increment: step;
+      padding: 0.5rem 0 0.5rem 2.5rem;
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: var(--mit-blue);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* Callout boxes */
+    .callout {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .callout-info {
+      background: var(--mit-blue-bg);
+      border-left: 3px solid var(--mit-blue-light);
+    }
+    .callout-warning {
+      background: #fffbeb;
+      border-left: 3px solid var(--amber-600);
+    }
+    .callout-success {
+      background: #ecfdf5;
+      border-left: 3px solid var(--green-600);
+    }
+    .callout-danger {
+      background: #fef2f2;
+      border-left: 3px solid var(--red-600);
+    }
+    .callout strong { display: block; margin-bottom: 0.25rem; }
+
+    /* Keyboard shortcut badges */
+    kbd {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      font-size: 0.8rem;
+      font-family: monospace;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: 3px;
+      box-shadow: 0 1px 0 var(--gray-300);
+    }
+
+    /* Status badges */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-gray { background: #f3f4f6; color: #374151; }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    th {
+      background: var(--gray-50);
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--gray-500);
+      font-size: 0.85rem;
+    }
+
+    /* Print */
+    @media print {
+      .header { position: static; }
+      .section-body { display: block !important; }
+      .section-header .chevron { display: none; }
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .header h1 { font-size: 1.35rem; }
+      .container { padding: 1rem; }
+      .section-header h2 { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>MIT Consulting &mdash; Daily Financial Review</h1>
+  <p>Training Guide &amp; Reference</p>
+</div>
+
+<div class="container">
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <p style="margin-bottom: 0.75rem;"><a href="index.html">&larr; Back to Main Training Guide</a></p>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#navigation">Navigating to Daily Review</a></li>
+      <li><a href="#syncing">Syncing Transactions</a></li>
+      <li><a href="#reviewing">Reviewing Transactions</a></li>
+      <li><a href="#categorizing">Categorizing Expenses</a></li>
+      <li><a href="#completing">Marking Days Complete</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1: Overview -->
+  <div class="section open" id="overview">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128202;</span>
+      <h2>1. Overview</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>What is the Daily Financial Review?</h3>
+      <p>The Daily Financial Review helps you track and categorize every financial transaction that flows through QuickBooks. Its purpose is to ensure nothing slips through the cracks, categorize expenses accurately, and identify unusual or unexpected transactions before they become problems.</p>
+
+      <h3>How transactions get here</h3>
+      <p>Transactions are synced from QuickBooks Online automatically. The system pulls the following transaction types:</p>
+      <ul>
+        <li><strong>Purchases</strong> &mdash; credit card charges and direct debits</li>
+        <li><strong>Bills</strong> &mdash; vendor invoices</li>
+        <li><strong>BillPayments</strong> &mdash; payments made to vendors</li>
+        <li><strong>Transfers</strong> &mdash; bank-to-bank transfers</li>
+        <li><strong>VendorCredits</strong> &mdash; credits received from vendors</li>
+        <li><strong>Payments</strong> &mdash; customer payments received</li>
+        <li><strong>Deposits</strong> &mdash; bank deposits</li>
+      </ul>
+
+      <h3>What you see for each transaction</h3>
+      <p>Each transaction displays the vendor or customer name, dollar amount, date, line items, and its current categorization status. This gives you a complete picture of every financial event so you can verify, categorize, and approve it.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Navigating to Daily Review -->
+  <div class="section" id="navigation">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#129517;</span>
+      <h2>2. Navigating to Daily Review</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>How to get there</h3>
+      <ol class="steps">
+        <li>Sign in to the app at <strong>https://rdsweet1.github.io/mit-qb-frontend/</strong> using your MIT Consulting Microsoft 365 account</li>
+        <li>Click <strong>"Daily Review"</strong> in the top navigation bar</li>
+        <li>The page loads showing today's transactions by default</li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>Access</strong>
+        The Daily Review tab is available to all users with view access. No special permissions are required to browse transactions.
+      </div>
+
+      <h3>Page layout</h3>
+      <p>When the page loads, you will see:</p>
+      <ul>
+        <li><strong>Date filter</strong> at the top &mdash; select the date range you want to review</li>
+        <li><strong>Sync button</strong> &mdash; pulls the latest transactions from QuickBooks Online</li>
+        <li><strong>Transaction table</strong> &mdash; lists all transactions for the selected date range with status indicators</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Syncing Transactions -->
+  <div class="section" id="syncing">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128260;</span>
+      <h2>3. Syncing Transactions</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Manual sync</h3>
+      <ol class="steps">
+        <li>Click the <strong>"Sync Transactions"</strong> button at the top of the page</li>
+        <li>The system connects to QuickBooks Online and pulls the latest data</li>
+        <li>New transactions appear in the table once the sync completes</li>
+      </ol>
+
+      <h3>What gets synced</h3>
+      <p>The sync pulls all supported transaction types from QuickBooks Online:</p>
+      <table>
+        <tr><th>Transaction Type</th><th>Description</th></tr>
+        <tr><td>Purchase</td><td>Credit card charges, direct debits</td></tr>
+        <tr><td>Bill</td><td>Vendor invoices</td></tr>
+        <tr><td>BillPayment</td><td>Payments to vendors</td></tr>
+        <tr><td>Transfer</td><td>Bank transfers</td></tr>
+        <tr><td>VendorCredit</td><td>Credits from vendors</td></tr>
+        <tr><td>Payment</td><td>Customer payments received</td></tr>
+        <tr><td>Deposit</td><td>Bank deposits</td></tr>
+      </table>
+
+      <div class="callout callout-warning">
+        <strong>Sync duration</strong>
+        Sync may take 30&ndash;60 seconds for large date ranges. The button will show a loading indicator while the sync is in progress.
+      </div>
+
+      <h3>Automatic sync</h3>
+      <p>In addition to manual syncing, the system runs an automatic sync on a schedule. Check the <strong>Settings</strong> page to see the current sync timing and adjust it if needed.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Reviewing Transactions -->
+  <div class="section" id="reviewing">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128064;</span>
+      <h2>4. Reviewing Transactions</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Transaction details</h3>
+      <p>Each transaction card displays the following information:</p>
+      <ul>
+        <li><strong>Date</strong> &mdash; when the transaction occurred</li>
+        <li><strong>Vendor/Customer name</strong> &mdash; who the transaction is with</li>
+        <li><strong>Amount</strong> &mdash; the dollar value</li>
+        <li><strong>Account</strong> &mdash; the QB account associated with the transaction</li>
+        <li><strong>Line items</strong> &mdash; expandable detail showing individual line items</li>
+        <li><strong>Memo</strong> &mdash; any notes or descriptions from QuickBooks</li>
+      </ul>
+
+      <h3>Status badges</h3>
+      <table>
+        <tr><th>Badge</th><th>Meaning</th></tr>
+        <tr><td><span class="badge badge-gray">Pending</span></td><td>Needs review &mdash; no one has looked at this transaction yet</td></tr>
+        <tr><td><span class="badge badge-green">Reviewed</span></td><td>Someone manually reviewed and approved this transaction</td></tr>
+        <tr><td><span class="badge badge-blue">Auto-Approved</span></td><td>Matched a categorization rule and was automatically approved</td></tr>
+        <tr><td><span class="badge badge-red">Flagged</span></td><td>Needs attention &mdash; something unusual was detected</td></tr>
+      </table>
+
+      <h3>Transaction classes</h3>
+      <p>Transactions are classified into two main types:</p>
+      <ul>
+        <li><strong>Expense</strong> &mdash; money going out (purchases, bills, bill payments, vendor credits)</li>
+        <li><strong>Revenue</strong> &mdash; money coming in (customer payments, deposits)</li>
+      </ul>
+
+      <h3>How to review</h3>
+      <ol class="steps">
+        <li>Look at each transaction with a <span class="badge badge-gray">Pending</span> status</li>
+        <li>Verify the vendor or customer name and amount are correct</li>
+        <li>Check that the category assignment is appropriate</li>
+        <li>Mark the transaction as reviewed</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Categorizing Expenses -->
+  <div class="section" id="categorizing">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#127991;&#65039;</span>
+      <h2>5. Categorizing Expenses</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Why categorization matters</h3>
+      <p>Categories determine how expenses appear in profitability reports and overhead analysis. Accurate categorization is essential for understanding where money is going and making informed business decisions.</p>
+
+      <h3>Category sources</h3>
+      <p>Transactions can receive categories from different sources:</p>
+      <table>
+        <tr><th>Source</th><th>Description</th></tr>
+        <tr><td><span class="badge badge-blue">auto</span></td><td>Matched by an existing categorization rule</td></tr>
+        <tr><td><span class="badge badge-green">vendor</span></td><td>Used the vendor's default category</td></tr>
+        <tr><td><span class="badge badge-amber">manual</span></td><td>You chose the category yourself</td></tr>
+        <tr><td><span class="badge badge-gray">recurring</span></td><td>Matched a recurring transaction rule</td></tr>
+      </table>
+
+      <h3>How to categorize</h3>
+      <ol class="steps">
+        <li>Find a transaction that has no category assigned</li>
+        <li>Click the <strong>category dropdown</strong> on the transaction</li>
+        <li>Select the appropriate category from the list</li>
+        <li>The category is saved automatically &mdash; no need to click a separate save button</li>
+      </ol>
+
+      <div class="callout callout-info">
+        <strong>Vendor rules</strong>
+        Setting a category for a vendor creates a rule &mdash; future transactions from that same vendor will be auto-categorized using your selection. This saves time as you build up your vendor mappings.
+      </div>
+
+      <h3>The overhead flag</h3>
+      <p>Transactions can be marked with an <strong>is_overhead</strong> flag, which identifies them as overhead expenses. Overhead-flagged transactions are included in the Overhead analysis page and factor into overall profitability calculations.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Marking Days Complete -->
+  <div class="section" id="completing">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#9989;</span>
+      <h2>6. Marking Days Complete</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>What does "day complete" mean?</h3>
+      <p>After reviewing all transactions for a given day, you can mark the day as complete. This provides a visual indicator that every transaction for that date has been reviewed and categorized, helping you track your progress across the week.</p>
+
+      <h3>How to mark a day complete</h3>
+      <ol class="steps">
+        <li>Review all transactions for the selected date</li>
+        <li>Verify that all transactions have correct categories assigned</li>
+        <li>Check the completion indicator to mark the day as done</li>
+      </ol>
+
+      <div class="callout callout-success">
+        <strong>Optional but recommended</strong>
+        Marking a day complete is optional but helps track review progress. It gives you and other team members a clear view of which days have been fully reviewed.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: FAQ -->
+  <div class="section" id="faq">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#10067;</span>
+      <h2>7. FAQ</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>What happens if new transactions appear after I've reviewed a day?</h3>
+      <p>New synced transactions will appear as <span class="badge badge-gray">Pending</span> regardless of the day's completion status. You'll need to review the new transactions individually, even if the day was previously marked complete.</p>
+
+      <h3>Can I change a category after marking a transaction as reviewed?</h3>
+      <p>Yes, categories can always be updated. The transaction's review status is independent of its categorization. Changing a category does not affect the reviewed/pending status.</p>
+
+      <h3>What's the difference between "Reviewed" and "Auto-Approved"?</h3>
+      <p><span class="badge badge-green">Reviewed</span> means someone manually checked the transaction and marked it as reviewed. <span class="badge badge-blue">Auto-Approved</span> means the transaction matched a categorization rule and was automatically approved by the system without manual intervention.</p>
+
+      <h3>How do expenses here connect to the Overhead page?</h3>
+      <p>Transactions marked as overhead (using the <strong>is_overhead</strong> flag) feed directly into the Overhead analysis page. The categories you assign here determine how those expenses are grouped and displayed in overhead reports.</p>
+
+      <h3>What if a transaction is miscategorized?</h3>
+      <p>Simply change the category using the dropdown on the transaction. The change takes effect immediately in all reports, including profitability and overhead analysis. There is no need to re-review or re-approve the transaction.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2026 Mitigation Information Technologies. All rights reserved.</p>
+    <p style="margin-top: 0.25rem;">Last updated: February 2026</p>
+  </div>
+
+</div>
+
+<script>
+  function toggleSection(header) {
+    const section = header.parentElement;
+    section.classList.toggle('open');
+  }
+
+  // Open section if navigated to via anchor
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash);
+      if (target && target.classList.contains('section')) {
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
+
+  // Handle anchor clicks
+  document.querySelectorAll('.toc a[href^="#"]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      var hash = this.getAttribute('href');
+      var target = document.querySelector(hash);
+      if (target) {
+        // Close all sections first
+        document.querySelectorAll('.section').forEach(function(s) {
+          s.classList.remove('open');
+        });
+        // Open the target
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.pushState(null, '', hash);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
