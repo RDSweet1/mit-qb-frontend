@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Loader2, CheckCircle, AlertCircle, ChevronDown, ChevronRight, DollarSign, CreditCard, TrendingUp, Clock } from 'lucide-react';
+import { RefreshCw, Loader2, CheckCircle, AlertCircle, ChevronDown, ChevronRight, DollarSign, CreditCard, TrendingUp, Clock, Landmark, FileText, Building2 } from 'lucide-react';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { fmtMoney, fmtPct, weekLabel, getMonday, fmtIsoDate as fmt } from '@/lib/utils';
-import type { QBPayment, QBInvoiceBalance, CashPositionWeek } from '@/lib/types';
+import type {
+  QBPayment, QBInvoiceBalance, CashPositionWeek,
+  CashPositionAccount, CashPositionBill, CCExpenseBreakdownItem, CashPositionTotals, CashPositionSummaryResponse,
+} from '@/lib/types';
 import {
   BarChart,
   Bar,
@@ -41,6 +44,18 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [arBalances, setArBalances] = useState<QBInvoiceBalance[]>([]);
   const [showAging, setShowAging] = useState(false);
+
+  // --- Net Position state ---
+  const [liveAccounts, setLiveAccounts] = useState<CashPositionAccount[]>([]);
+  const [openBills, setOpenBills] = useState<CashPositionBill[]>([]);
+  const [ccBreakdown, setCcBreakdown] = useState<CCExpenseBreakdownItem[]>([]);
+  const [liveTotals, setLiveTotals] = useState<CashPositionTotals | null>(null);
+  const [liveFetchedAt, setLiveFetchedAt] = useState<string | null>(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveError, setLiveError] = useState<string | null>(null);
+  const [showAccounts, setShowAccounts] = useState(true);
+  const [showCCBreakdown, setShowCCBreakdown] = useState(false);
+  const [showBills, setShowBills] = useState(false);
 
   // Load all data
   useEffect(() => {
@@ -86,7 +101,7 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
     });
   }, [startDate, endDate]);
 
-  // Sync handler
+  // Sync handler (existing)
   async function handleSync() {
     setSyncing(true);
     setSyncResult(null);
@@ -114,6 +129,25 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
       setSyncResult({ success: false, error: err.message });
     } finally {
       setSyncing(false);
+    }
+  }
+
+  // Live balances handler
+  async function handleLiveRefresh() {
+    setLiveLoading(true);
+    setLiveError(null);
+    try {
+      const result: CashPositionSummaryResponse = await callEdgeFunction('cash-position-summary', {});
+      if (!result.success) throw new Error(result.error || 'Failed to fetch live balances');
+      setLiveAccounts(result.accounts);
+      setOpenBills(result.openBills);
+      setCcBreakdown(result.ccExpenseBreakdown);
+      setLiveTotals(result.totals);
+      setLiveFetchedAt(result.fetchedAt);
+    } catch (err: any) {
+      setLiveError(err.message);
+    } finally {
+      setLiveLoading(false);
     }
   }
 
@@ -243,6 +277,16 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
     }));
   }, [weeklyData]);
 
+  // CC Expense breakdown grouped by account
+  const ccByAccount = useMemo(() => {
+    const map: Record<string, CCExpenseBreakdownItem[]> = {};
+    for (const item of ccBreakdown) {
+      if (!map[item.accountName]) map[item.accountName] = [];
+      map[item.accountName].push(item);
+    }
+    return map;
+  }, [ccBreakdown]);
+
   function collectionColor(pct: number): string {
     if (pct >= 90) return 'text-green-700';
     if (pct >= 70) return 'text-amber-700';
@@ -253,6 +297,23 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
     if (pct >= 90) return 'bg-green-100 text-green-800';
     if (pct >= 70) return 'bg-amber-100 text-amber-800';
     return 'bg-red-100 text-red-800';
+  }
+
+  function billStatusBadge(bill: CashPositionBill) {
+    if (bill.isOverdue) {
+      return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Overdue</span>;
+    }
+    if (bill.daysUntilDue !== null && bill.daysUntilDue <= 7) {
+      return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Due Soon</span>;
+    }
+    return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Current</span>;
+  }
+
+  function daysLabel(bill: CashPositionBill) {
+    if (bill.daysUntilDue === null) return '-';
+    if (bill.daysUntilDue < 0) return `${Math.abs(bill.daysUntilDue)}d overdue`;
+    if (bill.daysUntilDue === 0) return 'Due today';
+    return `${bill.daysUntilDue}d`;
   }
 
   if (loading) {
@@ -270,7 +331,7 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
 
   return (
     <div className="space-y-6">
-      {/* A. Sync Panel */}
+      {/* A. Sync Panel — both buttons */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
         <div className="flex items-center justify-between">
           <div>
@@ -279,14 +340,24 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
               Pulls payments, deposits, and invoice balances from QuickBooks
             </p>
           </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
-          >
-            {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            {syncing ? 'Syncing...' : 'Sync Payments'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLiveRefresh}
+              disabled={liveLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm font-medium"
+            >
+              {liveLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Landmark className="w-4 h-4" />}
+              {liveLoading ? 'Loading...' : 'Refresh Live Balances'}
+            </button>
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+            >
+              {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              {syncing ? 'Syncing...' : 'Sync Payments'}
+            </button>
+          </div>
         </div>
 
         {syncResult && (
@@ -306,9 +377,277 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
             )}
           </div>
         )}
+
+        {liveError && (
+          <div className="mt-3 rounded-lg p-3 border bg-red-50 border-red-200">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-800">{liveError}</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* B. Summary Cards */}
+      {/* ===== NEW: Net Position Section (shown after live refresh) ===== */}
+      {liveTotals && (
+        <>
+          {/* B. Net Position Summary — 5 hero cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-green-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Landmark className="w-4 h-4 text-green-600" />
+                <span className="text-xs text-gray-500 uppercase font-semibold">Cash on Hand</span>
+              </div>
+              <p className="text-2xl font-bold text-green-600">{fmtMoney(liveTotals.totalCash)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-purple-200">
+              <div className="flex items-center gap-2 mb-2">
+                <CreditCard className="w-4 h-4 text-purple-600" />
+                <span className="text-xs text-gray-500 uppercase font-semibold">CC Outstanding</span>
+              </div>
+              <p className={`text-2xl font-bold ${liveTotals.totalCCDebt > 0 ? 'text-red-600' : 'text-purple-600'}`}>
+                {fmtMoney(liveTotals.totalCCDebt)}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-blue-200">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-blue-600" />
+                <span className="text-xs text-gray-500 uppercase font-semibold">Receivables (A/R)</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-600">{fmtMoney(liveTotals.totalAR)}</p>
+              <p className="text-xs text-gray-400 mt-1">{liveTotals.arCount} invoice{liveTotals.arCount !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-amber-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Building2 className="w-4 h-4 text-amber-600" />
+                <span className="text-xs text-gray-500 uppercase font-semibold">Payables (A/P)</span>
+              </div>
+              <p className="text-2xl font-bold text-amber-600">{fmtMoney(liveTotals.totalAP)}</p>
+              <p className="text-xs text-gray-400 mt-1">{liveTotals.apCount} bill{liveTotals.apCount !== 1 ? 's' : ''}</p>
+            </div>
+            <div className={`p-4 rounded-xl shadow-sm border-2 ${liveTotals.netPosition >= 0 ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className={`w-4 h-4 ${liveTotals.netPosition >= 0 ? 'text-green-700' : 'text-red-700'}`} />
+                <span className="text-xs text-gray-600 uppercase font-semibold">Net Position</span>
+              </div>
+              <p className={`text-2xl font-bold ${liveTotals.netPosition >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {fmtMoney(liveTotals.netPosition)}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Cash &minus; CC Debt + A/R &minus; A/P</p>
+            </div>
+          </div>
+
+          {liveFetchedAt && (
+            <p className="text-xs text-gray-400 text-right -mt-4">
+              Live balances as of {new Date(liveFetchedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+            </p>
+          )}
+
+          {/* C. Account Balances Table */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <button
+              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              onClick={() => setShowAccounts(!showAccounts)}
+            >
+              <h3 className="text-lg font-semibold text-gray-900">Account Balances</h3>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-500">{liveAccounts.length} accounts</span>
+                {showAccounts ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+              </div>
+            </button>
+
+            {showAccounts && (
+              <div className="px-6 pb-4">
+                {liveAccounts.length > 0 ? (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="py-2 text-left text-xs text-gray-500 uppercase">Account</th>
+                        <th className="py-2 text-center text-xs text-gray-500 uppercase">Type</th>
+                        <th className="py-2 text-right text-xs text-gray-500 uppercase">Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {liveAccounts.map(acct => (
+                        <tr key={acct.id} className="hover:bg-gray-50">
+                          <td className="py-2 text-gray-900 font-medium">{acct.name}</td>
+                          <td className="py-2 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
+                              acct.accountType === 'Bank' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {acct.accountType === 'Bank' ? 'Bank' : 'Credit Card'}
+                            </span>
+                          </td>
+                          <td className={`py-2 text-right font-medium ${
+                            acct.accountType === 'Bank'
+                              ? (acct.currentBalance >= 0 ? 'text-green-700' : 'text-red-700')
+                              : (acct.currentBalance > 0 ? 'text-red-700' : 'text-green-700')
+                          }`}>
+                            {fmtMoney(Math.abs(acct.currentBalance))}
+                            {acct.accountType === 'Credit Card' && acct.currentBalance > 0 && (
+                              <span className="text-xs text-gray-400 ml-1">owed</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="border-t-2 border-gray-300">
+                      <tr>
+                        <td className="py-2 text-gray-900 font-bold">Total Bank</td>
+                        <td></td>
+                        <td className="py-2 text-right font-bold text-green-700">{fmtMoney(liveTotals.totalCash)}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 text-gray-900 font-bold">Total CC Debt</td>
+                        <td></td>
+                        <td className="py-2 text-right font-bold text-red-700">{fmtMoney(liveTotals.totalCCDebt)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">No accounts found</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* D. CC Expense Breakdown */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <button
+              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              onClick={() => setShowCCBreakdown(!showCCBreakdown)}
+            >
+              <h3 className="text-lg font-semibold text-gray-900">CC Expense Breakdown</h3>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-500">
+                  {ccBreakdown.length > 0
+                    ? `${Object.keys(ccByAccount).length} card${Object.keys(ccByAccount).length !== 1 ? 's' : ''}, ${ccBreakdown.reduce((s, c) => s + c.transactionCount, 0)} txns`
+                    : 'No data'}
+                </span>
+                {showCCBreakdown ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+              </div>
+            </button>
+
+            {showCCBreakdown && (
+              <div className="px-6 pb-4">
+                {ccBreakdown.length > 0 ? (
+                  <div className="space-y-4">
+                    {Object.entries(ccByAccount).map(([accountName, items]) => {
+                      const accountTotal = items.reduce((s, i) => s + i.totalAmount, 0);
+                      const accountTxns = items.reduce((s, i) => s + i.transactionCount, 0);
+                      return (
+                        <div key={accountName}>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-semibold text-purple-800 flex items-center gap-2">
+                              <CreditCard className="w-3.5 h-3.5" />
+                              {accountName}
+                            </h4>
+                            <span className="text-sm font-medium text-gray-700">
+                              {fmtMoney(accountTotal)} ({accountTxns} txn{accountTxns !== 1 ? 's' : ''})
+                            </span>
+                          </div>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-200">
+                                <th className="py-1.5 text-left text-xs text-gray-500 uppercase">Category</th>
+                                <th className="py-1.5 text-right text-xs text-gray-500 uppercase">Amount</th>
+                                <th className="py-1.5 text-right text-xs text-gray-500 uppercase">Txns</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {items.map((item, idx) => (
+                                <tr key={idx} className={`hover:bg-gray-50 ${item.category === 'Uncategorized' ? 'bg-amber-50' : ''}`}>
+                                  <td className={`py-1.5 ${item.category === 'Uncategorized' ? 'text-amber-800 font-medium' : 'text-gray-700'}`}>
+                                    {item.category}
+                                  </td>
+                                  <td className="py-1.5 text-right text-gray-900 font-medium">{fmtMoney(item.totalAmount)}</td>
+                                  <td className="py-1.5 text-right text-gray-500">{item.transactionCount}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <CreditCard className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">Run Daily Review Sync to populate CC expense data.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* E. Upcoming Bills / A/P */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <button
+              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              onClick={() => setShowBills(!showBills)}
+            >
+              <h3 className="text-lg font-semibold text-gray-900">Upcoming Bills / A/P</h3>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-500">
+                  {openBills.length > 0
+                    ? `${openBills.length} bill${openBills.length !== 1 ? 's' : ''} — ${fmtMoney(liveTotals.totalAP)}`
+                    : 'No open bills'}
+                </span>
+                {showBills ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+              </div>
+            </button>
+
+            {showBills && (
+              <div className="px-6 pb-4">
+                {openBills.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="py-2 text-left text-xs text-gray-500 uppercase">Vendor</th>
+                          <th className="py-2 text-right text-xs text-gray-500 uppercase">Due Date</th>
+                          <th className="py-2 text-right text-xs text-gray-500 uppercase">Total</th>
+                          <th className="py-2 text-right text-xs text-gray-500 uppercase">Balance</th>
+                          <th className="py-2 text-center text-xs text-gray-500 uppercase">Status</th>
+                          <th className="py-2 text-right text-xs text-gray-500 uppercase">Days</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {openBills.map(bill => (
+                          <tr key={bill.id} className={`hover:bg-gray-50 ${bill.isOverdue ? 'bg-red-50' : ''}`}>
+                            <td className="py-2 text-gray-900">{bill.vendorName}</td>
+                            <td className="py-2 text-right text-gray-600">{bill.dueDate || '-'}</td>
+                            <td className="py-2 text-right text-gray-900">{fmtMoney(bill.totalAmount)}</td>
+                            <td className="py-2 text-right font-medium text-amber-700">{fmtMoney(bill.balance)}</td>
+                            <td className="py-2 text-center">{billStatusBadge(bill)}</td>
+                            <td className="py-2 text-right text-xs text-gray-500">{daysLabel(bill)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="border-t-2 border-gray-300">
+                        <tr>
+                          <td className="py-2 text-gray-900 font-bold">Total A/P</td>
+                          <td></td>
+                          <td></td>
+                          <td className="py-2 text-right font-bold text-amber-700">{fmtMoney(liveTotals.totalAP)}</td>
+                          <td></td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">No open bills</p>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ===== EXISTING SECTIONS BELOW ===== */}
+
+      {/* YTD Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center gap-2 mb-2">
@@ -342,7 +681,7 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
         </div>
       </div>
 
-      {/* C. A/R Aging */}
+      {/* A/R Aging */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <button
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -455,7 +794,7 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
         )}
       </div>
 
-      {/* D. Cash Flow Chart */}
+      {/* Cash Flow Chart */}
       {chartData.length > 1 && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Cash Flow</h3>
@@ -478,7 +817,7 @@ export default function CashPositionView({ startDate, endDate }: CashPositionVie
         </div>
       )}
 
-      {/* E. Weekly Detail Table */}
+      {/* Weekly Detail Table */}
       {weeklyData.length > 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">

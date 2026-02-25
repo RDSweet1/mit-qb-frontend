@@ -240,6 +240,54 @@ export interface CashPositionWeek {
   expenseRatioPct: number;
 }
 
+// --- Cash Position Summary (Net Position) ---
+
+export interface CashPositionAccount {
+  id: string;
+  name: string;
+  accountType: 'Bank' | 'Credit Card';
+  currentBalance: number;
+  active: boolean;
+}
+
+export interface CashPositionBill {
+  id: string;
+  vendorName: string;
+  txnDate: string;
+  dueDate: string | null;
+  totalAmount: number;
+  balance: number;
+  isOverdue: boolean;
+  daysUntilDue: number | null;
+}
+
+export interface CCExpenseBreakdownItem {
+  accountName: string;
+  category: string;
+  totalAmount: number;
+  transactionCount: number;
+}
+
+export interface CashPositionTotals {
+  totalCash: number;
+  totalCCDebt: number;
+  totalAR: number;
+  totalAP: number;
+  netPosition: number;
+  arCount: number;
+  apCount: number;
+}
+
+export interface CashPositionSummaryResponse {
+  success: boolean;
+  accounts: CashPositionAccount[];
+  openBills: CashPositionBill[];
+  ccExpenseBreakdown: CCExpenseBreakdownItem[];
+  totals: CashPositionTotals;
+  fetchedAt: string;
+  error?: string;
+}
+
 // --- Daily Financial Review ---
 
 export interface QBLineItem {
