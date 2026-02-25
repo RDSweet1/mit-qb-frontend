@@ -21,8 +21,8 @@ test.describe('Reports', () => {
   test('week/date selector exists', async ({ page }) => {
     const reports = new ReportsPage(page);
     await reports.goto();
-    const selector = page.locator('select').or(page.locator('input[type="date"]')).or(page.getByRole('button', { name: /week|prev|next/i }).first());
-    await expect(selector).toBeVisible();
+    // Reports page has a date input for "Select Week to Report"
+    await expect(page.locator('input[type="date"]').first()).toBeVisible();
   });
 
   test('customer cards or table renders', async ({ page }) => {

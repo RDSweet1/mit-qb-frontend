@@ -76,15 +76,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const instance = new PublicClientApplication(runtimeConfig);
         await instance.initialize();
 
-        // Handle redirect promise (for redirect-based flows)
-        const response = await instance.handleRedirectPromise();
-        if (response) {
-          instance.setActiveAccount(response.account);
-        } else {
-          // Set active account from cache if available
+        if (isTestMode) {
+          // In test mode, skip handleRedirectPromise (it can hang waiting for
+          // iframes/popups that will never complete). Just load from cache.
           const accounts = instance.getAllAccounts();
           if (accounts.length > 0) {
             instance.setActiveAccount(accounts[0]);
+          }
+        } else {
+          // Handle redirect promise (for redirect-based flows)
+          const response = await instance.handleRedirectPromise();
+          if (response) {
+            instance.setActiveAccount(response.account);
+          } else {
+            // Set active account from cache if available
+            const accounts = instance.getAllAccounts();
+            if (accounts.length > 0) {
+              instance.setActiveAccount(accounts[0]);
+            }
           }
         }
 

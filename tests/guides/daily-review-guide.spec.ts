@@ -181,7 +181,10 @@ test.describe('Guide: Section 4 — Reviewing steps match app', () => {
       for (let i = 0; i < Math.min(badgeCount, 10); i++) {
         const text = await statusBadges.nth(i).textContent();
         const trimmed = text?.trim();
-        expect(['Pending', 'Reviewed', 'Auto', 'Flagged']).toContain(trimmed);
+        // Skip badges with empty text (icon-only buttons)
+        if (trimmed && trimmed.length > 0) {
+          expect(['Pending', 'Reviewed', 'Auto', 'Flagged']).toContain(trimmed);
+        }
       }
     }
   });

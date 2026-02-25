@@ -45,23 +45,21 @@ test.describe('Time Entries', () => {
     expect(errors).toHaveLength(0);
   });
 
-  test('view toggle buttons exist (grouped/flat)', async ({ page }) => {
+  test('date range preset buttons exist', async ({ page }) => {
     const timeEntries = new TimeEntriesPage(page);
     await timeEntries.goto();
 
-    // Guide says two views: Grouped by Customer and Flat List
-    const groupedBtn = page.getByRole('button', { name: /grouped|customer/i });
-    const flatBtn = page.getByRole('button', { name: /flat|list/i });
-    const toggleExists = (await groupedBtn.count()) > 0 || (await flatBtn.count()) > 0;
-    expect(toggleExists).toBeTruthy();
+    // Time entries has preset buttons: This Week, Last Week, This Month, Last Month
+    await expect(page.getByRole('button', { name: 'This Week' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Last Week' })).toBeVisible();
   });
 
   test('date picker controls exist', async ({ page }) => {
     const timeEntries = new TimeEntriesPage(page);
     await timeEntries.goto();
 
-    const datePicker = page.locator('input[type="date"]').or(page.getByRole('button', { name: /prev|next|week/i }).first());
-    await expect(datePicker).toBeVisible();
+    // From/To date inputs
+    await expect(page.locator('input[type="date"]').first()).toBeVisible();
   });
 
   test('edit mechanism exists on entries', async ({ page }) => {

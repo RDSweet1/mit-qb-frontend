@@ -18,9 +18,8 @@ test.describe('Daily Review', () => {
   test('date filter controls exist', async ({ page }) => {
     const dailyReview = new DailyReviewPage(page);
     await dailyReview.goto();
-    // Date filter — either input[type=date] or date picker buttons
-    const dateControl = page.locator('input[type="date"]').or(page.getByRole('button', { name: /prev|next|today/i }).first());
-    await expect(dateControl).toBeVisible();
+    // Daily Review has From/To date inputs
+    await expect(page.locator('input[type="date"]').first()).toBeVisible();
   });
 
   test('transaction table renders or shows empty state', async ({ page }) => {

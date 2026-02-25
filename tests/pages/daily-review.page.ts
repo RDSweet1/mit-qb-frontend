@@ -20,7 +20,7 @@ export class DailyReviewPage extends BasePage {
 
   async verify() {
     await this.verifyAppShell();
-    await this.verifyPageHeader('Daily Review');
+    await this.verifyPageHeader('Daily Financial Review');
     await this.verifyActiveNavTab('Daily Review');
   }
 }
