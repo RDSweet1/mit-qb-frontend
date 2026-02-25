@@ -354,14 +354,16 @@ test.describe('Guide: Section 6 — Upcoming Bills described correctly', () => {
 
     await page.locator('button', { hasText: 'Upcoming Bills / A/P' }).click();
 
-    const hasData = await page.locator('th', { hasText: 'Vendor' }).isVisible().catch(() => false);
+    // Scope to the A/P section to avoid matching A/R Aging's "Balance" header
+    const apSection = page.locator('button', { hasText: 'Upcoming Bills / A/P' }).locator('..');
+    const hasData = await apSection.locator('th', { hasText: 'Vendor' }).isVisible().catch(() => false);
     if (hasData) {
-      await expect(page.locator('th', { hasText: 'Vendor' })).toBeVisible();
-      await expect(page.locator('th', { hasText: 'Due Date' })).toBeVisible();
-      await expect(page.locator('th', { hasText: 'Total' })).toBeVisible();
-      await expect(page.locator('th', { hasText: 'Balance' })).toBeVisible();
-      await expect(page.locator('th', { hasText: 'Status' })).toBeVisible();
-      await expect(page.locator('th', { hasText: 'Days' })).toBeVisible();
+      await expect(apSection.locator('th', { hasText: 'Vendor' })).toBeVisible();
+      await expect(apSection.locator('th', { hasText: 'Due Date' })).toBeVisible();
+      await expect(apSection.locator('th', { hasText: 'Total' })).toBeVisible();
+      await expect(apSection.locator('th', { hasText: 'Balance' })).toBeVisible();
+      await expect(apSection.locator('th', { hasText: 'Status' })).toBeVisible();
+      await expect(apSection.locator('th', { hasText: 'Days' })).toBeVisible();
     }
   });
 

@@ -248,10 +248,8 @@ test.describe('Cash Position Tab', () => {
     await page.getByRole('button', { name: /refresh live balances/i }).click();
     await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
 
-    // Formula subtitle under Net Position
-    await expect(page.locator('text=Cash')).toBeVisible();
-    // Check for the minus sign entity
-    const formulaText = page.locator('p', { hasText: /CC Debt.*A\/R.*A\/P/ });
+    // Formula subtitle under Net Position card
+    const formulaText = page.locator('p', { hasText: /Cash.*CC Debt.*A\/R.*A\/P/ });
     await expect(formulaText).toBeVisible();
   });
 
