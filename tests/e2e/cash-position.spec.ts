@@ -3,8 +3,12 @@
  *
  * Tests the Cash Position tab on the Profitability page:
  *   - Tab existence and navigation
- *   - Sync panel UI
- *   - Summary cards rendering
+ *   - Sync panel UI (both buttons)
+ *   - Net Position hero cards (5 metrics)
+ *   - Account Balances table
+ *   - CC Expense Breakdown
+ *   - Upcoming Bills / A/P
+ *   - YTD Summary cards rendering
  *   - A/R aging section
  *   - Weekly detail table structure
  *   - Chart rendering
@@ -163,6 +167,231 @@ test.describe('Cash Position Tab', () => {
     const error = page.locator('text=/Sync failed|error/i');
     await expect(success.or(error)).toBeVisible({ timeout: 5000 });
   });
+
+  // ================================================================
+  // Net Position — Live Balances UI
+  // ================================================================
+
+  test('Refresh Live Balances button is visible', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByRole('button', { name: /refresh live balances/i })).toBeVisible();
+  });
+
+  test('both sync buttons exist in the sync panel', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByRole('button', { name: /refresh live balances/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /sync payments/i })).toBeVisible();
+  });
+
+  test('Refresh Live Balances calls cash-position-summary', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    let edgeFnCalled = false;
+    page.on('request', (req) => {
+      if (req.url().includes('cash-position-summary')) {
+        edgeFnCalled = true;
+      }
+    });
+
+    const btn = page.getByRole('button', { name: /refresh live balances/i });
+    await btn.click();
+
+    // Button should show loading state
+    await expect(page.locator('text=Loading...')).toBeVisible({ timeout: 3000 });
+
+    // Wait for it to finish (QB API can be slow)
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    expect(edgeFnCalled).toBeTruthy();
+  });
+
+  test('after live refresh, 5 net position hero cards appear', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    // Trigger live refresh
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    // Check all 5 hero cards
+    await expect(page.locator('span', { hasText: 'Cash on Hand' })).toBeVisible();
+    await expect(page.locator('span', { hasText: 'CC Outstanding' })).toBeVisible();
+    await expect(page.locator('span', { hasText: 'Receivables (A/R)' })).toBeVisible();
+    await expect(page.locator('span', { hasText: 'Payables (A/P)' })).toBeVisible();
+    await expect(page.locator('span', { hasText: 'Net Position' })).toBeVisible();
+  });
+
+  test('net position card shows formula subtitle', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    // Formula subtitle under Net Position
+    await expect(page.locator('text=Cash')).toBeVisible();
+    // Check for the minus sign entity
+    const formulaText = page.locator('p', { hasText: /CC Debt.*A\/R.*A\/P/ });
+    await expect(formulaText).toBeVisible();
+  });
+
+  test('Account Balances section appears after live refresh', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    // Account Balances heading should be visible
+    await expect(page.locator('h3', { hasText: 'Account Balances' })).toBeVisible();
+
+    // Should show type badges (Bank / Credit Card)
+    const bankBadges = page.locator('span.rounded-full', { hasText: 'Bank' });
+    const ccBadges = page.locator('span.rounded-full', { hasText: 'Credit Card' });
+    const bankCount = await bankBadges.count();
+    const ccCount = await ccBadges.count();
+    expect(bankCount + ccCount).toBeGreaterThan(0);
+  });
+
+  test('Account Balances shows Total Bank and Total CC Debt rows', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    await expect(page.locator('text=Total Bank')).toBeVisible();
+    await expect(page.locator('text=Total CC Debt')).toBeVisible();
+  });
+
+  test('CC Expense Breakdown section is collapsible', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    // CC Expense Breakdown should be visible as a collapsible header
+    const ccHeader = page.locator('button', { hasText: 'CC Expense Breakdown' });
+    await expect(ccHeader).toBeVisible();
+
+    // Click to expand
+    await ccHeader.click();
+
+    // Should show either category data or the empty state message
+    const categoryTable = page.locator('th', { hasText: 'Category' });
+    const emptyState = page.locator('text=Run Daily Review Sync to populate CC expense data.');
+    await expect(categoryTable.first().or(emptyState)).toBeVisible({ timeout: 5000 });
+  });
+
+  test('Upcoming Bills / A/P section is collapsible', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    // A/P header
+    const apHeader = page.locator('button', { hasText: 'Upcoming Bills / A/P' });
+    await expect(apHeader).toBeVisible();
+
+    // Click to expand
+    await apHeader.click();
+
+    // Should show either bill data or "No open bills"
+    const vendorColumn = page.locator('th', { hasText: 'Vendor' });
+    const emptyState = page.locator('text=No open bills');
+    await expect(vendorColumn.first().or(emptyState)).toBeVisible({ timeout: 5000 });
+  });
+
+  test('A/P bills show status badges (Overdue/Due Soon/Current)', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    // Expand A/P section
+    await page.locator('button', { hasText: 'Upcoming Bills / A/P' }).click();
+
+    // If there are bills, check for status badges
+    const hasBills = await page.locator('th', { hasText: 'Vendor' }).isVisible().catch(() => false);
+    if (hasBills) {
+      const statusBadges = page.locator('span.rounded-full').filter({ hasText: /Overdue|Due Soon|Current/ });
+      const count = await statusBadges.count();
+      expect(count).toBeGreaterThan(0);
+    }
+  });
+
+  test('live balances timestamp is shown after refresh', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    // Should show "Live balances as of ..."
+    await expect(page.locator('text=Live balances as of')).toBeVisible();
+  });
+
+  test('existing YTD cards still appear after live refresh', async ({ page }) => {
+    const profitability = new ProfitabilityPage(page);
+    await profitability.goto();
+
+    await page.getByRole('button', { name: /cash position/i }).click();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /refresh live balances/i }).click();
+    await expect(page.locator('text=Loading...')).not.toBeVisible({ timeout: 120000 });
+
+    // Original 4 YTD summary cards should still be visible below net position
+    await expect(page.locator('span', { hasText: 'YTD Billed' })).toBeVisible();
+    await expect(page.locator('span', { hasText: 'YTD Received' })).toBeVisible();
+    await expect(page.locator('span', { hasText: 'Collection Rate' })).toBeVisible();
+    await expect(page.locator('span', { hasText: 'Outstanding A/R' })).toBeVisible();
+  });
+
+  // ================================================================
+  // Original tests continue below
+  // ================================================================
 
   test('chart renders when data exists', async ({ page }) => {
     const profitability = new ProfitabilityPage(page);

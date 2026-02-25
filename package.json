@@ -12,7 +12,8 @@
     "test:setup": "npx playwright test --project=auth-setup",
     "test:api": "npx playwright test --config=playwright.api.config.ts",
     "test:health": "npx playwright test --config=playwright.api.config.ts health-checks",
-    "test:all": "npm run test:api && npm run test:e2e"
+    "test:guides": "npx playwright test --project=guides",
+    "test:all": "npm run test:api && npm run test:e2e && npm run test:guides"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.7.1",

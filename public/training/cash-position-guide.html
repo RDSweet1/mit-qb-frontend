@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT Consulting - Cash Position &amp; Net Financial Position Guide</title>
+  <style>
+    :root {
+      --mit-blue: #1e40af;
+      --mit-blue-light: #3b82f6;
+      --mit-blue-bg: #eff6ff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --green-600: #059669;
+      --amber-600: #d97706;
+      --red-600: #dc2626;
+      --purple-600: #9333ea;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--gray-800);
+      line-height: 1.6;
+      background: var(--gray-50);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--mit-blue), var(--mit-blue-light));
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .header p { opacity: 0.9; font-size: 0.95rem; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    .toc {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .toc h2 {
+      font-size: 1.1rem;
+      color: var(--mit-blue);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--mit-blue-bg);
+    }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: 0.4rem; }
+    .toc a {
+      color: var(--mit-blue-light);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    .section {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      transition: background 0.15s;
+    }
+    .section-header:hover { background: var(--mit-blue-bg); }
+
+    .section-header .icon {
+      font-size: 1.5rem;
+      width: 2rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 1.15rem;
+      color: var(--gray-900);
+      flex: 1;
+    }
+
+    .section-header .chevron {
+      font-size: 1.25rem;
+      color: var(--gray-500);
+      transition: transform 0.2s;
+    }
+    .section.open .section-header .chevron { transform: rotate(90deg); }
+
+    .section-body {
+      display: none;
+      padding: 1.25rem;
+    }
+    .section.open .section-body { display: block; }
+
+    .section-body h3 {
+      font-size: 1rem;
+      color: var(--mit-blue);
+      margin: 1.25rem 0 0.5rem 0;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .section-body h3:first-child { margin-top: 0; }
+
+    .section-body p { margin-bottom: 0.75rem; color: var(--gray-700); }
+
+    .section-body ul, .section-body ol {
+      padding-left: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .section-body li { margin-bottom: 0.35rem; color: var(--gray-700); }
+
+    .steps {
+      counter-reset: step;
+      padding-left: 0;
+      list-style: none;
+    }
+    .steps li {
+      counter-increment: step;
+      padding: 0.5rem 0 0.5rem 2.5rem;
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.5rem;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: var(--mit-blue);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .callout {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .callout-info {
+      background: var(--mit-blue-bg);
+      border-left: 3px solid var(--mit-blue-light);
+    }
+    .callout-warning {
+      background: #fffbeb;
+      border-left: 3px solid var(--amber-600);
+    }
+    .callout-success {
+      background: #ecfdf5;
+      border-left: 3px solid var(--green-600);
+    }
+    .callout-danger {
+      background: #fef2f2;
+      border-left: 3px solid var(--red-600);
+    }
+    .callout strong { display: block; margin-bottom: 0.25rem; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-purple { background: #f3e8ff; color: #6b21a8; }
+    .badge-gray { background: #f3f4f6; color: #374151; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    th {
+      background: var(--gray-50);
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .formula-box {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      text-align: center;
+      margin: 1rem 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+    .formula-box .green { color: var(--green-600); }
+    .formula-box .red { color: var(--red-600); }
+    .formula-box .blue { color: var(--mit-blue-light); }
+    .formula-box .amber { color: var(--amber-600); }
+
+    .footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--gray-500);
+      font-size: 0.85rem;
+    }
+
+    @media print {
+      .header { position: static; }
+      .section-body { display: block !important; }
+      .section-header .chevron { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .header h1 { font-size: 1.35rem; }
+      .container { padding: 1rem; }
+      .section-header h2 { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Cash Position &amp; Net Financial Position</h1>
+  <p>Training Guide &mdash; MIT Consulting Weekly Time Billing</p>
+</div>
+
+<div class="container">
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc" data-testid="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#overview">Overview &mdash; What is Net Position?</a></li>
+      <li><a href="#getting-live-balances">Getting Live Balances</a></li>
+      <li><a href="#net-position-cards">Net Position Summary Cards</a></li>
+      <li><a href="#account-balances">Account Balances</a></li>
+      <li><a href="#cc-expenses">Credit Card Expense Breakdown</a></li>
+      <li><a href="#upcoming-bills">Upcoming Bills / Accounts Payable</a></li>
+      <li><a href="#existing-sections">YTD Summary, A/R Aging &amp; Cash Flow</a></li>
+      <li><a href="#faq">FAQ &amp; Troubleshooting</a></li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1: Overview -->
+  <div class="section open" id="overview" data-testid="section-overview">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128176;</span>
+      <h2>1. Overview &mdash; What is Net Position?</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p><strong>Net Position</strong> gives you a single number that answers the question: <em>"If we collected everything owed to us and paid everything we owe, how much cash would we have?"</em></p>
+
+      <div class="formula-box">
+        <span class="green">Cash on Hand</span>
+        &minus;
+        <span class="red">CC Debt</span>
+        +
+        <span class="blue">Accounts Receivable</span>
+        &minus;
+        <span class="amber">Accounts Payable</span>
+        =
+        <strong>Net Position</strong>
+      </div>
+
+      <h3>Where to find it</h3>
+      <ol class="steps" data-testid="steps-navigate">
+        <li>Click <strong>Profitability</strong> in the top navigation bar</li>
+        <li>Click the <strong>Cash Position</strong> tab</li>
+        <li>Click <strong>"Refresh Live Balances"</strong> (the purple button) to pull live data from QuickBooks</li>
+      </ol>
+
+      <h3>Data sources</h3>
+      <table data-testid="data-sources-table">
+        <tr><th>Data</th><th>Source</th><th>Updated</th></tr>
+        <tr><td>Bank balances</td><td>QuickBooks Online (live)</td><td>Each time you click Refresh</td></tr>
+        <tr><td>Credit card balances</td><td>QuickBooks Online (live)</td><td>Each time you click Refresh</td></tr>
+        <tr><td>Accounts Receivable</td><td>Supabase (synced invoices)</td><td>Last payment sync</td></tr>
+        <tr><td>Accounts Payable</td><td>QuickBooks Online (live)</td><td>Each time you click Refresh</td></tr>
+        <tr><td>CC Expense categories</td><td>Supabase (daily review)</td><td>Last Daily Review sync</td></tr>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>Payment safety</strong>
+        Credit card payments (transfers from bank to CC) are <em>not</em> counted as expenses. The CC balance from QuickBooks already reflects all payments applied &mdash; it is the single source of truth for what you owe.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Getting Live Balances -->
+  <div class="section" id="getting-live-balances" data-testid="section-live-balances">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128260;</span>
+      <h2>2. Getting Live Balances</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Two buttons in the sync panel</h3>
+      <p>The Cash Position tab has two separate sync buttons:</p>
+      <table data-testid="sync-buttons-table">
+        <tr><th>Button</th><th>Color</th><th>What it does</th></tr>
+        <tr>
+          <td><strong>Refresh Live Balances</strong></td>
+          <td><span class="badge badge-purple">Purple</span></td>
+          <td>Pulls live bank/CC balances and open bills from QB, calculates net position</td>
+        </tr>
+        <tr>
+          <td><strong>Sync Payments</strong></td>
+          <td><span class="badge badge-blue">Blue</span></td>
+          <td>Syncs payment history, deposits, and invoice balances for the YTD section below</td>
+        </tr>
+      </table>
+
+      <h3>How to refresh</h3>
+      <ol class="steps" data-testid="steps-refresh">
+        <li>Navigate to <strong>Profitability &gt; Cash Position</strong></li>
+        <li>Click the purple <strong>"Refresh Live Balances"</strong> button</li>
+        <li>Wait for the loading to complete (this queries QuickBooks live, may take a few seconds)</li>
+        <li>The Net Position cards, Account Balances, CC Breakdown, and Bills sections will appear</li>
+      </ol>
+
+      <div class="callout callout-warning">
+        <strong>First time loading</strong>
+        The net position sections only appear <em>after</em> you click "Refresh Live Balances." Before clicking, you'll only see the YTD summary cards and weekly detail table.
+      </div>
+
+      <p>After refreshing, a timestamp appears below the cards showing when the data was fetched (e.g., "Live balances as of Feb 25, 10:30 AM").</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Net Position Cards -->
+  <div class="section" id="net-position-cards" data-testid="section-net-position">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#127919;</span>
+      <h2>3. Net Position Summary Cards</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>After refreshing, 5 large cards appear at the top of the page:</p>
+
+      <table data-testid="cards-table">
+        <tr><th>Card</th><th>Color</th><th>What it shows</th></tr>
+        <tr>
+          <td><strong>Cash on Hand</strong></td>
+          <td><span class="badge badge-green">Green</span></td>
+          <td>Total balance across all bank accounts</td>
+        </tr>
+        <tr>
+          <td><strong>CC Outstanding</strong></td>
+          <td><span class="badge badge-purple">Purple/Red</span></td>
+          <td>Total balance owed on all credit cards</td>
+        </tr>
+        <tr>
+          <td><strong>Receivables (A/R)</strong></td>
+          <td><span class="badge badge-blue">Blue</span></td>
+          <td>Total unpaid invoices &mdash; money customers owe you</td>
+        </tr>
+        <tr>
+          <td><strong>Payables (A/P)</strong></td>
+          <td><span class="badge badge-amber">Amber</span></td>
+          <td>Total unpaid bills &mdash; money you owe vendors</td>
+        </tr>
+        <tr>
+          <td><strong>Net Position</strong></td>
+          <td><span class="badge badge-green">Green</span> or <span class="badge badge-red">Red</span></td>
+          <td>The bottom line: green = positive, red = negative</td>
+        </tr>
+      </table>
+
+      <div class="callout callout-success">
+        <strong>Reading the Net Position card</strong>
+        A <strong>green</strong> Net Position means you have more assets than liabilities. A <strong>red</strong> Net Position means liabilities exceed your liquid assets. The formula is shown underneath: "Cash &minus; CC Debt + A/R &minus; A/P."
+      </div>
+
+      <p>The A/R and A/P cards also show a count (e.g., "37 invoices" or "2 bills") so you can quickly see how many open items there are.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Account Balances -->
+  <div class="section" id="account-balances" data-testid="section-account-balances">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#127974;</span>
+      <h2>4. Account Balances</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>Below the summary cards is the <strong>Account Balances</strong> table. It shows every active bank and credit card account from QuickBooks with their current balance.</p>
+
+      <h3>What you'll see</h3>
+      <ul>
+        <li><span class="badge badge-blue">Bank</span> accounts &mdash; shown first, with balances in green</li>
+        <li><span class="badge badge-purple">Credit Card</span> accounts &mdash; shown second, with balances in red (amount owed)</li>
+        <li><strong>Total Bank</strong> and <strong>Total CC Debt</strong> rows at the bottom</li>
+      </ul>
+
+      <h3>Collapsing/expanding</h3>
+      <p>Click the <strong>"Account Balances"</strong> header to collapse or expand this section. It is expanded by default after refreshing.</p>
+
+      <div class="callout callout-info">
+        <strong>Balance meaning differs by type</strong>
+        For bank accounts, a positive balance = money you have. For credit cards, a positive balance = money you owe. The CC balance already includes all payments QB has processed &mdash; if you paid off a card today, the balance would show $0 on the next refresh.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: CC Expenses -->
+  <div class="section" id="cc-expenses" data-testid="section-cc-expenses">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128179;</span>
+      <h2>5. Credit Card Expense Breakdown</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>This section answers <em>"Where is the CC money going?"</em> &mdash; it breaks down charges on each credit card by expense category.</p>
+
+      <h3>How to view</h3>
+      <ol class="steps" data-testid="steps-cc-breakdown">
+        <li>After refreshing live balances, find the <strong>"CC Expense Breakdown"</strong> section</li>
+        <li>Click the header to expand it</li>
+        <li>Each credit card account gets its own sub-section with a table of categories</li>
+      </ol>
+
+      <h3>What the columns mean</h3>
+      <table>
+        <tr><th>Column</th><th>Description</th></tr>
+        <tr><td>Category</td><td>Expense category (e.g., "Internet/Phone", "Office Supplies", "Uncategorized")</td></tr>
+        <tr><td>Amount</td><td>Total dollar amount for that category</td></tr>
+        <tr><td>Txns</td><td>Number of individual transactions in that category</td></tr>
+      </table>
+
+      <div class="callout callout-warning">
+        <strong>Uncategorized expenses</strong>
+        Rows labeled <strong>"Uncategorized"</strong> are highlighted in amber. These are charges that haven't been categorized yet in the Daily Review. To categorize them, go to the <strong>Daily Review</strong> page and assign categories.
+      </div>
+
+      <h3>Empty state</h3>
+      <p>If no CC expense data appears, you'll see the message: <em>"Run Daily Review Sync to populate CC expense data."</em> This means the Daily Review sync hasn't pulled CC Purchase transactions yet.</p>
+
+      <div class="callout callout-info">
+        <strong>Only actual charges</strong>
+        This breakdown only counts <em>Purchase</em> transactions (actual CC charges). It does not include Transfers (CC payments from bank) or BillPayments &mdash; so there's no double-counting.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Upcoming Bills -->
+  <div class="section" id="upcoming-bills" data-testid="section-bills">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128196;</span>
+      <h2>6. Upcoming Bills / Accounts Payable</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>This section shows all open bills from QuickBooks &mdash; money you owe to vendors that hasn't been paid yet.</p>
+
+      <h3>How to view</h3>
+      <ol class="steps" data-testid="steps-bills">
+        <li>After refreshing live balances, find the <strong>"Upcoming Bills / A/P"</strong> section</li>
+        <li>Click the header to expand it</li>
+        <li>Bills are sorted by due date (soonest first)</li>
+      </ol>
+
+      <h3>Table columns</h3>
+      <table>
+        <tr><th>Column</th><th>Description</th></tr>
+        <tr><td>Vendor</td><td>Who you owe</td></tr>
+        <tr><td>Due Date</td><td>When payment is due</td></tr>
+        <tr><td>Total</td><td>Original bill amount</td></tr>
+        <tr><td>Balance</td><td>Remaining amount to pay (after partial payments)</td></tr>
+        <tr><td>Status</td><td>Color-coded badge</td></tr>
+        <tr><td>Days</td><td>Days until due (or "Xd overdue")</td></tr>
+      </table>
+
+      <h3>Status badges</h3>
+      <table data-testid="bill-status-table">
+        <tr><th>Badge</th><th>Meaning</th></tr>
+        <tr>
+          <td><span class="badge badge-red">Overdue</span></td>
+          <td>Past due date &mdash; row highlighted in red</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-amber">Due Soon</span></td>
+          <td>Due within 7 days</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">Current</span></td>
+          <td>More than 7 days until due</td>
+        </tr>
+      </table>
+
+      <div class="callout callout-danger">
+        <strong>Overdue bills</strong>
+        Overdue bills are highlighted with a red background. Pay attention to these &mdash; they may incur late fees or affect vendor relationships.
+      </div>
+
+      <p>The <strong>Total A/P</strong> row at the bottom shows the total balance across all open bills.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 7: Existing Sections -->
+  <div class="section" id="existing-sections" data-testid="section-existing">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128200;</span>
+      <h2>7. YTD Summary, A/R Aging &amp; Cash Flow</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>Below the net position sections, the Cash Position tab still shows all original sections:</p>
+
+      <h3>YTD Summary cards</h3>
+      <table>
+        <tr><th>Card</th><th>Description</th></tr>
+        <tr><td>YTD Billed</td><td>Total invoiced this year</td></tr>
+        <tr><td>YTD Received</td><td>Total payments received this year</td></tr>
+        <tr><td>Collection Rate</td><td>Received &divide; Billed (green &ge;90%, amber 70-90%, red &lt;70%)</td></tr>
+        <tr><td>Outstanding A/R</td><td>Total unpaid invoices</td></tr>
+      </table>
+
+      <h3>A/R Aging</h3>
+      <p>Click to expand. Shows a stacked bar and table breaking A/R into buckets: <span class="badge badge-green">Current</span>, <span class="badge badge-amber">31-60d</span>, <span class="badge badge-amber">61-90d</span>, <span class="badge badge-red">90+d</span>.</p>
+
+      <h3>Weekly Cash Flow chart</h3>
+      <p>Bar chart showing Billed, Received, and Expenses per week, with a line for YTD Net. Only appears when there are 2+ weeks of data.</p>
+
+      <h3>Weekly Cash Detail table</h3>
+      <p>A detailed table with weekly breakdowns including labor, overhead, collection rate, and running YTD totals. To populate this data, use the blue <strong>"Sync Payments"</strong> button.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 8: FAQ -->
+  <div class="section" id="faq" data-testid="section-faq">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#10067;</span>
+      <h2>8. FAQ &amp; Troubleshooting</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <table data-testid="faq-table">
+        <tr><th>Question</th><th>Answer</th></tr>
+        <tr>
+          <td>Why don't I see the net position cards?</td>
+          <td>Click <strong>"Refresh Live Balances"</strong> first. The cards only appear after loading live data from QuickBooks.</td>
+        </tr>
+        <tr>
+          <td>Why is CC Outstanding showing $0?</td>
+          <td>Either all cards are paid off, or QB hasn't posted recent charges yet. Check your QB Online credit card accounts to confirm.</td>
+        </tr>
+        <tr>
+          <td>Why is CC Expense Breakdown empty?</td>
+          <td>Run the Daily Review sync first (Daily Review page &gt; Sync button). CC purchases need to be synced before categories appear here.</td>
+        </tr>
+        <tr>
+          <td>Are CC payments counted as expenses?</td>
+          <td><strong>No.</strong> Only actual Purchase transactions count. Transfers from bank to CC are excluded. The CC balance already reflects all payments.</td>
+        </tr>
+        <tr>
+          <td>What's the difference between "Refresh Live Balances" and "Sync Payments"?</td>
+          <td>"Refresh Live Balances" pulls real-time account balances and bills from QB. "Sync Payments" syncs payment/invoice history for the YTD analysis below.</td>
+        </tr>
+        <tr>
+          <td>How often should I refresh?</td>
+          <td>Whenever you want a current snapshot. There's no automatic schedule &mdash; it's on-demand because it queries QB live.</td>
+        </tr>
+        <tr>
+          <td>Why do I see very old bills in A/P?</td>
+          <td>QB reports all bills with a balance > $0. Some may be legacy items that were never closed. Contact the accountant to write off or close old bills in QB.</td>
+        </tr>
+        <tr>
+          <td>The refresh button shows an error</td>
+          <td>This usually means the QuickBooks token has expired. Contact the system administrator to refresh the QB Online token.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2026 Mitigation Information Technologies. All rights reserved.</p>
+    <p style="margin-top: 0.25rem;">Last updated: February 2026</p>
+    <p style="margin-top: 0.25rem;"><a href="index.html" style="color: var(--mit-blue-light);">&larr; Back to main training guide</a></p>
+  </div>
+
+</div>
+
+<script>
+  function toggleSection(header) {
+    const section = header.parentElement;
+    section.classList.toggle('open');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash);
+      if (target && target.classList.contains('section')) {
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
+
+  document.querySelectorAll('.toc a').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      var hash = this.getAttribute('href');
+      var target = document.querySelector(hash);
+      if (target) {
+        document.querySelectorAll('.section').forEach(function(s) {
+          s.classList.remove('open');
+        });
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.pushState(null, '', hash);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

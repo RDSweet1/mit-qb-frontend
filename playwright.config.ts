@@ -27,6 +27,11 @@ export default defineConfig({
       testDir: './tests/e2e',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'guides',
+      testDir: './tests/guides',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   webServer: {
