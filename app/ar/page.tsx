@@ -848,6 +848,7 @@ export default function ARPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [fullSyncing, setFullSyncing] = useState(false);
+  const [emailSyncing, setEmailSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -947,6 +948,23 @@ export default function ARPage() {
       showToast(e.message, false);
     } finally {
       setFullSyncing(false);
+    }
+  };
+
+  const syncEmails = async () => {
+    setEmailSyncing(true);
+    try {
+      const res = await callEdgeFunction('ar-sync-emails', { lookbackDays: 90 });
+      if (res.success) {
+        showToast(`Email sync — ${res.logged || 0} new messages logged`, true);
+        await load();
+      } else {
+        showToast(res.error || 'Email sync failed', false);
+      }
+    } catch (e: any) {
+      showToast(e.message, false);
+    } finally {
+      setEmailSyncing(false);
     }
   };
 
@@ -1061,8 +1079,17 @@ export default function ARPage() {
               Sync from QB
             </button>
             <button
+              onClick={syncEmails}
+              disabled={emailSyncing || fullSyncing || syncing}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg disabled:opacity-50 transition-colors"
+              title="Pull customer email replies from accounting@ inbox"
+            >
+              {emailSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+              Sync Emails
+            </button>
+            <button
               onClick={syncPayments}
-              disabled={syncing || fullSyncing}
+              disabled={syncing || fullSyncing || emailSyncing}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg disabled:opacity-50 transition-colors"
               title="Update payment balances from QuickBooks"
             >

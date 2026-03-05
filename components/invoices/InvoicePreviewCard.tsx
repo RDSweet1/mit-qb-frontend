@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   FileText,
   DollarSign,
+  Ban,
 } from 'lucide-react';
 
 export interface CustomerPreview {
@@ -42,6 +43,7 @@ interface Props {
   onActionChange: (stagingId: number, action: string) => void;
   marginPercent?: number | null;
   hasDisputedReports?: boolean;
+  hasBillingHold?: boolean;
 }
 
 const STATUS_CONFIG = {
@@ -79,7 +81,7 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function InvoicePreviewCard({ preview, onActionChange, marginPercent, hasDisputedReports }: Props) {
+export default function InvoicePreviewCard({ preview, onActionChange, marginPercent, hasDisputedReports, hasBillingHold }: Props) {
   const [expanded, setExpanded] = useState(preview.missingRateCount > 0);
   const config = STATUS_CONFIG[preview.comparisonStatus];
   const StatusIcon = config.icon;
@@ -133,6 +135,12 @@ export default function InvoicePreviewCard({ preview, onActionChange, marginPerc
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                     <AlertTriangle className="w-3 h-3" />
                     Disputed
+                  </span>
+                )}
+                {hasBillingHold && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    <Ban className="w-3 h-3" />
+                    Billing Hold
                   </span>
                 )}
               </div>

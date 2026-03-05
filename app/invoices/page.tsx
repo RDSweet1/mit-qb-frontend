@@ -22,6 +22,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Info,
+  Ban,
 } from 'lucide-react';
 import { useMsal } from '@azure/msal-react';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
@@ -88,6 +89,10 @@ export default function InvoicesPage() {
   // Profitability context for preview cards
   const [margins, setMargins] = useState<Record<string, number>>({});
   const [disputedCustomers, setDisputedCustomers] = useState<Set<string>>(new Set());
+
+  // Billing holds: customers with unpaid AR on hold
+  const [billingHolds, setBillingHolds] = useState<{ qb_customer_id: string; customer_name: string; balance_due: number; qb_invoice_number: string }[]>([]);
+  const [billingHoldsExpanded, setBillingHoldsExpanded] = useState(true);
 
   // Load customer override data
   const loadOverrides = useCallback(async () => {
@@ -220,6 +225,16 @@ export default function InvoicesPage() {
       if (disputed) {
         setDisputedCustomers(new Set(disputed.map(d => d.qb_customer_id)));
       }
+
+      // Check for billing holds — customers with unpaid AR that have been placed on hold
+      const { data: holds } = await supabase
+        .from('invoice_log')
+        .select('qb_customer_id, customer_name, balance_due, qb_invoice_number')
+        .eq('billing_hold', true)
+        .not('ar_status', 'in', '("paid","void")');
+
+      setBillingHolds(holds || []);
+      if (holds && holds.length > 0) setBillingHoldsExpanded(true);
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : 'Failed to generate preview');
       setStage('config');
@@ -510,6 +525,40 @@ export default function InvoicesPage() {
               </div>
             )}
 
+            {/* Billing Hold Warning */}
+            {billingHolds.length > 0 && (
+              <div className="bg-orange-50 border border-orange-300 rounded-xl mb-6 overflow-hidden">
+                <button
+                  onClick={() => setBillingHoldsExpanded(e => !e)}
+                  className="w-full flex items-center gap-3 p-4 text-left hover:bg-orange-100 transition-colors"
+                >
+                  <Ban className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-orange-900">
+                      {billingHolds.length} customer{billingHolds.length > 1 ? 's' : ''} with unpaid invoices on billing hold
+                    </p>
+                    <p className="text-orange-700 text-sm">
+                      Review before generating new invoices — outstanding balances must be addressed.
+                    </p>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-orange-500 transition-transform ${billingHoldsExpanded ? 'rotate-180' : ''}`} />
+                </button>
+                {billingHoldsExpanded && (
+                  <div className="border-t border-orange-200 divide-y divide-orange-100">
+                    {billingHolds.map((h, i) => (
+                      <div key={i} className="flex items-center px-4 py-2.5 gap-4 text-sm">
+                        <span className="font-medium text-orange-900 flex-1">{h.customer_name}</span>
+                        <span className="text-orange-600 text-xs">Invoice #{h.qb_invoice_number}</span>
+                        <span className="font-semibold text-orange-700">
+                          ${(h.balance_due ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} outstanding
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Per-Customer Cards */}
             <div className="space-y-3 mb-24">
               {previews.map((preview) => (
@@ -519,6 +568,7 @@ export default function InvoicesPage() {
                   onActionChange={handleActionChange}
                   marginPercent={margins[preview.qbCustomerId] ?? null}
                   hasDisputedReports={disputedCustomers.has(preview.qbCustomerId)}
+                  hasBillingHold={billingHolds.some(h => h.qb_customer_id === preview.qbCustomerId)}
                 />
               ))}
             </div>
