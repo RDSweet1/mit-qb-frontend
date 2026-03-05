@@ -27,6 +27,7 @@ export function AppNav() {
   const [unbilledCount, setUnbilledCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [dailyReviewPending, setDailyReviewPending] = useState(0);
+  const [arOverdueCount, setArOverdueCount] = useState(0);
 
   // Normalize path — strip basePath prefix if present
   const normalizedPath = pathname?.replace(/^\/mit-qb-frontend/, '') || '/';
@@ -69,7 +70,14 @@ export function AppNav() {
         .from('daily_review_transactions')
         .select('id', { count: 'exact', head: true })
         .eq('review_status', 'pending'),
-    ]).then(([pausedRes, qbRes, unbilledRes, pendingRes, dailyReviewRes]) => {
+      // AR: invoices with next_action_date <= today (action overdue)
+      supabase
+        .from('invoice_log')
+        .select('id', { count: 'exact', head: true })
+        .not('ar_status', 'in', '("paid","void","attorney")')
+        .not('next_action_date', 'is', null)
+        .lte('next_action_date', new Date().toISOString().split('T')[0]),
+    ]).then(([pausedRes, qbRes, unbilledRes, pendingRes, dailyReviewRes, arRes]) => {
       setPausedCount(pausedRes.count || 0);
       setQbConnected(
         qbRes.data && !qbRes.error
@@ -79,6 +87,7 @@ export function AppNav() {
       setUnbilledCount(unbilledRes.count || 0);
       setPendingCount(pendingRes.count || 0);
       setDailyReviewPending(dailyReviewRes.count || 0);
+      setArOverdueCount(arRes.count || 0);
     });
   }, []);
 
@@ -88,6 +97,7 @@ export function AppNav() {
     if (href === '/analytics/unbilled-time' && unbilledCount > 0) return { count: unbilledCount, color: 'bg-red-500' };
     if (href === '/time-entries-enhanced' && pendingCount > 0) return { count: pendingCount, color: 'bg-blue-500' };
     if (href === '/daily-review' && dailyReviewPending > 0) return { count: dailyReviewPending, color: 'bg-teal-500' };
+    if (href === '/ar' && arOverdueCount > 0) return { count: arOverdueCount, color: 'bg-rose-500' };
     return null;
   }
 
