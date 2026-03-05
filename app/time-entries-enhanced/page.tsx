@@ -290,7 +290,7 @@ export default function TimeEntriesEnhancedPage() {
         entries: sortedEntries.map(entry => ({
           date: entry.txn_date, employee: entry.employee_name, customer: entry.qb_customer_id,
           costCode: entry.cost_code, hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
-          billable: entry.billable_status, description: entry.description,
+          billable: entry.billable_status, description: entry.notes,
         })),
         summary: { totalEntries: entries.length, totalHours: calculateTotalHours(entries) },
       };
@@ -331,7 +331,7 @@ export default function TimeEntriesEnhancedPage() {
         entries: customerEntries.map(entry => ({
           date: entry.txn_date, employee: entry.employee_name, customer: entry.qb_customer_id,
           costCode: entry.cost_code, hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
-          billable: entry.billable_status, description: entry.description,
+          billable: entry.billable_status, description: entry.notes,
         })),
         summary: { totalEntries: customerEntries.length, totalHours: calculateTotalHours(customerEntries) },
       };
@@ -383,7 +383,7 @@ export default function TimeEntriesEnhancedPage() {
         entries: customerEntries.map(entry => ({
           date: entry.txn_date, employee: entry.employee_name, customer: entry.qb_customer_id,
           costCode: entry.cost_code, hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
-          billable: entry.billable_status, description: entry.description,
+          billable: entry.billable_status, description: entry.notes,
         })),
         summary: { totalEntries: customerEntries.length, totalHours: calculateTotalHours(customerEntries) },
       };
