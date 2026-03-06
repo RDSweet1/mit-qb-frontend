@@ -32,6 +32,11 @@ export default defineConfig({
       testDir: './tests/guides',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'screenshots',
+      testDir: './tests/screenshots',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 
   webServer: {

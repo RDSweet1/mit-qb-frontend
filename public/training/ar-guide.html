@@ -200,6 +200,27 @@
       font-size: 0.85rem;
       padding: 2rem 0 1rem;
     }
+
+    .screenshot-wrap {
+      margin: 1.25rem 0;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    }
+    .screenshot-wrap img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .screenshot-caption {
+      background: var(--gray-50);
+      border-top: 1px solid var(--gray-200);
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--gray-500);
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -318,6 +339,11 @@
         The <strong>Billing Pipeline</strong> banner on the home Dashboard also shows a &ldquo;Collections Due&rdquo; count in red when AR action is needed, so you&apos;ll see it the moment you log in.
       </div>
 
+      <div class="screenshot-wrap">
+        <img src="screenshots/ar-page-overview.png" alt="Accounts Receivable page showing the four sub-tabs: Dashboard, Invoices, Queue, Activity">
+        <div class="screenshot-caption">The AR page — four sub-tabs at the top and three sync buttons in the top-right corner.</div>
+      </div>
+
       <h3>The Four Sub-Tabs</h3>
       <table class="reference">
         <tr><th>Tab</th><th>What It Shows</th></tr>
@@ -326,6 +352,11 @@
         <tr><td><strong>Queue</strong></td><td>Two sections: &ldquo;Due Today&rdquo; (action needed now) and &ldquo;Upcoming&rdquo; (due within 7 days). Best view for daily AR work.</td></tr>
         <tr><td><strong>Activity</strong></td><td>Searchable log of every interaction across all invoices &mdash; calls, emails, notes, payments, disputes</td></tr>
       </table>
+
+      <div class="screenshot-wrap">
+        <img src="screenshots/ar-queue.png" alt="Queue tab showing Due Today and Upcoming sections with invoice cards">
+        <div class="screenshot-caption">The Queue tab — the best starting point for daily AR work. Items due today appear first, followed by upcoming due items.</div>
+      </div>
 
       <h3>Recommended Daily Workflow</h3>
       <ol class="steps">
@@ -347,6 +378,11 @@
     <div class="section-body">
       <h3>Why Sync?</h3>
       <p>Our system creates invoice records automatically when you generate invoices in the Invoices tab. However, if an invoice was created directly in QuickBooks, or if a payment was received in QB that we haven&apos;t captured yet, the sync buttons bring everything up to date.</p>
+
+      <div class="screenshot-wrap">
+        <img src="screenshots/ar-sync-buttons.png" alt="Three sync buttons: Sync from QB, Sync Payments, Sync Emails">
+        <div class="screenshot-caption">The three sync buttons in the top-right of the AR page.</div>
+      </div>
 
       <h3>Sync from QB (Full Invoice Sync)</h3>
       <ol class="steps">
@@ -385,6 +421,11 @@
       <span class="chevron">&#9654;</span>
     </div>
     <div class="section-body">
+      <div class="screenshot-wrap">
+        <img src="screenshots/ar-invoices.png" alt="Invoice list showing customer names, invoice numbers, status badges, aging days, and balance due">
+        <div class="screenshot-caption">The Invoices tab — searchable list with status badges, aging days, and balance for every open invoice. Click any row to open the detail drawer.</div>
+      </div>
+
       <h3>Status Badges</h3>
       <table class="reference">
         <tr><th>Badge</th><th>Meaning</th></tr>
@@ -425,6 +466,11 @@
     <div class="section-body">
       <h3>Opening the Detail Drawer</h3>
       <p>Click any invoice row in the Invoices list or Queue tab. A drawer slides in from the right showing everything about that invoice in one place.</p>
+
+      <div class="screenshot-wrap">
+        <img src="screenshots/ar-detail-drawer.png" alt="Invoice detail drawer open on the right side, showing financial strip, status banners, action buttons, and activity timeline">
+        <div class="screenshot-caption">The detail drawer — financial strip at top, action buttons, status banners, and the full activity timeline below.</div>
+      </div>
 
       <h3>Financial Strip</h3>
       <p>At the top of the drawer, four numbers give the financial status at a glance:</p>
@@ -580,6 +626,11 @@
       <h3>What Email Sync Does</h3>
       <p>The email sync function reads the <strong>accounting@mitigationconsulting.com</strong> inbox and sent items folder, identifies messages to or from known customers, and logs them in the AR activity timeline. This means every email interaction &mdash; whether sent by the system or written manually in Outlook &mdash; is captured in one place.</p>
 
+      <div class="screenshot-wrap">
+        <img src="screenshots/ar-activity.png" alt="Activity tab showing searchable log of all AR interactions across all invoices">
+        <div class="screenshot-caption">The Activity tab — every call, email, note, payment, and dispute logged in one searchable feed.</div>
+      </div>
+
       <h3>What Gets Captured</h3>
       <table class="reference">
         <tr><th>Type</th><th>Direction</th><th>Example</th></tr>
@@ -622,6 +673,11 @@
       <h3>What Is the Billing Pipeline?</h3>
       <p>The <strong>Billing Pipeline</strong> banner at the top of the Home Dashboard gives a five-stage snapshot of where work currently stands in the billing cycle, so you can see at a glance what needs attention the moment you log in.</p>
 
+      <div class="screenshot-wrap">
+        <img src="screenshots/home-pipeline.png" alt="Home dashboard showing the Billing Pipeline banner with five color-coded stages">
+        <div class="screenshot-caption">The Billing Pipeline banner appears at the top of the dashboard every time you log in. Green = clear, amber = action needed, red = urgent.</div>
+      </div>
+
       <h3>The Five Stages</h3>
       <table class="reference">
         <tr><th>Stage</th><th>What It Counts</th><th>Where It Links</th></tr>
@@ -648,6 +704,11 @@
       <h3>Billing Hold Warnings on Invoices</h3>
       <p>When you generate a monthly invoice preview, a collapsible orange banner appears at the top if any customers have an active billing hold. The banner lists each affected customer and their outstanding balance, so you can decide whether to proceed with invoicing or resolve the hold first.</p>
       <p>Each affected customer&apos;s invoice card also shows an orange <span class="badge badge-orange">Billing Hold</span> badge for quick identification.</p>
+
+      <div class="screenshot-wrap">
+        <img src="screenshots/invoices-billing-hold.png" alt="Invoice preview page showing orange billing hold warning banner at the top listing customers with active holds">
+        <div class="screenshot-caption">The billing hold banner on the Invoices page — appears after generating a preview when any customer has an active collection hold.</div>
+      </div>
     </div>
   </div>
 
