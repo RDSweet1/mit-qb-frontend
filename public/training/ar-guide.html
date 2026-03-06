@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT Consulting - Accounts Receivable Collections Guide</title>
+  <style>
+    :root {
+      --mit-blue: #1e40af;
+      --mit-blue-light: #3b82f6;
+      --mit-blue-bg: #eff6ff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --green-600: #059669;
+      --amber-600: #d97706;
+      --red-600: #dc2626;
+      --rose-600: #e11d48;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--gray-800);
+      line-height: 1.6;
+      background: var(--gray-50);
+    }
+
+    .header {
+      background: linear-gradient(135deg, #9f1239, var(--rose-600));
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .header p { opacity: 0.9; font-size: 0.95rem; }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+
+    .toc {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .toc h2 {
+      font-size: 1.1rem;
+      color: var(--rose-600);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #fff1f2;
+    }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: 0.4rem; }
+    .toc a { color: var(--mit-blue-light); text-decoration: none; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; }
+
+    .section {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      transition: background 0.15s;
+    }
+    .section-header:hover { background: #fff1f2; }
+    .section-header .icon { font-size: 1.5rem; width: 2rem; text-align: center; flex-shrink: 0; }
+    .section-header h2 { font-size: 1.15rem; color: var(--gray-900); flex: 1; }
+    .section-header .chevron { font-size: 1.25rem; color: var(--gray-500); transition: transform 0.2s; }
+    .section.open .section-header .chevron { transform: rotate(90deg); }
+
+    .section-body { display: none; padding: 1.5rem; }
+    .section.open .section-body { display: block; }
+
+    .section-body h3 {
+      font-size: 1rem;
+      color: var(--gray-900);
+      margin: 1.25rem 0 0.5rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .section-body h3:first-child { margin-top: 0; }
+    .section-body p { color: var(--gray-700); margin-bottom: 0.75rem; }
+
+    ol.steps { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+    ol.steps li { margin-bottom: 0.4rem; color: var(--gray-700); }
+    ul.bullets { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+    ul.bullets li { margin-bottom: 0.4rem; color: var(--gray-700); }
+
+    .callout {
+      border-radius: 6px;
+      padding: 0.875rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.925rem;
+    }
+    .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-success { background: #f0fdf4; border-left: 4px solid #22c55e; color: #14532d; }
+    .callout-danger { background: #fff1f2; border-left: 4px solid #e11d48; color: #9f1239; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #b91c1c; }
+    .badge-gray { background: #f3f4f6; color: #374151; }
+    .badge-rose { background: #ffe4e6; color: #be123c; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+
+    table.reference {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 0.75rem 0 1rem;
+    }
+    table.reference th {
+      background: var(--gray-100);
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    table.reference td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-700);
+      vertical-align: top;
+    }
+    table.reference tr:last-child td { border-bottom: none; }
+
+    .pipeline {
+      display: flex;
+      gap: 0;
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+    .pipeline-stage {
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.8rem;
+      position: relative;
+    }
+    .pipeline-stage + .pipeline-stage::before {
+      content: '▶';
+      position: absolute;
+      left: -0.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray-300);
+      font-size: 0.7rem;
+    }
+    .pipeline-stage .ps-num {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .pipeline-stage .ps-label { font-weight: 600; color: var(--gray-800); }
+    .pipeline-stage .ps-sub { color: var(--gray-500); font-size: 0.75rem; }
+    .ps-0 { background: #f0fdf4; border-radius: 6px 0 0 6px; border: 1px solid #bbf7d0; }
+    .ps-1 { background: #eff6ff; border: 1px solid #bfdbfe; border-left: none; }
+    .ps-2 { background: #fffbeb; border: 1px solid #fde68a; border-left: none; }
+    .ps-3 { background: #fff7ed; border: 1px solid #fed7aa; border-left: none; }
+    .ps-4 { background: #fef2f2; border: 1px solid #fecaca; border-left: none; }
+    .ps-5 { background: #fff1f2; border: 1px solid #fda4af; border-left: none; border-radius: 0 6px 6px 0; }
+
+    .footer {
+      text-align: center;
+      color: var(--gray-500);
+      font-size: 0.85rem;
+      padding: 2rem 0 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>&#128176; Accounts Receivable Collections</h1>
+  <p>Training Guide &mdash; MIT Consulting Internal Use</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#overview">Overview &amp; Collection Sequence</a></li>
+      <li><a href="#navigating">Navigating to Accounts Receivable</a></li>
+      <li><a href="#syncing">Syncing from QuickBooks</a></li>
+      <li><a href="#invoice-list">Reading the Invoice List</a></li>
+      <li><a href="#detail-drawer">Working an Invoice (Detail Drawer)</a></li>
+      <li><a href="#actions">Taking Action</a></li>
+      <li><a href="#email-sync">Email Inbox Sync</a></li>
+      <li><a href="#dashboard">Billing Pipeline Dashboard</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1: Overview -->
+  <div class="section open" id="overview">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128176;</span>
+      <h2>1. Overview &amp; Collection Sequence</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <p>The Accounts Receivable module tracks every open invoice from the moment it is created in QuickBooks through to final payment or attorney referral. It automates the dunning (collection reminder) sequence and records every interaction — emails, phone calls, promises to pay, disputes, and payments — in a cradle-to-grave timeline.</p>
+
+      <h3>The Dunning Sequence</h3>
+      <p>Once an invoice is created, the system automatically progresses through collection stages based on age:</p>
+
+      <div class="pipeline">
+        <div class="pipeline-stage ps-0">
+          <span class="ps-num">0</span>
+          <div class="ps-label">Invoice Sent</div>
+          <div class="ps-sub">Day 0</div>
+        </div>
+        <div class="pipeline-stage ps-1">
+          <span class="ps-num">1</span>
+          <div class="ps-label">Friendly Reminder</div>
+          <div class="ps-sub">+7 days</div>
+        </div>
+        <div class="pipeline-stage ps-2">
+          <span class="ps-num">2</span>
+          <div class="ps-label">Grace Expired</div>
+          <div class="ps-sub">+15 days</div>
+        </div>
+        <div class="pipeline-stage ps-3">
+          <span class="ps-num">3</span>
+          <div class="ps-label">Second Notice</div>
+          <div class="ps-sub">+30 days</div>
+        </div>
+        <div class="pipeline-stage ps-4">
+          <span class="ps-num">4</span>
+          <div class="ps-label">Final Notice</div>
+          <div class="ps-sub">+45 days</div>
+        </div>
+        <div class="pipeline-stage ps-5">
+          <span class="ps-num">5</span>
+          <div class="ps-label">Attorney</div>
+          <div class="ps-sub">+60 days</div>
+        </div>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Stages 1&ndash;4 fire automatically</strong> at 9 AM each day. Stage 5 (attorney referral) generates an internal alert only &mdash; no email is sent automatically. Sharon must decide the next step.
+      </div>
+
+      <h3>How the System Gets Its Data</h3>
+      <ul class="bullets">
+        <li><strong>Invoices we create:</strong> Automatically tracked when you create invoices via the Invoices tab. Due date is set to the 1st of the following month plus 3 days.</li>
+        <li><strong>Invoices created directly in QuickBooks:</strong> Pulled in using the &ldquo;Sync from QB&rdquo; button, which reads all open invoices from QuickBooks regardless of origin.</li>
+        <li><strong>Payments:</strong> Synced from QuickBooks daily. Invoices paid in QB are automatically marked as paid in our system.</li>
+        <li><strong>Customer emails:</strong> Replies from customers to the accounting@ mailbox are automatically captured and linked to the correct invoice timeline.</li>
+      </ul>
+
+      <h3>What Gets Tracked</h3>
+      <ul class="bullets">
+        <li>Every automated dunning email sent (with delivery and read receipt status)</li>
+        <li>Every manual email sent from Outlook to a customer</li>
+        <li>Customer replies to collection emails</li>
+        <li>Phone calls logged manually</li>
+        <li>Internal notes added by Sharon or David</li>
+        <li>Promises to pay (date recorded, dunning paused until that date passes)</li>
+        <li>Disputes (reason recorded, assigned to responsible person, dunning paused)</li>
+        <li>Billing holds applied at Stage 2+</li>
+        <li>Payments received</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Navigating -->
+  <div class="section" id="navigating">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128205;</span>
+      <h2>2. Navigating to Accounts Receivable</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Finding the AR Page</h3>
+      <ol class="steps">
+        <li>Log in to the MIT Timesheet system</li>
+        <li>Click the <strong>Accts. Rec.</strong> tab in the top navigation bar (it appears between Invoices and Daily Review)</li>
+        <li>If any invoices are overdue for action today, a red badge shows the count on the tab</li>
+      </ol>
+
+      <div class="callout callout-info">
+        The <strong>Billing Pipeline</strong> banner on the home Dashboard also shows a &ldquo;Collections Due&rdquo; count in red when AR action is needed, so you&apos;ll see it the moment you log in.
+      </div>
+
+      <h3>The Four Sub-Tabs</h3>
+      <table class="reference">
+        <tr><th>Tab</th><th>What It Shows</th></tr>
+        <tr><td><strong>Dashboard</strong></td><td>Aging buckets (1&ndash;15, 16&ndash;30, 31&ndash;60, 60+ days overdue), KPI cards, attorney and dispute alert banners</td></tr>
+        <tr><td><strong>Invoices</strong></td><td>Full searchable list of all open invoices with status badges, aging, and balance. Click any row to open the detail drawer.</td></tr>
+        <tr><td><strong>Queue</strong></td><td>Two sections: &ldquo;Due Today&rdquo; (action needed now) and &ldquo;Upcoming&rdquo; (due within 7 days). Best view for daily AR work.</td></tr>
+        <tr><td><strong>Activity</strong></td><td>Searchable log of every interaction across all invoices &mdash; calls, emails, notes, payments, disputes</td></tr>
+      </table>
+
+      <h3>Recommended Daily Workflow</h3>
+      <ol class="steps">
+        <li>Open the <strong>Queue</strong> tab &mdash; work items listed under &ldquo;Due Today&rdquo; first</li>
+        <li>Click each invoice to open its detail drawer and review the full timeline</li>
+        <li>Take the appropriate action (automated email will already have fired; you may need to log a call or set a promise-to-pay)</li>
+        <li>Check the <strong>Dashboard</strong> tab to confirm aging buckets are improving</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Syncing -->
+  <div class="section" id="syncing">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128260;</span>
+      <h2>3. Syncing from QuickBooks</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Why Sync?</h3>
+      <p>Our system creates invoice records automatically when you generate invoices in the Invoices tab. However, if an invoice was created directly in QuickBooks, or if a payment was received in QB that we haven&apos;t captured yet, the sync buttons bring everything up to date.</p>
+
+      <h3>Sync from QB (Full Invoice Sync)</h3>
+      <ol class="steps">
+        <li>Click the <span class="badge badge-rose">Sync from QB</span> button in the top-right of the AR page</li>
+        <li>The system queries QuickBooks for <em>all open invoices</em> (any with a remaining balance)</li>
+        <li>New invoices found in QB are added to our system with collection tracking enabled</li>
+        <li>Invoices we track that are now fully paid in QB are automatically marked as paid</li>
+        <li>A summary shows how many invoices were added, updated, and marked paid</li>
+      </ol>
+      <div class="callout callout-warn">
+        Run this sync whenever you suspect QB and the AR system are out of sync &mdash; for example, after receiving a payment directly in QB, or after creating an invoice manually in QB outside our app.
+      </div>
+
+      <h3>Sync Payments</h3>
+      <p>The <strong>Sync Payments</strong> button updates balance_due figures and payment status for all tracked invoices by querying QuickBooks. This is lighter than the full sync and runs automatically each morning as part of the daily AR automation.</p>
+
+      <h3>Sync Emails</h3>
+      <p>The <strong>Sync Emails</strong> button reads the last 90 days of the accounting@ inbox and sent folder to find any customer-related messages not yet in the system. See Section 7 for full details.</p>
+
+      <h3>Automatic Daily Sync</h3>
+      <p>At 9 AM every day, the system automatically:</p>
+      <ol class="steps">
+        <li>Syncs the last 3 days of accounting@ email to capture customer replies</li>
+        <li>Syncs payments from QuickBooks</li>
+        <li>Finds invoices with <code>next_action_date &le; today</code></li>
+        <li>Fires the next dunning stage for each (or generates an internal alert at Stage 5)</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Invoice List -->
+  <div class="section" id="invoice-list">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128203;</span>
+      <h2>4. Reading the Invoice List</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Status Badges</h3>
+      <table class="reference">
+        <tr><th>Badge</th><th>Meaning</th></tr>
+        <tr><td><span class="badge badge-red">unpaid</span></td><td>Invoice is open with a balance due; collection is active</td></tr>
+        <tr><td><span class="badge badge-amber">disputed</span></td><td>Customer has disputed the invoice; dunning is paused</td></tr>
+        <tr><td><span class="badge badge-orange">billing hold</span></td><td>Stage 2+ reached; new invoices to this customer are flagged with a warning</td></tr>
+        <tr><td><span class="badge badge-blue">promise</span></td><td>Customer promised to pay by a specific date; dunning is paused until that date passes</td></tr>
+        <tr><td><span class="badge badge-green">paid</span></td><td>Invoice has been paid in full</td></tr>
+        <tr><td><span class="badge badge-gray">void</span></td><td>Invoice has been voided in QuickBooks</td></tr>
+        <tr><td><span class="badge badge-rose">attorney</span></td><td>Stage 5 reached; matter requires manual/legal decision</td></tr>
+      </table>
+
+      <h3>Warning Icons</h3>
+      <ul class="bullets">
+        <li><strong>&#9888; (triangle warning)</strong> &mdash; Customer has no email address on file. Collection emails cannot be sent until an email is added.</li>
+        <li>Use the &ldquo;Add Email&rdquo; button inside the detail drawer to fix this immediately.</li>
+      </ul>
+
+      <h3>Aging Column</h3>
+      <p>The <strong>Aging</strong> column shows how many days the invoice has been past due. The Dashboard tab groups these into four buckets:</p>
+      <table class="reference">
+        <tr><th>Bucket</th><th>Days Overdue</th><th>Urgency</th></tr>
+        <tr><td>1&ndash;15 days</td><td>1&ndash;15</td><td>Low &mdash; friendly reminder stage</td></tr>
+        <tr><td>16&ndash;30 days</td><td>16&ndash;30</td><td>Moderate &mdash; grace period expired</td></tr>
+        <tr><td>31&ndash;60 days</td><td>31&ndash;60</td><td>High &mdash; second and final notices</td></tr>
+        <tr><td>60+ days</td><td>61+</td><td>Critical &mdash; attorney referral stage</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Detail Drawer -->
+  <div class="section" id="detail-drawer">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128196;</span>
+      <h2>5. Working an Invoice (Detail Drawer)</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Opening the Detail Drawer</h3>
+      <p>Click any invoice row in the Invoices list or Queue tab. A drawer slides in from the right showing everything about that invoice in one place.</p>
+
+      <h3>Financial Strip</h3>
+      <p>At the top of the drawer, four numbers give the financial status at a glance:</p>
+      <ul class="bullets">
+        <li><strong>Invoice Total</strong> &mdash; original billed amount</li>
+        <li><strong>Paid</strong> &mdash; payments received to date</li>
+        <li><strong>Balance Due</strong> &mdash; what remains outstanding (highlighted in red if overdue)</li>
+        <li><strong>Stage</strong> &mdash; current dunning stage (0&ndash;5)</li>
+      </ul>
+
+      <h3>Status Banners</h3>
+      <p>Below the financial strip, colored banners appear when relevant:</p>
+      <ul class="bullets">
+        <li><strong>Orange &mdash; No Email on File:</strong> Customer email is missing. An &ldquo;Add Email&rdquo; button appears to fix it inline.</li>
+        <li><strong>Blue &mdash; Promise to Pay:</strong> Shows the date the customer promised to pay. Dunning is paused until this date.</li>
+        <li><strong>Amber &mdash; Disputed:</strong> Shows the dispute reason. Dunning is paused. A &ldquo;Resolve Dispute&rdquo; button allows Sharon to reactivate collection after resolution.</li>
+      </ul>
+
+      <h3>Activity Timeline</h3>
+      <p>The full history of the invoice appears in chronological order, combining:</p>
+      <ul class="bullets">
+        <li>Automated dunning emails sent (with delivery / read / bounced badges)</li>
+        <li>Manual Outlook emails sent to this customer (logged via email sync)</li>
+        <li>Customer replies received (inbound emails from the accounting@ inbox)</li>
+        <li>Phone calls logged manually</li>
+        <li>Internal notes</li>
+        <li>Payments received</li>
+        <li>Dispute and resolution events</li>
+        <li>Promise-to-pay confirmations</li>
+      </ul>
+
+      <div class="callout callout-success">
+        The timeline is your complete audit trail. You can see exactly what was sent, when it was delivered, when the customer opened it, and what happened next.
+      </div>
+
+      <h3>Action Buttons</h3>
+      <p>Six action buttons appear at the top of the drawer. See Section 6 for details on each action.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Actions -->
+  <div class="section" id="actions">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#9989;</span>
+      <h2>6. Taking Action</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+
+      <h3>Log Call</h3>
+      <p>Records that you spoke with the customer by phone.</p>
+      <ol class="steps">
+        <li>Click <strong>Log Call</strong></li>
+        <li>Enter who you spoke with and a brief summary of the conversation</li>
+        <li>Click Save &mdash; the call appears in the timeline immediately</li>
+      </ol>
+
+      <h3>Add Note</h3>
+      <p>Records an internal note visible only to staff (not sent to customer).</p>
+      <ol class="steps">
+        <li>Click <strong>Add Note</strong></li>
+        <li>Type your note</li>
+        <li>Click Save</li>
+      </ol>
+
+      <h3>Promise to Pay</h3>
+      <p>Use when the customer verbally commits to paying by a specific date.</p>
+      <ol class="steps">
+        <li>Click <strong>Promise to Pay</strong></li>
+        <li>Enter the date the customer committed to</li>
+        <li>Click Save</li>
+      </ol>
+      <p>What happens:</p>
+      <ul class="bullets">
+        <li>Dunning is paused &mdash; no automated emails will fire while the promise date is in the future</li>
+        <li>A branded confirmation email is sent to the customer summarizing their commitment</li>
+        <li>The promise date appears as a blue banner in the detail drawer</li>
+        <li>If the date passes without payment, dunning automatically resumes from where it left off</li>
+      </ul>
+      <div class="callout callout-warn">
+        If the customer does not pay by the promised date, the system will resume sending dunning emails the following morning.
+      </div>
+
+      <h3>Dispute</h3>
+      <p>Use when the customer disputes the invoice amount or the work billed.</p>
+      <ol class="steps">
+        <li>Click <strong>Dispute</strong></li>
+        <li>Enter the reason for the dispute</li>
+        <li>Optionally enter the name of the internal person responsible for resolving it</li>
+        <li>Click Save</li>
+      </ol>
+      <p>What happens:</p>
+      <ul class="bullets">
+        <li>Invoice status changes to <span class="badge badge-amber">disputed</span></li>
+        <li>Dunning pauses immediately</li>
+        <li>If an assignee was entered and they have an email on file, they receive an email notification</li>
+        <li>The dispute reason appears as an amber banner in the detail drawer</li>
+      </ul>
+
+      <h3>Resolve Dispute</h3>
+      <p>Use when the dispute has been resolved and billing should resume.</p>
+      <ol class="steps">
+        <li>Click <strong>Resolve Dispute</strong> (appears only when status is <em>disputed</em>)</li>
+        <li>Enter a brief resolution note</li>
+        <li>Click Save</li>
+      </ol>
+      <p>What happens:</p>
+      <ul class="bullets">
+        <li>Status returns to <span class="badge badge-red">unpaid</span></li>
+        <li>Next action date is recalculated based on the current stage and sequence config</li>
+        <li>Dunning resumes on the next scheduled run</li>
+      </ul>
+
+      <h3>Clear Hold</h3>
+      <p>Removes the billing hold flag from the customer account. Use this after a payment plan is established or after full payment is received.</p>
+      <ol class="steps">
+        <li>Click <strong>Clear Hold</strong></li>
+        <li>Confirm the action</li>
+      </ol>
+      <div class="callout callout-info">
+        Billing holds are set automatically at Stage 2 (15 days overdue). Clearing the hold removes the warning that appears on the Invoices page when generating new invoices for this customer.
+      </div>
+
+      <h3>Send Next Stage</h3>
+      <p>Manually fires the next dunning email immediately, without waiting for the 9 AM automation.</p>
+      <ol class="steps">
+        <li>Click <strong>Send Next Stage</strong></li>
+        <li>Review the stage number and confirm</li>
+        <li>The email is sent and the timeline updates</li>
+      </ol>
+      <div class="callout callout-warn">
+        Use this sparingly &mdash; the automation handles timing automatically. This button is for cases where you need to act immediately (e.g., a customer just called asking for a copy of the collection notice).
+      </div>
+
+      <h3>Add Email (for missing customer email)</h3>
+      <p>If the customer has no email on file, collection emails cannot be sent. An &ldquo;Add Email&rdquo; button appears in the orange warning banner at the top of the detail drawer.</p>
+      <ol class="steps">
+        <li>Click <strong>Add Email</strong> in the orange banner</li>
+        <li>Enter the customer&apos;s email address</li>
+        <li>Click Save &mdash; the email is saved to the customer record and collection can proceed</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- SECTION 7: Email Sync -->
+  <div class="section" id="email-sync">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128236;</span>
+      <h2>7. Email Inbox Sync</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>What Email Sync Does</h3>
+      <p>The email sync function reads the <strong>accounting@mitigationconsulting.com</strong> inbox and sent items folder, identifies messages to or from known customers, and logs them in the AR activity timeline. This means every email interaction &mdash; whether sent by the system or written manually in Outlook &mdash; is captured in one place.</p>
+
+      <h3>What Gets Captured</h3>
+      <table class="reference">
+        <tr><th>Type</th><th>Direction</th><th>Example</th></tr>
+        <tr><td>Automated dunning email</td><td>Outbound</td><td>Stage 1 friendly reminder sent by the system</td></tr>
+        <tr><td>Manual Outlook email</td><td>Outbound</td><td>Sharon emailing a customer directly from Outlook</td></tr>
+        <tr><td>Customer reply</td><td>Inbound</td><td>Customer responding to a collection notice</td></tr>
+      </table>
+
+      <h3>Automatic vs. Manual Sync</h3>
+      <ul class="bullets">
+        <li><strong>Automatic:</strong> Runs daily at 9 AM, scanning the last 3 days of mail. Keeps the timeline current without any manual action.</li>
+        <li><strong>Manual:</strong> Click <strong>Sync Emails</strong> on the AR page to scan the last 90 days immediately. Use this if you suspect a recent customer reply was missed.</li>
+      </ul>
+
+      <h3>Deduplication</h3>
+      <p>The system tracks message IDs to prevent the same email from being logged twice. Running the sync multiple times will not create duplicate entries.</p>
+
+      <h3>Delivery and Read Receipts</h3>
+      <p>For automated dunning emails sent through the system, delivery and read status is tracked:</p>
+      <ul class="bullets">
+        <li><span class="badge badge-green">Delivered</span> &mdash; Email was accepted by the recipient&apos;s mail server</li>
+        <li><span class="badge badge-blue">Read</span> &mdash; The recipient opened the email</li>
+        <li><span class="badge badge-red">Bounced</span> &mdash; Email could not be delivered. Check the customer&apos;s email address.</li>
+      </ul>
+
+      <div class="callout callout-warn">
+        A <span class="badge badge-red">Bounced</span> receipt means the customer never received the notice. Update their email address using the &ldquo;Add Email&rdquo; action and resend.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: Dashboard -->
+  <div class="section" id="dashboard">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128202;</span>
+      <h2>8. Billing Pipeline Dashboard</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>What Is the Billing Pipeline?</h3>
+      <p>The <strong>Billing Pipeline</strong> banner at the top of the Home Dashboard gives a five-stage snapshot of where work currently stands in the billing cycle, so you can see at a glance what needs attention the moment you log in.</p>
+
+      <h3>The Five Stages</h3>
+      <table class="reference">
+        <tr><th>Stage</th><th>What It Counts</th><th>Where It Links</th></tr>
+        <tr><td><strong>Time Review</strong></td><td>Time entries pending approval (last 14 days)</td><td>Time Entries page</td></tr>
+        <tr><td><strong>Reports</strong></td><td>Report periods not yet sent to clients</td><td>Reports page</td></tr>
+        <tr><td><strong>Awaiting Client</strong></td><td>Reports sent but not yet accepted by the customer</td><td>Reports page</td></tr>
+        <tr><td><strong>Invoice Ready</strong></td><td>Accepted reports that have not yet been invoiced</td><td>Invoices page</td></tr>
+        <tr><td><strong>Collections Due</strong></td><td>AR invoices with next action date &le; today</td><td>Accts. Rec. page</td></tr>
+      </table>
+
+      <h3>Color Coding</h3>
+      <table class="reference">
+        <tr><th>Color</th><th>Meaning</th></tr>
+        <tr><td><span class="badge badge-green">Green / checkmark</span></td><td>Stage is clear &mdash; nothing outstanding</td></tr>
+        <tr><td><span class="badge badge-blue">Blue</span></td><td>Informational &mdash; items present but no immediate action required (awaiting client)</td></tr>
+        <tr><td><span class="badge badge-amber">Amber</span></td><td>Action needed &mdash; unsent reports, unissued invoices, or a few overdue AR items</td></tr>
+        <tr><td><span class="badge badge-red">Red</span></td><td>Urgent &mdash; more than 2 AR collections due (or more than 5 pending time entries)</td></tr>
+      </table>
+
+      <div class="callout callout-success">
+        <strong>Goal:</strong> When you finish your daily work, every stage should show green with a checkmark. This means all time is approved, all reports are sent, all invoices are issued, and no collection action is overdue.
+      </div>
+
+      <h3>Billing Hold Warnings on Invoices</h3>
+      <p>When you generate a monthly invoice preview, a collapsible orange banner appears at the top if any customers have an active billing hold. The banner lists each affected customer and their outstanding balance, so you can decide whether to proceed with invoicing or resolve the hold first.</p>
+      <p>Each affected customer&apos;s invoice card also shows an orange <span class="badge badge-orange">Billing Hold</span> badge for quick identification.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 9: FAQ -->
+  <div class="section" id="faq">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#10067;</span>
+      <h2>9. FAQ</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>What happens if a customer calls and says they paid?</h3>
+      <p>First, verify in QuickBooks. If the payment is in QB, click <strong>Sync Payments</strong> on the AR page and it will be marked paid automatically. If the payment is not yet in QB, log a note in the detail drawer documenting the conversation, and wait for the payment to appear in QB before marking it resolved.</p>
+
+      <h3>Can I stop collection on an invoice temporarily?</h3>
+      <p>Yes &mdash; use <strong>Promise to Pay</strong> if the customer committed to a date, or <strong>Dispute</strong> if the invoice is being contested. Both actions pause the dunning sequence immediately.</p>
+
+      <h3>What happens at Stage 5?</h3>
+      <p>An internal alert email is sent to Sharon and David. No email is automatically sent to the customer. The invoice is flagged for manual review and potential attorney referral. Sharon must decide the next step using the AR detail drawer.</p>
+
+      <h3>Why is a customer showing a billing hold when they&apos;ve paid?</h3>
+      <p>Billing holds are cleared manually after resolution. If the customer has paid, click <strong>Clear Hold</strong> in the detail drawer to remove the hold flag. Then confirm in QuickBooks that the payment has been applied.</p>
+
+      <h3>A customer replied to a collection email but I don&apos;t see it in the timeline.</h3>
+      <p>Click <strong>Sync Emails</strong> on the AR page. This scans the last 90 days of the accounting@ inbox and will capture any replies that were missed by the automatic daily sync. If the reply still doesn&apos;t appear, verify that the customer email address in the system matches the address they replied from.</p>
+
+      <h3>Can the system send emails to multiple contacts at the same customer?</h3>
+      <p>Currently, the system sends to the single email address on the customer record. If a customer needs a secondary contact, add a note in the detail drawer with the additional email and copy them manually from Outlook until multi-email support is added.</p>
+
+      <h3>How do I know if a collection email was actually received?</h3>
+      <p>The timeline shows delivery and read receipts for every automated email. A <span class="badge badge-green">Delivered</span> badge means the server accepted it. A <span class="badge badge-blue">Read</span> badge means the recipient opened it. A <span class="badge badge-red">Bounced</span> badge means delivery failed &mdash; check the email address.</p>
+
+      <h3>What does the AR Dashboard&apos;s &ldquo;Attorney&rdquo; alert banner mean?</h3>
+      <p>One or more invoices have reached Stage 5 (60+ days overdue). These appear in a red banner at the top of the Dashboard tab. They require manual decision &mdash; click each one to open the detail drawer and decide on next steps, which may include engaging legal counsel.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Other guides: <a href="index.html">Main Guide</a> &bull; <a href="daily-review-guide.html">Daily Review</a> &bull; <a href="profitability-guide.html">Profitability</a> &bull; <a href="cash-position-guide.html">Cash Position</a></p>
+    <p style="margin-top: 0.5rem;">&copy; 2026 Mitigation Information Technologies. All rights reserved.</p>
+    <p style="margin-top: 0.25rem;">Last updated: March 2026</p>
+  </div>
+
+</div>
+
+<script>
+  function toggleSection(header) {
+    const section = header.parentElement;
+    section.classList.toggle('open');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash);
+      if (target && target.classList.contains('section')) {
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  });
+
+  document.querySelectorAll('.toc a[href^="#"]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      var hash = this.getAttribute('href');
+      var target = document.querySelector(hash);
+      if (target) {
+        document.querySelectorAll('.section').forEach(function(s) {
+          s.classList.remove('open');
+        });
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.pushState(null, '', hash);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
