@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { ProfitabilitySummary } from '@/components/dashboard/ProfitabilitySummary';
 import { CashPositionSummary } from '@/components/dashboard/CashPositionSummary';
+import { WorkflowStatusBanner } from '@/components/dashboard/WorkflowStatusBanner';
 import { AppShell } from '@/components/AppShell';
 import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/lib/supabaseClient';
@@ -259,6 +260,9 @@ export default function Home() {
           title="Dashboard"
           subtitle="Manage timesheets, reports, and invoices"
         />
+
+        {/* Billing Pipeline Status */}
+        <WorkflowStatusBanner />
 
         {/* Primary Workflow Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
