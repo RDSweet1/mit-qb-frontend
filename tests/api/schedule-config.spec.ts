@@ -19,10 +19,10 @@ test.describe('schedule_config API', () => {
     expect(res.ok()).toBeTruthy();
     const data = await res.json();
     expect(Array.isArray(data)).toBeTruthy();
-    expect(data.length).toBe(5);
+    expect(data.length).toBeGreaterThanOrEqual(11);
   });
 
-  test('all 5 seeded automations have correct function names', async ({ request }) => {
+  test('all seeded automations have correct function names', async ({ request }) => {
     const res = await request.get(
       `${SUPABASE_URL}/rest/v1/schedule_config?order=id.asc`,
       { headers }
@@ -30,11 +30,22 @@ test.describe('schedule_config API', () => {
     const data = await res.json();
     const names = data.map((r: any) => r.function_name);
 
+    // Original 5
     expect(names).toContain('send-reminder');
     expect(names).toContain('follow-up-reminders');
     expect(names).toContain('auto-accept');
     expect(names).toContain('report-reconciliation');
     expect(names).toContain('weekly-profitability-report');
+
+    // Monitoring & oversight
+    expect(names).toContain('automation-health-digest');
+    expect(names).toContain('midweek-oversight');
+    expect(names).toContain('sync-customer-emails');
+    expect(names).toContain('self-heal');
+
+    // AR automation
+    expect(names).toContain('ar-automation');
+    expect(names).toContain('ar-sync-payments');
   });
 
   test('each config has required fields', async ({ request }) => {

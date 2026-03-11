@@ -33,6 +33,10 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'api',
+      testDir: './tests/api',
+    },
+    {
       name: 'screenshots',
       testDir: './tests/screenshots',
       use: { ...devices['Desktop Chrome'] },

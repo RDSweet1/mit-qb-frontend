@@ -16,7 +16,7 @@ test.describe('Settings', () => {
     await expect(page.getByRole('heading', { name: 'Automation' })).toBeVisible();
     await expect(page.getByText('Scheduled tasks and automation status')).toBeVisible();
 
-    // Should show all 5 automation names from schedule_config
+    // Should show the original 5 automation names from schedule_config (plus newer ones)
     await expect(page.getByText('Weekly Reports', { exact: true })).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('Follow-Up Reminders', { exact: true })).toBeVisible();
     await expect(page.getByText('Auto-Accept', { exact: true })).toBeVisible();
@@ -29,13 +29,13 @@ test.describe('Settings', () => {
     await settings.goto();
     await page.waitForLoadState('networkidle');
 
-    // Wait for all 5 automation cards to render with day @ time format
+    // Wait for automation cards to render with day @ time format
     await expect(page.locator('text=Profitability Report')).toBeVisible({ timeout: 15000 });
 
     const automationCards = page.locator('.rounded-lg').filter({ hasText: /@ \d+:\d+ [AP]M/ });
     await expect(automationCards.first()).toBeVisible({ timeout: 10000 });
     const cardCount = await automationCards.count();
-    expect(cardCount).toBeGreaterThanOrEqual(5);
+    expect(cardCount).toBeGreaterThanOrEqual(11);
   });
 
   test('paused automation shows red styling and badge', async ({ page }) => {

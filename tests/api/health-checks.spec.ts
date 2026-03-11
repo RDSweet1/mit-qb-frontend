@@ -55,6 +55,20 @@ test.describe('Database health', () => {
     });
   }
 
+  test('MIT internal customers have email set', async ({ request }) => {
+    const res = await request.get(
+      `${SUPABASE_URL}/rest/v1/customers?is_internal=eq.true&select=id,display_name,email,is_internal`,
+      { headers: restHeaders }
+    );
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(data.length).toBeGreaterThan(0);
+
+    for (const customer of data) {
+      expect(customer.email).toBe('accounting@mitigationconsulting.com');
+    }
+  });
+
   test('customers have QB IDs populated', async ({ request }) => {
     const res = await request.get(
       `${SUPABASE_URL}/rest/v1/customers?select=id,qb_customer_id,display_name&limit=10`,
@@ -150,14 +164,14 @@ test.describe('Sync health', () => {
 // ==================================================================
 
 test.describe('Schedule config health', () => {
-  test('all 5 automations are seeded', async ({ request }) => {
+  test('all automations are seeded', async ({ request }) => {
     const res = await request.get(
       `${SUPABASE_URL}/rest/v1/schedule_config?order=id.asc`,
       { headers: restHeaders }
     );
     expect(res.ok()).toBeTruthy();
     const data = await res.json();
-    expect(data.length).toBe(5);
+    expect(data.length).toBeGreaterThanOrEqual(11);
 
     const names = data.map((r: any) => r.function_name);
     expect(names).toContain('send-reminder');
@@ -165,6 +179,12 @@ test.describe('Schedule config health', () => {
     expect(names).toContain('auto-accept');
     expect(names).toContain('report-reconciliation');
     expect(names).toContain('weekly-profitability-report');
+    expect(names).toContain('automation-health-digest');
+    expect(names).toContain('midweek-oversight');
+    expect(names).toContain('sync-customer-emails');
+    expect(names).toContain('self-heal');
+    expect(names).toContain('ar-automation');
+    expect(names).toContain('ar-sync-payments');
   });
 
   test('no automations are accidentally paused (warning)', async ({ request }) => {
@@ -200,6 +220,10 @@ test.describe('Edge function deployment', () => {
     'qb-online-sync',
     'sync-payments',
     'qb-health',
+    'self-heal',
+    'automation-health-digest',
+    'midweek-oversight',
+    'sync-customer-emails',
   ];
 
   for (const fn of coreFunctions) {

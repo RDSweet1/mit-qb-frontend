@@ -40,7 +40,7 @@ test.describe('Admin', () => {
     await expect(page.locator('[data-testid="admin-tab-scheduling"]')).toHaveClass(/border-indigo-600/);
   });
 
-  test('scheduling tab renders automation table with 5 rows', async ({ page }) => {
+  test('scheduling tab renders automation table with all rows', async ({ page }) => {
     await page.goto(BASE_PATH + '/admin');
     await page.waitForLoadState('networkidle');
     await page.locator('[data-testid="admin-tab-scheduling"]').click();
@@ -49,11 +49,12 @@ test.describe('Admin', () => {
     const table = page.locator('table');
     await expect(table).toBeVisible({ timeout: 10000 });
 
-    // Should have 5 automation rows in the table body
+    // Should have at least 11 automation rows in the table body
     const rows = table.locator('tbody tr');
-    await expect(rows).toHaveCount(5);
+    const rowCount = await rows.count();
+    expect(rowCount).toBeGreaterThanOrEqual(11);
 
-    // Verify all 5 automation names appear
+    // Verify original 5 automation names appear
     await expect(page.getByText('Weekly Reports', { exact: true })).toBeVisible();
     await expect(page.getByText('Follow-Up Reminders', { exact: true })).toBeVisible();
     await expect(page.getByText('Auto-Accept', { exact: true })).toBeVisible();
@@ -106,7 +107,7 @@ test.describe('Admin', () => {
     // Each row should have a Pause or Resume button
     const rows = page.locator('table tbody tr');
     const rowCount = await rows.count();
-    expect(rowCount).toBe(5);
+    expect(rowCount).toBeGreaterThanOrEqual(11);
 
     for (let i = 0; i < rowCount; i++) {
       const row = rows.nth(i);

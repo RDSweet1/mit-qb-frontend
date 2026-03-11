@@ -282,6 +282,14 @@ export default function TimeEntriesEnhancedPage() {
   // Email / Send operations
   // ──────────────────────────────────────────────
 
+  const fmtEntryTime = (iso: string | null | undefined) => {
+    if (!iso) return undefined;
+    try {
+      const d = iso.includes('T') ? new Date(iso) : new Date(`2000-01-01T${iso}`);
+      return format(d, 'h:mm a');
+    } catch { return undefined; }
+  };
+
   const sendEmailReport = async (recipient: string, recipientType: string, cc?: string[]) => {
     try {
       setError(null);
@@ -291,6 +299,7 @@ export default function TimeEntriesEnhancedPage() {
           date: entry.txn_date, employee: entry.employee_name, customer: entry.qb_customer_id,
           costCode: entry.cost_code, hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
           billable: entry.billable_status, description: entry.notes,
+          startTime: fmtEntryTime(entry.start_time), endTime: fmtEntryTime(entry.end_time),
         })),
         summary: { totalEntries: entries.length, totalHours: calculateTotalHours(entries) },
       };
@@ -332,6 +341,7 @@ export default function TimeEntriesEnhancedPage() {
           date: entry.txn_date, employee: entry.employee_name, customer: entry.qb_customer_id,
           costCode: entry.cost_code, hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
           billable: entry.billable_status, description: entry.notes,
+          startTime: fmtEntryTime(entry.start_time), endTime: fmtEntryTime(entry.end_time),
         })),
         summary: { totalEntries: customerEntries.length, totalHours: calculateTotalHours(customerEntries) },
       };
@@ -384,6 +394,7 @@ export default function TimeEntriesEnhancedPage() {
           date: entry.txn_date, employee: entry.employee_name, customer: entry.qb_customer_id,
           costCode: entry.cost_code, hours: `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`,
           billable: entry.billable_status, description: entry.notes,
+          startTime: fmtEntryTime(entry.start_time), endTime: fmtEntryTime(entry.end_time),
         })),
         summary: { totalEntries: customerEntries.length, totalHours: calculateTotalHours(customerEntries) },
       };

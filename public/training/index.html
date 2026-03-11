@@ -284,6 +284,8 @@
       <li><a href="#reports">Reports &amp; Reminders</a></li>
       <li><a href="#customer-review">Customer Review Portal</a></li>
       <li><a href="#invoices">Invoices</a></li>
+      <li><a href="#accounts-receivable">Accounts Receivable</a></li>
+      <li><a href="#monitoring">Monitoring &amp; Automation</a></li>
       <li><a href="#admin">Admin &amp; Settings</a></li>
       <li><a href="#troubleshooting">Troubleshooting</a></li>
     </ol>
@@ -318,6 +320,7 @@
         <tr><td>Time Entries</td><td>View, edit, lock/unlock time entries from QB Workforce</td></tr>
         <tr><td>Reports</td><td>Weekly reports by customer, send reminders</td></tr>
         <tr><td>Invoices</td><td>Preview and generate QB invoices</td></tr>
+        <tr><td>Accts. Rec.</td><td>Accounts receivable collections &mdash; automated dunning, aging dashboard, activity log</td></tr>
         <tr><td>Daily Review</td><td>Daily financial sync &mdash; categorize bank transactions and CC expenses</td></tr>
         <tr><td>Profitability</td><td>Revenue, cost, and margin analysis &mdash; includes Overhead, P&amp;L Summary, and Cash Position sub-tabs</td></tr>
         <tr><td>Unbilled</td><td>Find time entries not yet billed</td></tr>
@@ -434,6 +437,11 @@
 
       <h3>Auto-accept</h3>
       <p>Reports that go 14 days without a response are automatically accepted. This runs at 5 PM on weekdays.</p>
+
+      <div class="callout callout-info">
+        <strong>Internal MIT reports</strong>
+        MIT Consulting's own time entries are included in all reporting flows &mdash; daily reports, weekly roll-ups, follow-up reminders, and auto-accept. Internal reports are sent to <strong>accounting@mitigationconsulting.com</strong>. Every report email displays the customer/project name prominently in the subject line and email header.
+      </div>
     </div>
   </div>
 
@@ -507,11 +515,105 @@
     </div>
   </div>
 
-  <!-- SECTION 6: Admin & Settings -->
+  <!-- SECTION 6: Accounts Receivable -->
+  <div class="section" id="accounts-receivable">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128176;</span>
+      <h2>6. Accounts Receivable</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>What is the AR module?</h3>
+      <p>The Accounts Receivable module automates the collection sequence for overdue invoices. It tracks every open invoice from creation through payment (or attorney referral), sends dunning emails on a configurable schedule, and records all interactions &mdash; emails, calls, promises, disputes &mdash; in a single timeline per invoice.</p>
+
+      <h3>The four sub-tabs</h3>
+      <table>
+        <tr><th>Sub-tab</th><th>Purpose</th></tr>
+        <tr><td><strong>Dashboard</strong></td><td>Aging overview with buckets (1&ndash;15, 16&ndash;30, 31&ndash;60, 60+ days), KPI cards, and alert banners for disputes and attorney referrals</td></tr>
+        <tr><td><strong>Invoices</strong></td><td>Searchable list of all open invoices with status badges and aging. Click any row to open the detail drawer showing the full activity timeline.</td></tr>
+        <tr><td><strong>Queue</strong></td><td>&ldquo;Due Today&rdquo; and &ldquo;Upcoming&rdquo; sections &mdash; the best starting point for daily AR work</td></tr>
+        <tr><td><strong>Activity</strong></td><td>Searchable log of every interaction across all invoices &mdash; emails sent, customer replies, calls, notes, payments, and disputes</td></tr>
+      </table>
+
+      <h3>Automated dunning sequence</h3>
+      <p>Once an invoice is created, the system progresses through six stages over 60 days:</p>
+      <table>
+        <tr><th>Stage</th><th>Timing</th><th>Action</th></tr>
+        <tr><td>0 &mdash; Invoice Sent</td><td>Day 0</td><td>Invoice created and emailed</td></tr>
+        <tr><td>1 &mdash; Friendly Reminder</td><td>+7 days</td><td>Automated reminder email</td></tr>
+        <tr><td>2 &mdash; Grace Expired</td><td>+15 days</td><td>Firmer notice; billing hold applied</td></tr>
+        <tr><td>3 &mdash; Second Notice</td><td>+30 days</td><td>Escalated collection email</td></tr>
+        <tr><td>4 &mdash; Final Notice</td><td>+45 days</td><td>Final warning before legal action</td></tr>
+        <tr><td>5 &mdash; Attorney</td><td>+60 days</td><td>Internal alert only &mdash; no email sent; requires manual decision</td></tr>
+      </table>
+
+      <div class="callout callout-info">
+        <strong>Stages 1&ndash;4 fire automatically at 9 AM each day.</strong>
+        Dunning pauses automatically when a customer sets a promise-to-pay date or when an invoice is disputed.
+      </div>
+
+      <h3>Sync buttons</h3>
+      <p>Three sync buttons appear in the top-right corner of the AR page:</p>
+      <ul>
+        <li><strong>Sync from QB</strong> &mdash; pulls all open invoices from QuickBooks, adds new ones, and marks paid ones as resolved</li>
+        <li><strong>Sync Payments</strong> &mdash; updates balance-due figures from QuickBooks (runs automatically each morning)</li>
+        <li><strong>Sync Emails</strong> &mdash; scans the accounting@ inbox and sent folder (last 90 days) to capture customer replies and manual Outlook emails</li>
+      </ul>
+
+      <div class="callout callout-success">
+        <strong>Detailed guide available</strong>
+        For step-by-step instructions on working invoices, logging calls, handling disputes, and using the detail drawer, see the <a href="ar-guide.html">full Accounts Receivable Guide &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: Monitoring & Automation -->
+  <div class="section" id="monitoring">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128225;</span>
+      <h2>7. Monitoring &amp; Automation</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>Admin &gt; Scheduling tab</h3>
+      <p>All automations (send-reminder, follow-up, auto-accept, reconciliation, AR dunning, profitability, etc.) can be paused and resumed from the <strong>Admin &gt; Scheduling</strong> tab. You can also change the day and time each automation runs. Paused automations show a yellow badge.</p>
+
+      <h3>Health Digest</h3>
+      <p>Every morning at <strong>7 AM</strong>, a summary email is sent to administrators listing the status of every automation:</p>
+      <table>
+        <tr><th>Status</th><th>Meaning</th></tr>
+        <tr><td><span class="badge badge-green">OK</span></td><td>Function ran successfully within its expected window</td></tr>
+        <tr><td><span class="badge badge-amber">STALE</span></td><td>Function has not run in longer than expected &mdash; may need attention</td></tr>
+        <tr><td><span class="badge badge-red">ERROR</span></td><td>Function&rsquo;s last run failed</td></tr>
+        <tr><td><span class="badge badge-gray">PAUSED</span></td><td>Automation is intentionally paused via the Scheduling tab</td></tr>
+      </table>
+
+      <h3>Self-Heal</h3>
+      <p>A repair loop runs every <strong>15 minutes</strong>. It performs two checks:</p>
+      <ul>
+        <li><strong>Inbox scan:</strong> looks for ALERT emails in the accounting@ inbox indicating a function failure, then retries the failed function</li>
+        <li><strong>Schedule check:</strong> compares each function&rsquo;s last run time against its expected schedule in <code>schedule_config</code> and retries any that are overdue</li>
+      </ul>
+      <p>After each repair attempt, the system sends either a <strong>resolution email</strong> (if the retry succeeded) or an <strong>escalation email</strong> (if it failed again).</p>
+
+      <h3>Watchdog Alerts</h3>
+      <p>When an edge function fails for the first time, a <strong>watchdog alert email</strong> is sent immediately to administrators. This provides early warning before the next Health Digest or self-heal cycle.</p>
+
+      <h3>Mid-Week Oversight</h3>
+      <p>Every <strong>Wednesday</strong>, the system checks for time entries added or modified since the last weekly report was sent. If any customers have new entries that would require a supplemental report, an oversight email is sent to Sharon listing the affected customers and entry counts so they can be addressed before the end of the week.</p>
+
+      <div class="callout callout-info">
+        <strong>No action needed most days</strong>
+        The monitoring layer is fully automated. You only need to intervene when a Health Digest shows ERROR or STALE status, or when you receive a watchdog alert.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: Admin & Settings -->
   <div class="section" id="admin">
     <div class="section-header" onclick="toggleSection(this)">
       <span class="icon">&#9881;</span>
-      <h2>6. Admin &amp; Settings</h2>
+      <h2>8. Admin &amp; Settings</h2>
       <span class="chevron">&#9654;</span>
     </div>
     <div class="section-body">
@@ -548,11 +650,11 @@
     </div>
   </div>
 
-  <!-- SECTION 7: Troubleshooting -->
+  <!-- SECTION 9: Troubleshooting -->
   <div class="section" id="troubleshooting">
     <div class="section-header" onclick="toggleSection(this)">
       <span class="icon">&#128295;</span>
-      <h2>7. Troubleshooting</h2>
+      <h2>9. Troubleshooting</h2>
       <span class="chevron">&#9654;</span>
     </div>
     <div class="section-body">
@@ -611,8 +713,9 @@
   </div>
 
   <div class="footer">
-    <p>&copy; 2026 Mitigation Information Technologies. All rights reserved.</p>
-    <p style="margin-top: 0.25rem;">Last updated: February 2026</p>
+    <p>Other guides: <a href="ar-guide.html">Accounts Receivable</a> &bull; <a href="daily-review-guide.html">Daily Review</a> &bull; <a href="profitability-guide.html">Profitability</a> &bull; <a href="cash-position-guide.html">Cash Position</a></p>
+    <p style="margin-top: 0.5rem;">&copy; 2026 Mitigation Information Technologies. All rights reserved.</p>
+    <p style="margin-top: 0.25rem;">Last updated: March 2026</p>
   </div>
 
 </div>
