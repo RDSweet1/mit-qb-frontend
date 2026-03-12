@@ -20,7 +20,7 @@ export function useCustomers(activeOnly = true): UseCustomersResult {
       setError(null);
       let query = supabase
         .from('customers')
-        .select('qb_customer_id, display_name, email')
+        .select('qb_customer_id, display_name, email, file_closed')
         .order('display_name');
 
       if (activeOnly) {

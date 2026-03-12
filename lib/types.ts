@@ -54,6 +54,7 @@ export interface Customer {
   email?: string | null;
   is_active?: boolean;
   is_internal?: boolean;
+  file_closed?: boolean;
 }
 
 export interface ServiceItem {

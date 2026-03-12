@@ -75,7 +75,7 @@ export function TimeEntryFilters({
               <option value="all">All Customers</option>
               {customers.map(customer => (
                 <option key={customer.qb_customer_id} value={customer.qb_customer_id}>
-                  {customer.display_name}
+                  {customer.file_closed ? '[CLOSED] ' : ''}{customer.display_name}
                 </option>
               ))}
             </select>

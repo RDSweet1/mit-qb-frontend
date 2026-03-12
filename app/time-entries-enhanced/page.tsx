@@ -383,6 +383,7 @@ export default function TimeEntriesEnhancedPage() {
 
     for (const [customerId, customerEntries] of byCustomer) {
       const customer = customers.find(c => c.qb_customer_id === customerId);
+      if (customer?.file_closed) continue; // Skip closed files
       if (!testMode && !customer?.email) continue;
 
       const recipient = testMode ? 'david@mitigationconsulting.com' : customer!.email!;
@@ -451,6 +452,7 @@ export default function TimeEntriesEnhancedPage() {
       }
       const customer = customers.find(c => c.qb_customer_id === selectedCustomer);
       if (!customer) { toast.error('Customer not found'); return; }
+      if (customer.file_closed) { toast.error(`Cannot send report — file is closed for ${customer.display_name}`); return; }
       if (!customer.email) { toast.error('Customer email not found. Please add customer email in QuickBooks.'); return; }
       sendEmailReport(customer.email, `Customer (${customer.display_name})`, ['skisner@mitigationconsulting.com', 'david@mitigationconsulting.com']);
     }

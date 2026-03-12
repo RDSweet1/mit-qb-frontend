@@ -86,6 +86,10 @@ export default function InvoicesPage() {
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [overrideLoading, setOverrideLoading] = useState(false);
 
+  // Closed files
+  const [closedExpanded, setClosedExpanded] = useState(false);
+  const [closedCustomers, setClosedCustomers] = useState<any[]>([]);
+
   // Profitability context for preview cards
   const [margins, setMargins] = useState<Record<string, number>>({});
   const [disputedCustomers, setDisputedCustomers] = useState<Set<string>>(new Set());
@@ -94,20 +98,27 @@ export default function InvoicesPage() {
   const [billingHolds, setBillingHolds] = useState<{ qb_customer_id: string; customer_name: string; balance_due: number; qb_invoice_number: string }[]>([]);
   const [billingHoldsExpanded, setBillingHoldsExpanded] = useState(true);
 
-  // Load customer override data
+  // Load customer override data + closed files
   const loadOverrides = useCallback(async () => {
     setOverrideLoading(true);
     try {
       const { data: overrides } = await supabase
         .from('customers')
-        .select('id, qb_customer_id, display_name, email, skip_acceptance_gate')
+        .select('id, qb_customer_id, display_name, email, skip_acceptance_gate, file_closed')
         .eq('skip_acceptance_gate', true)
         .order('display_name');
       setOverrideCustomers(overrides || []);
 
+      const { data: closed } = await supabase
+        .from('customers')
+        .select('id, qb_customer_id, display_name, email, file_closed, file_closed_at, file_closed_by')
+        .eq('file_closed', true)
+        .order('display_name');
+      setClosedCustomers(closed || []);
+
       const { data: all } = await supabase
         .from('customers')
-        .select('id, qb_customer_id, display_name, email, skip_acceptance_gate')
+        .select('id, qb_customer_id, display_name, email, skip_acceptance_gate, file_closed')
         .eq('is_active', true)
         .order('display_name');
       setAllCustomers(all || []);
@@ -126,6 +137,19 @@ export default function InvoicesPage() {
     await supabase
       .from('customers')
       .update({ skip_acceptance_gate: newValue })
+      .eq('id', customerId);
+    await loadOverrides();
+  };
+
+  const toggleFileClosed = async (customerId: number, currentlyClosed: boolean, userName?: string) => {
+    const newValue = !currentlyClosed;
+    await supabase
+      .from('customers')
+      .update({
+        file_closed: newValue,
+        file_closed_at: newValue ? new Date().toISOString() : null,
+        file_closed_by: newValue ? (userName || 'system') : null,
+      })
       .eq('id', customerId);
     await loadOverrides();
   };
@@ -415,6 +439,99 @@ export default function InvoicesPage() {
                               }}
                             >
                               <option value="">Add customer override...</option>
+                              {available.map(c => (
+                                <option key={c.id} value={c.id}>{c.display_name}</option>
+                              ))}
+                            </select>
+                          );
+                        })()}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Closed Files */}
+              <div className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setClosedExpanded(!closedExpanded)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Ban className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Closed Files
+                    </span>
+                    {closedCustomers.length > 0 && (
+                      <span className="bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {closedCustomers.length}
+                      </span>
+                    )}
+                  </div>
+                  {closedExpanded ? (
+                    <ChevronUp className="w-4 h-4 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
+
+                {closedExpanded && (
+                  <div className="p-4 border-t border-gray-200">
+                    <div className="flex items-start gap-2 mb-4 p-3 bg-red-50 rounded-lg">
+                      <Info className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-red-700">
+                        Closed files are excluded from all automated reports, follow-ups, invoices, and manual sends.
+                        Time entries still sync from QuickBooks but will not be reported to the customer.
+                      </p>
+                    </div>
+
+                    {overrideLoading ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                      </div>
+                    ) : (
+                      <>
+                        {closedCustomers.length > 0 ? (
+                          <div className="space-y-2 mb-4">
+                            {closedCustomers.map((c) => (
+                              <div key={c.id} className="flex items-center justify-between px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                                <div>
+                                  <span className="text-sm font-medium text-gray-900">{c.display_name}</span>
+                                  {c.file_closed_at && (
+                                    <span className="text-xs text-gray-500 ml-2">
+                                      Closed {new Date(c.file_closed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                      {c.file_closed_by ? ` by ${c.file_closed_by}` : ''}
+                                    </span>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => toggleFileClosed(c.id, true, accounts[0]?.username || accounts[0]?.name)}
+                                  className="text-xs px-2 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded font-medium"
+                                  title="Reopen this file"
+                                >
+                                  Reopen
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 mb-4">No files are currently closed.</p>
+                        )}
+
+                        {/* Close a file dropdown */}
+                        {(() => {
+                          const available = allCustomers.filter(c => !c.file_closed);
+                          if (available.length === 0) return null;
+                          return (
+                            <select
+                              className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                              value=""
+                              onChange={async (e) => {
+                                const id = Number(e.target.value);
+                                if (id) await toggleFileClosed(id, false, accounts[0]?.username || accounts[0]?.name);
+                              }}
+                            >
+                              <option value="">Close a file...</option>
                               {available.map(c => (
                                 <option key={c.id} value={c.id}>{c.display_name}</option>
                               ))}
