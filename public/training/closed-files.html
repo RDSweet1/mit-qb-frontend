@@ -117,71 +117,25 @@
     th { background: var(--gray-100); padding: 0.6rem 0.75rem; text-align: left; font-weight: 600; color: var(--gray-700); border-bottom: 2px solid var(--gray-200); }
     td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--gray-200); color: var(--gray-700); }
 
-    .screenshot-mock {
-      background: white;
+    .screenshot {
       border: 2px solid var(--gray-200);
       border-radius: 8px;
       overflow: hidden;
       margin: 1rem 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-    .mock-toolbar {
+    .screenshot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .screenshot-caption {
       background: var(--gray-100);
       padding: 0.5rem 0.75rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      border-bottom: 1px solid var(--gray-200);
       font-size: 0.8rem;
       color: var(--gray-500);
-    }
-    .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .mock-body { padding: 1rem; }
-
-    .mock-section {
-      border: 1px solid var(--gray-200);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .mock-section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.6rem 1rem;
-      background: var(--gray-50);
-      border-bottom: 1px solid var(--gray-200);
-      font-size: 0.85rem;
-    }
-    .mock-section-body { padding: 1rem; }
-
-    .mock-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.5rem 0.75rem;
-      background: var(--red-50);
-      border: 1px solid #fecaca;
-      border-radius: 6px;
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-    }
-    .mock-btn {
-      padding: 3px 10px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      border: none;
-      cursor: default;
-    }
-    .mock-btn-green { background: #dcfce7; color: var(--green-700); }
-
-    .mock-select {
-      width: 100%;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #fca5a5;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      color: var(--gray-500);
-      background: white;
+      border-top: 1px solid var(--gray-200);
+      text-align: center;
     }
 
     .footer {
@@ -228,6 +182,13 @@
     <!-- How to Close a File -->
     <div class="card">
       <h2>&#128296; How to Close a File</h2>
+
+      <div class="screenshot" style="margin-bottom:1.25rem;">
+        <img src="/mit-qb-frontend/training/screenshots/closed-files-full-page.png"
+             alt="Full Invoices page showing navigation tabs and the Closed Files section location">
+        <div class="screenshot-caption">Navigate to the Invoices tab — the Closed Files section is below the billing month selector</div>
+      </div>
+
       <ol class="steps">
         <li>
           <strong>Go to the Invoices page</strong><br>
@@ -237,6 +198,12 @@
           <strong>Find the "Closed Files" section</strong><br>
           Below the "Customer Acceptance Gate Overrides" section, you'll see a collapsible panel labeled
           <strong>&#128683; Closed Files</strong>. Click to expand it.
+
+          <div class="screenshot" style="margin-top:0.75rem;">
+            <img src="/mit-qb-frontend/training/screenshots/closed-files-collapsed.png"
+                 alt="Collapsed Closed Files section showing the header bar with chevron">
+            <div class="screenshot-caption">The collapsed "Closed Files" panel — click anywhere on the bar to expand</div>
+          </div>
         </li>
         <li>
           <strong>Select the customer to close</strong><br>
@@ -250,48 +217,17 @@
         </li>
       </ol>
 
-      <!-- Visual mockup -->
-      <div class="screenshot-mock">
-        <div class="mock-toolbar">
-          <div class="mock-dot" style="background:#ef4444;"></div>
-          <div class="mock-dot" style="background:#f59e0b;"></div>
-          <div class="mock-dot" style="background:#22c55e;"></div>
-          <span style="margin-left: 0.5rem;">Invoices page — Closed Files section</span>
-        </div>
-        <div class="mock-body">
-          <div class="mock-section">
-            <div class="mock-section-header">
-              <div style="display:flex;align-items:center;gap:0.5rem;">
-                <span>&#128683;</span>
-                <strong>Closed Files</strong>
-                <span class="badge badge-red">2</span>
-              </div>
-              <span>&#9660;</span>
-            </div>
-            <div class="mock-section-body">
-              <div class="callout callout-red" style="margin-bottom:0.75rem; font-size:0.8rem;">
-                <strong>&#9432;</strong> Closed files are excluded from all automated reports, follow-ups, invoices, and manual sends.
-              </div>
-              <div class="mock-item">
-                <div>
-                  <strong>Acme Corporation</strong>
-                  <span style="font-size:0.75rem; color:#6b7280; margin-left:0.5rem;">Closed Mar 10, 2026 by Sharon</span>
-                </div>
-                <span class="mock-btn mock-btn-green">Reopen</span>
-              </div>
-              <div class="mock-item">
-                <div>
-                  <strong>Smith Residence</strong>
-                  <span style="font-size:0.75rem; color:#6b7280; margin-left:0.5rem;">Closed Mar 12, 2026 by David</span>
-                </div>
-                <span class="mock-btn mock-btn-green">Reopen</span>
-              </div>
-              <select class="mock-select" disabled>
-                <option>Close a file...</option>
-              </select>
-            </div>
-          </div>
-        </div>
+      <!-- Screenshots -->
+      <div class="screenshot">
+        <img src="/mit-qb-frontend/training/screenshots/closed-files-expanded.png"
+             alt="Invoices page showing the expanded Closed Files section with the info banner and Close a file dropdown">
+        <div class="screenshot-caption">The Closed Files section on the Invoices page (expanded view)</div>
+      </div>
+
+      <div class="screenshot">
+        <img src="/mit-qb-frontend/training/screenshots/closed-files-dropdown.png"
+             alt="Close-up of the Close a file dropdown">
+        <div class="screenshot-caption">The "Close a file..." dropdown — select any active customer to close their file</div>
       </div>
     </div>
 
