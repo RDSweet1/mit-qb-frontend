@@ -41,7 +41,7 @@ export default function ClarifyPage() {
   // Pre-fill suggested description for single-entry mode
   useEffect(() => {
     if (entries.length === 1 && !suggestedDesc) {
-      setSuggestedDesc(entries[0].description || entries[0].notes || '');
+      setSuggestedDesc(entries[0].description || '');
     }
   }, [entries]);
 
@@ -199,6 +199,8 @@ export default function ClarifyPage() {
                   <thead>
                     <tr style={{ backgroundColor: COLORS.grayLight }}>
                       <th style={thStyle}>Date / Professional</th>
+                      <th style={thStyle}>Project</th>
+                      <th style={thStyle}>Activity</th>
                       <th style={thStyle}>Description</th>
                       <th style={{ ...thStyle, textAlign: 'right' }}>Hours</th>
                     </tr>
@@ -209,11 +211,7 @@ export default function ClarifyPage() {
                       const startT = fmtClockTime(entry.start_time);
                       const endT = fmtClockTime(entry.end_time);
                       const customerName = customerNames[entry.qb_customer_id] || entry.qb_customer_id;
-                      // Build description: show both description and notes if different
-                      const descParts: string[] = [];
-                      if (entry.description) descParts.push(entry.description);
-                      if (entry.notes && entry.notes !== entry.description) descParts.push(entry.notes);
-                      const hasDesc = descParts.length > 0;
+                      const desc = entry.description || '';
                       return (
                         <tr key={entry.id} style={{ backgroundColor: i % 2 === 1 ? COLORS.grayLight : '#fff' }}>
                           <td style={{ ...tdStyle, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
@@ -222,16 +220,11 @@ export default function ClarifyPage() {
                               <div style={{ fontSize: 11, color: COLORS.gray }}>{startT} – {endT}</div>
                             )}
                             <div style={{ fontSize: 12 }}>{entry.employee_name}</div>
-                            <div style={{ fontSize: 11, color: COLORS.gray }}>
-                              {customerName}{entry.cost_code ? ` · ${entry.cost_code}` : ''}
-                            </div>
                           </td>
-                          <td style={{ ...tdStyle, maxWidth: 400, wordBreak: 'break-word', verticalAlign: 'top' }}>
-                            {hasDesc ? descParts.map((part, pi) => (
-                              <div key={pi} style={pi > 0 ? { fontSize: 12, color: COLORS.gray, marginTop: 4 } : undefined}>{part}</div>
-                            )) : (
-                              <span style={{ color: '#dc2626', fontStyle: 'italic' }}>No description entered</span>
-                            )}
+                          <td style={{ ...tdStyle, verticalAlign: 'top' }}>{customerName}</td>
+                          <td style={{ ...tdStyle, verticalAlign: 'top' }}>{entry.cost_code || 'General'}</td>
+                          <td style={{ ...tdStyle, maxWidth: 300, wordBreak: 'break-word', verticalAlign: 'top' }}>
+                            {desc || <span style={{ color: '#dc2626', fontStyle: 'italic' }}>No description entered</span>}
                           </td>
                           <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'top', whiteSpace: 'nowrap' }}>{hours}</td>
                         </tr>

@@ -251,9 +251,6 @@ export default function InternalReviewPage() {
                           <div className="mt-1"><span className="text-gray-500">Service:</span> <span className="font-medium">{entry.cost_code}</span></div>
                         )}
                         <div className="mt-1"><span className="text-gray-500">Description:</span> <span className="font-medium">{entry.description || <span className="text-red-500 italic">No description</span>}</span></div>
-                        {entry.notes && entry.notes !== entry.description && (
-                          <div className="mt-1"><span className="text-gray-500">Notes:</span> <span className="font-medium">{entry.notes}</span></div>
-                        )}
                       </div>
                     )}
 
