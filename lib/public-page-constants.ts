@@ -45,3 +45,11 @@ export function fmtShortDate(dateStr: string): string {
   const day = d.toLocaleDateString('en-US', { weekday: 'short' });
   return `${day} ${d.getMonth() + 1}/${d.getDate()}`;
 }
+
+/** Format an ISO timestamp to Eastern hh:mm AM/PM */
+export function fmtClockTime(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' });
+  } catch { return null; }
+}

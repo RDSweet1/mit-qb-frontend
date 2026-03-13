@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { supabase, callEdgeFunction } from '@/lib/supabaseClient';
 import { fmtDateTime } from '@/lib/utils';
 import { useAssignmentData } from '@/lib/hooks/useAssignmentData';
-import { COLORS, SERVICE_COLORS, MIT_LOGO, fmtShortDate } from '@/lib/public-page-constants';
+import { COLORS, SERVICE_COLORS, MIT_LOGO, fmtShortDate, fmtClockTime } from '@/lib/public-page-constants';
 import toast from 'react-hot-toast';
 
 type PageState = 'loading' | 'not_found' | 'expired' | 'active' | 'submitted' | 'cleared';
@@ -41,7 +41,7 @@ export default function ClarifyPage() {
   // Pre-fill suggested description for single-entry mode
   useEffect(() => {
     if (entries.length === 1 && !suggestedDesc) {
-      setSuggestedDesc(entries[0].description || '');
+      setSuggestedDesc(entries[0].description || entries[0].notes || '');
     }
   }, [entries]);
 
@@ -198,33 +198,42 @@ export default function ClarifyPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ backgroundColor: COLORS.grayLight }}>
-                      <th style={thStyle}>Date</th>
-                      <th style={thStyle}>Employee</th>
-                      <th style={thStyle}>Customer</th>
-                      <th style={thStyle}>Service</th>
-                      <th style={{ ...thStyle, width: '35%' }}>Current Description</th>
+                      <th style={thStyle}>Date / Professional</th>
+                      <th style={thStyle}>Description</th>
                       <th style={{ ...thStyle, textAlign: 'right' }}>Hours</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {entries.map((entry, i) => {
+                    {entries.map((entry: any, i: number) => {
                       const hours = (entry.hours + entry.minutes / 60).toFixed(2);
-                      const sc = SERVICE_COLORS[entry.cost_code || ''] || { bg: '#f3f4f6', text: '#374151' };
+                      const startT = fmtClockTime(entry.start_time);
+                      const endT = fmtClockTime(entry.end_time);
+                      const customerName = customerNames[entry.qb_customer_id] || entry.qb_customer_id;
+                      // Build description: show both description and notes if different
+                      const descParts: string[] = [];
+                      if (entry.description) descParts.push(entry.description);
+                      if (entry.notes && entry.notes !== entry.description) descParts.push(entry.notes);
+                      const hasDesc = descParts.length > 0;
                       return (
                         <tr key={entry.id} style={{ backgroundColor: i % 2 === 1 ? COLORS.grayLight : '#fff' }}>
-                          <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{fmtShortDate(entry.txn_date)}</td>
-                          <td style={tdStyle}>{entry.employee_name}</td>
-                          <td style={tdStyle}>{customerNames[entry.qb_customer_id] || entry.qb_customer_id}</td>
-                          <td style={tdStyle}>
-                            <span style={{
-                              backgroundColor: sc.bg, color: sc.text,
-                              padding: '2px 8px', borderRadius: 4, fontSize: 11, display: 'inline-block',
-                            }}>
-                              {entry.cost_code || 'General'}
-                            </span>
+                          <td style={{ ...tdStyle, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                            <strong>{fmtShortDate(entry.txn_date)}</strong>
+                            {startT && endT && (
+                              <div style={{ fontSize: 11, color: COLORS.gray }}>{startT} – {endT}</div>
+                            )}
+                            <div style={{ fontSize: 12 }}>{entry.employee_name}</div>
+                            <div style={{ fontSize: 11, color: COLORS.gray }}>
+                              {customerName}{entry.cost_code ? ` · ${entry.cost_code}` : ''}
+                            </div>
                           </td>
-                          <td style={{ ...tdStyle, maxWidth: 300, wordBreak: 'break-word' }}>{entry.description || '-'}</td>
-                          <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold' }}>{hours}</td>
+                          <td style={{ ...tdStyle, maxWidth: 400, wordBreak: 'break-word', verticalAlign: 'top' }}>
+                            {hasDesc ? descParts.map((part, pi) => (
+                              <div key={pi} style={pi > 0 ? { fontSize: 12, color: COLORS.gray, marginTop: 4 } : undefined}>{part}</div>
+                            )) : (
+                              <span style={{ color: '#dc2626', fontStyle: 'italic' }}>No description entered</span>
+                            )}
+                          </td>
+                          <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'top', whiteSpace: 'nowrap' }}>{hours}</td>
                         </tr>
                       );
                     })}

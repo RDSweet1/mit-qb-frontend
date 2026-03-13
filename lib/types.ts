@@ -41,8 +41,11 @@ export interface TimeEntrySummary {
   qb_customer_id: string;
   cost_code: string | null;
   description: string | null;
+  notes?: string | null;
   hours: number;
   minutes: number;
+  start_time?: string | null;
+  end_time?: string | null;
   service_item_name?: string | null;
   qb_item_id?: string | null;
   customer_name?: string;

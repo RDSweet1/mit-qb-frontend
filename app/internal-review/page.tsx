@@ -233,7 +233,16 @@ export default function InternalReviewPage() {
                     {entry && (
                       <div className="p-3 bg-gray-50 rounded-lg mb-4 text-sm">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <div><span className="text-gray-500">Date:</span> <span className="font-medium">{fmtDate(entry.txn_date)}</span></div>
+                          <div>
+                            <span className="text-gray-500">Date:</span> <span className="font-medium">{fmtDate(entry.txn_date)}</span>
+                            {entry.start_time && entry.end_time && (
+                              <div className="text-xs text-gray-400">
+                                {new Date(entry.start_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })}
+                                {' – '}
+                                {new Date(entry.end_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })}
+                              </div>
+                            )}
+                          </div>
                           <div><span className="text-gray-500">Employee:</span> <span className="font-medium">{entry.employee_name}</span></div>
                           <div><span className="text-gray-500">Customer:</span> <span className="font-medium">{custName}</span></div>
                           <div><span className="text-gray-500">Hours:</span> <span className="font-medium">{(entry.hours + entry.minutes / 60).toFixed(2)}</span></div>
@@ -241,7 +250,10 @@ export default function InternalReviewPage() {
                         {entry.cost_code && (
                           <div className="mt-1"><span className="text-gray-500">Service:</span> <span className="font-medium">{entry.cost_code}</span></div>
                         )}
-                        <div className="mt-1"><span className="text-gray-500">Current Description:</span> <span className="font-medium">{entry.description || '-'}</span></div>
+                        <div className="mt-1"><span className="text-gray-500">Description:</span> <span className="font-medium">{entry.description || <span className="text-red-500 italic">No description</span>}</span></div>
+                        {entry.notes && entry.notes !== entry.description && (
+                          <div className="mt-1"><span className="text-gray-500">Notes:</span> <span className="font-medium">{entry.notes}</span></div>
+                        )}
                       </div>
                     )}
 
