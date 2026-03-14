@@ -281,6 +281,7 @@
     <ol>
       <li><a href="#getting-started">Getting Started</a></li>
       <li><a href="#time-entries">Time Entries</a></li>
+      <li><a href="#structured-notes">Structured Notes (Workforce Questions)</a></li>
       <li><a href="#reports">Reports &amp; Reminders</a></li>
       <li><a href="#customer-review">Customer Review Portal</a></li>
       <li><a href="#invoices">Invoices</a></li>
@@ -340,7 +341,7 @@
     </div>
     <div class="section-body">
       <h3>Where does the data come from?</h3>
-      <p>Field technicians clock in and out using the <strong>QuickBooks Workforce</strong> mobile app. This data syncs to QuickBooks Online and is pulled into our system automatically.</p>
+      <p>Field technicians clock in and out using the <strong>QuickBooks Workforce</strong> mobile app. When clocking out, they are required to answer <strong>5 structured questions</strong> about their work (see <a href="#structured-notes">Structured Notes</a> section below). This data syncs to QuickBooks Online and is pulled into our system automatically.</p>
 
       <h3>Viewing entries</h3>
       <p>Use the <strong>customer filter dropdown</strong> at the top to narrow entries to a single customer. When set to <em>All Customers</em>, entries are grouped by customer. Selecting a specific customer switches to a flat list for that customer only. Use the <strong>This Week</strong> / <strong>Last Week</strong> preset buttons or the date pickers to change the date range.</p>
@@ -389,6 +390,75 @@
         <li>The tech receives an email with a link to respond</li>
         <li>Their response appears in the Clarifications tab</li>
       </ol>
+    </div>
+  </div>
+
+  <!-- SECTION: Structured Notes -->
+  <div class="section" id="structured-notes">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="icon">&#128221;</span>
+      <h2>Structured Notes (Workforce Questions)</h2>
+      <span class="chevron">&#9654;</span>
+    </div>
+    <div class="section-body">
+      <h3>What are structured notes?</h3>
+      <p>When technicians clock out in QuickBooks Workforce, they are now required to answer <strong>5 questions</strong> about their work. These answers replace the old free-form notes and provide consistent, detailed documentation that flows through all reports, emails, and invoices.</p>
+
+      <h3>The 5 required questions</h3>
+      <table>
+        <tr><th>Workforce Question</th><th>System Label</th><th>What to document</th></tr>
+        <tr>
+          <td>1. Work &mdash; what you did</td>
+          <td><span class="badge badge-blue">Activity Performed</span></td>
+          <td>Describe the specific work completed during this time period</td>
+        </tr>
+        <tr>
+          <td>2. Complications &mdash; time consuming</td>
+          <td><span class="badge badge-amber">Complications</span></td>
+          <td>Any difficulties, delays, or unexpected issues that made the work harder or took longer</td>
+        </tr>
+        <tr>
+          <td>3. Purpose &mdash; why necessary</td>
+          <td><span class="badge" style="background:#f3e8ff;color:#6b21a8;">Why Necessary</span></td>
+          <td>Why this activity was needed &mdash; what problem it solves or what requirement it meets</td>
+        </tr>
+        <tr>
+          <td>4. Resources Utilized</td>
+          <td><span class="badge" style="background:#e0e7ff;color:#3730a3;">Resources Used</span></td>
+          <td>Documents, reference materials, tools, or source data used during the work</td>
+        </tr>
+        <tr>
+          <td>5. Client Benefit</td>
+          <td><span class="badge badge-green">Client Benefit</span></td>
+          <td>What the client received or gained from this work</td>
+        </tr>
+      </table>
+
+      <h3>Where structured notes appear</h3>
+      <p>Structured notes are displayed throughout the system:</p>
+      <ul>
+        <li><strong>Time Entries page</strong> &mdash; shown in a gray card below each entry with color-coded labels</li>
+        <li><strong>Weekly reports (customer emails)</strong> &mdash; 4 fields shown (Activity, Why Necessary, Resources, Client Benefit). <em>Complications are excluded from client-facing communications.</em></li>
+        <li><strong>Supplemental reports</strong> &mdash; same 4 client-facing fields</li>
+        <li><strong>Customer review portal</strong> &mdash; same 4 client-facing fields</li>
+        <li><strong>Invoice line items</strong> &mdash; 4 fields concatenated into the description</li>
+        <li><strong>Internal clarification emails</strong> &mdash; all 5 fields shown (includes Complications)</li>
+        <li><strong>Clarifications dashboard</strong> &mdash; all 5 fields for internal review</li>
+        <li><strong>CSV export</strong> &mdash; 5 separate columns added to the export</li>
+      </ul>
+
+      <div class="callout callout-warning">
+        <strong>Client-facing vs. internal</strong>
+        The <strong>Complications</strong> field is only visible in internal views (clarifications, internal review, admin pages). It is <em>never</em> shown to customers in reports, emails, the review portal, or invoices. This protects sensitive operational details.
+      </div>
+
+      <h3>Backward compatibility</h3>
+      <p>Historical time entries (before structured notes were enabled) continue to display the original free-form notes. The system automatically detects whether an entry has structured data and renders the appropriate format. No existing data is lost or overwritten.</p>
+
+      <div class="callout callout-info">
+        <strong>Reducing clarification requests</strong>
+        The structured questions are designed to capture the information Sharon and Fred most commonly ask about. With technicians answering these questions upfront, the need for back-and-forth clarification should decrease significantly.
+      </div>
     </div>
   </div>
 
@@ -715,7 +785,7 @@
   <div class="footer">
     <p>Other guides: <a href="ar-guide.html">Accounts Receivable</a> &bull; <a href="daily-review-guide.html">Daily Review</a> &bull; <a href="profitability-guide.html">Profitability</a> &bull; <a href="cash-position-guide.html">Cash Position</a></p>
     <p style="margin-top: 0.5rem;">&copy; 2026 Mitigation Information Technologies. All rights reserved.</p>
-    <p style="margin-top: 0.25rem;">Last updated: March 2026</p>
+    <p style="margin-top: 0.25rem;">Last updated: March 14, 2026</p>
   </div>
 
 </div>
