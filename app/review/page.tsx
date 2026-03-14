@@ -45,6 +45,11 @@ interface TimeEntry {
   hours: number;
   minutes: number;
   billable_status: string;
+  // Structured notes (client-facing — 4 fields, no Complications)
+  activity_performed?: string | null;
+  why_necessary?: string | null;
+  resources_used?: string | null;
+  client_benefit?: string | null;
 }
 
 interface Customer {
@@ -171,7 +176,7 @@ export default function ReviewPage() {
       // 4. Fetch time entries for this customer + week
       const { data: entryData } = await supabase
         .from('time_entries')
-        .select('id, txn_date, employee_name, cost_code, description, hours, minutes, billable_status')
+        .select('id, txn_date, employee_name, cost_code, description, hours, minutes, billable_status, activity_performed, why_necessary, resources_used, client_benefit')
         .eq('qb_customer_id', rpData.qb_customer_id)
         .gte('txn_date', rpData.week_start)
         .lte('txn_date', rpData.week_end)
@@ -783,7 +788,16 @@ function ReportContent({ entries, totalHours, uniqueDays, reportPeriod, readOnly
                           {entry.cost_code || 'General'}
                         </span>
                       </td>
-                      <td style={{ ...tdStyle, maxWidth: 400, wordBreak: 'break-word' }}>{entry.description || '-'}</td>
+                      <td style={{ ...tdStyle, maxWidth: 400, wordBreak: 'break-word', lineHeight: '1.5' }}>
+                        {entry.activity_performed ? (
+                          <>
+                            <div><strong style={{ fontSize: 11 }}>Activity:</strong> {entry.activity_performed}</div>
+                            {entry.why_necessary && <div><strong style={{ fontSize: 11 }}>Why Necessary:</strong> {entry.why_necessary}</div>}
+                            {entry.resources_used && <div><strong style={{ fontSize: 11 }}>Resources:</strong> {entry.resources_used}</div>}
+                            {entry.client_benefit && <div><strong style={{ fontSize: 11 }}>Client Benefit:</strong> {entry.client_benefit}</div>}
+                          </>
+                        ) : (entry.description || '-')}
+                      </td>
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{hours}</td>
                       {canReassign && (
                         <td style={{ ...tdStyle, textAlign: 'center', position: 'relative', padding: '6px 8px' }}>

@@ -211,7 +211,7 @@ export default function ClarifyPage() {
                       const startT = fmtClockTime(entry.start_time);
                       const endT = fmtClockTime(entry.end_time);
                       const customerName = customerNames[entry.qb_customer_id] || entry.qb_customer_id;
-                      const desc = entry.description || '';
+                      const hasStructured = !!entry.activity_performed;
                       return (
                         <tr key={entry.id} style={{ backgroundColor: i % 2 === 1 ? COLORS.grayLight : '#fff' }}>
                           <td style={{ ...tdStyle, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
@@ -223,8 +223,18 @@ export default function ClarifyPage() {
                           </td>
                           <td style={{ ...tdStyle, verticalAlign: 'top' }}>{customerName}</td>
                           <td style={{ ...tdStyle, verticalAlign: 'top' }}>{entry.cost_code || 'General'}</td>
-                          <td style={{ ...tdStyle, maxWidth: 300, wordBreak: 'break-word', verticalAlign: 'top' }}>
-                            {desc || <span style={{ color: '#dc2626', fontStyle: 'italic' }}>No description entered</span>}
+                          <td style={{ ...tdStyle, maxWidth: 350, wordBreak: 'break-word', verticalAlign: 'top', lineHeight: '1.5' }}>
+                            {hasStructured ? (
+                              <>
+                                {entry.activity_performed && <div><strong style={{ fontSize: 11, color: '#1e40af' }}>Activity:</strong> {entry.activity_performed}</div>}
+                                {entry.complications && <div><strong style={{ fontSize: 11, color: '#92400e' }}>Complications:</strong> {entry.complications}</div>}
+                                {entry.why_necessary && <div><strong style={{ fontSize: 11, color: '#5b21b6' }}>Why Necessary:</strong> {entry.why_necessary}</div>}
+                                {entry.resources_used && <div><strong style={{ fontSize: 11, color: '#3730a3' }}>Resources:</strong> {entry.resources_used}</div>}
+                                {entry.client_benefit && <div><strong style={{ fontSize: 11, color: '#065f46' }}>Client Benefit:</strong> {entry.client_benefit}</div>}
+                              </>
+                            ) : (
+                              entry.description || <span style={{ color: '#dc2626', fontStyle: 'italic' }}>No description entered</span>
+                            )}
                           </td>
                           <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 'bold', verticalAlign: 'top', whiteSpace: 'nowrap' }}>{hours}</td>
                         </tr>

@@ -271,6 +271,17 @@ export function TimeEntryRow({
             </div>
           )}
 
+          {/* Structured notes (5 required Workforce questions) — shown when available */}
+          {entry.activity_performed && (
+            <div className="text-sm space-y-0.5 mb-2 p-2 bg-gray-50 rounded border border-gray-200">
+              <div><span className="text-blue-800 font-semibold text-xs uppercase">Activity:</span> {entry.activity_performed}</div>
+              {entry.complications && <div><span className="text-amber-800 font-semibold text-xs uppercase">Complications:</span> {entry.complications}</div>}
+              {entry.why_necessary && <div><span className="text-purple-800 font-semibold text-xs uppercase">Why Necessary:</span> {entry.why_necessary}</div>}
+              {entry.resources_used && <div><span className="text-indigo-800 font-semibold text-xs uppercase">Resources:</span> {entry.resources_used}</div>}
+              {entry.client_benefit && <div><span className="text-emerald-800 font-semibold text-xs uppercase">Client Benefit:</span> {entry.client_benefit}</div>}
+            </div>
+          )}
+
           {/* Technician Notes (editable when unlocked) */}
           <InlineNotesEditor
             entryId={entry.id}

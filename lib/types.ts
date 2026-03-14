@@ -31,6 +31,12 @@ export interface TimeEntry {
   post_send_edit?: boolean;
   amended_at?: string | null;
   has_active_clarification?: boolean;
+  // Structured notes (5 required Workforce questions)
+  activity_performed?: string | null;
+  complications?: string | null;
+  why_necessary?: string | null;
+  resources_used?: string | null;
+  client_benefit?: string | null;
 }
 
 /** Lightweight time entry for unbilled-time and internal-review pages. */
@@ -49,6 +55,12 @@ export interface TimeEntrySummary {
   service_item_name?: string | null;
   qb_item_id?: string | null;
   customer_name?: string;
+  // Structured notes (5 required Workforce questions)
+  activity_performed?: string | null;
+  complications?: string | null;
+  why_necessary?: string | null;
+  resources_used?: string | null;
+  client_benefit?: string | null;
 }
 
 export interface Customer {

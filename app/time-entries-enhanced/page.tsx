@@ -251,7 +251,7 @@ export default function TimeEntriesEnhancedPage() {
 
   const generateReport = () => {
     try {
-      const headers = ['Date', 'Employee', 'Customer', 'Cost Code', 'Start Time', 'End Time', 'Hours', 'Billable', 'Status', 'Notes'];
+      const headers = ['Date', 'Employee', 'Customer', 'Cost Code', 'Start Time', 'End Time', 'Hours', 'Billable', 'Status', 'Notes', 'Activity Performed', 'Complications', 'Why Necessary', 'Resources Used', 'Client Benefit'];
       const rows = sortedEntries.map(entry => {
         const date = format(parseLocalDate(entry.txn_date), 'MM/dd/yyyy');
         const startTime = entry.start_time?.includes('T')
@@ -262,7 +262,12 @@ export default function TimeEntriesEnhancedPage() {
           : entry.end_time ? format(new Date(`2000-01-01T${entry.end_time}`), 'h:mm a') : 'N/A';
         return [date, entry.employee_name, entry.qb_customer_id, entry.cost_code, startTime, endTime,
           `${entry.hours}.${entry.minutes.toString().padStart(2, '0')}`, entry.billable_status,
-          entry.approval_status, (entry.notes || '').replace(/"/g, '""')];
+          entry.approval_status, (entry.notes || '').replace(/"/g, '""'),
+          (entry.activity_performed || '').replace(/"/g, '""'),
+          (entry.complications || '').replace(/"/g, '""'),
+          (entry.why_necessary || '').replace(/"/g, '""'),
+          (entry.resources_used || '').replace(/"/g, '""'),
+          (entry.client_benefit || '').replace(/"/g, '""')];
       });
       const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

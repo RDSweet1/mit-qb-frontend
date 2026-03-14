@@ -24,7 +24,7 @@ interface UseAssignmentDataOptions {
   fetchAll?: boolean;
 }
 
-const ENTRY_SELECT = 'id, txn_date, employee_name, qb_customer_id, cost_code, description, notes, hours, minutes, start_time, end_time';
+const ENTRY_SELECT = 'id, txn_date, employee_name, qb_customer_id, cost_code, description, notes, hours, minutes, start_time, end_time, activity_performed, complications, why_necessary, resources_used, client_benefit';
 
 export function useAssignmentData({ token, batchId, fetchAll = false }: UseAssignmentDataOptions): AssignmentDataResult {
   const [assignments, setAssignments] = useState<InternalAssignment[]>([]);

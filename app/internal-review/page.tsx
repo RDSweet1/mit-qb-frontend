@@ -250,7 +250,17 @@ export default function InternalReviewPage() {
                         {entry.cost_code && (
                           <div className="mt-1"><span className="text-gray-500">Service:</span> <span className="font-medium">{entry.cost_code}</span></div>
                         )}
-                        <div className="mt-1"><span className="text-gray-500">Description:</span> <span className="font-medium">{entry.description || <span className="text-red-500 italic">No description</span>}</span></div>
+                        {entry.activity_performed ? (
+                          <div className="mt-2 space-y-1 text-sm">
+                            <div><span className="text-blue-800 font-semibold text-xs uppercase">Activity:</span> <span className="font-medium">{entry.activity_performed}</span></div>
+                            {entry.complications && <div><span className="text-amber-800 font-semibold text-xs uppercase">Complications:</span> <span className="font-medium">{entry.complications}</span></div>}
+                            {entry.why_necessary && <div><span className="text-purple-800 font-semibold text-xs uppercase">Why Necessary:</span> <span className="font-medium">{entry.why_necessary}</span></div>}
+                            {entry.resources_used && <div><span className="text-indigo-800 font-semibold text-xs uppercase">Resources:</span> <span className="font-medium">{entry.resources_used}</span></div>}
+                            {entry.client_benefit && <div><span className="text-emerald-800 font-semibold text-xs uppercase">Client Benefit:</span> <span className="font-medium">{entry.client_benefit}</span></div>}
+                          </div>
+                        ) : (
+                          <div className="mt-1"><span className="text-gray-500">Description:</span> <span className="font-medium">{entry.description || <span className="text-red-500 italic">No description</span>}</span></div>
+                        )}
                       </div>
                     )}
 
