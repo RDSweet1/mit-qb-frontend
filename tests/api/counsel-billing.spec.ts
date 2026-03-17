@@ -145,13 +145,14 @@ test.describe('Counsel Billing Summary edge function', () => {
   });
 
   test('time entries have correct structure', async ({ request }) => {
+    // Use full range to get entries from Supabase (has richer data)
     const res = await request.post(
       `${SUPABASE_URL}/functions/v1/counsel-billing-summary`,
       {
         headers: fnHeaders,
         data: {
           customerId: '341',
-          startDate: '2026-03-01',
+          startDate: '2025-12-01',
           endDate: '2026-03-17',
         },
         timeout: 60000,
@@ -173,13 +174,14 @@ test.describe('Counsel Billing Summary edge function', () => {
   });
 
   test('time entries with clock times have valid duration check', async ({ request }) => {
+    // Use Dec 2025+ range where Supabase entries have Workforce clock times
     const res = await request.post(
       `${SUPABASE_URL}/functions/v1/counsel-billing-summary`,
       {
         headers: fnHeaders,
         data: {
           customerId: '341',
-          startDate: '2026-03-01',
+          startDate: '2025-12-01',
           endDate: '2026-03-17',
         },
         timeout: 60000,
