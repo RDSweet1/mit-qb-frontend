@@ -208,6 +208,16 @@ export function TimeEntryRow({
             }`}>
               {approvalLabels[entry.approval_status] || 'No Status'}
             </span>
+            {/* QB Promotion Status Badge */}
+            {entry.promotion_status === 'promoted' && (
+              <span className="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-700">QB</span>
+            )}
+            {entry.promotion_status === 'failed' && (
+              <span className="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-700">QB Failed</span>
+            )}
+            {entry.promotion_status === 'pending' && (
+              <span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-700 animate-pulse">QB...</span>
+            )}
             {/* Report Status Badge */}
             <span
               data-testid="entry-status-badge"

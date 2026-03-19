@@ -31,6 +31,11 @@ export interface TimeEntry {
   post_send_edit?: boolean;
   amended_at?: string | null;
   has_active_clarification?: boolean;
+  // QB Online promotion
+  qb_online_id?: string | null;
+  promotion_status?: 'pending' | 'promoted' | 'failed' | 'skipped' | null;
+  promoted_at?: string | null;
+  promoted_by?: string | null;
   // Structured notes (5 required Workforce questions)
   activity_performed?: string | null;
   complications?: string | null;

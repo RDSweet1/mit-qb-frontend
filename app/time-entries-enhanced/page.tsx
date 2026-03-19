@@ -464,6 +464,38 @@ export default function TimeEntriesEnhancedPage() {
   };
 
   // ──────────────────────────────────────────────
+  // QB Online promotion (fire-and-forget, does not block approval)
+  // ──────────────────────────────────────────────
+
+  const promoteEntries = async (entryIds: number[], userEmail: string) => {
+    try {
+      const result = await callEdgeFunction('promote-time-entries', { entryIds, userEmail });
+      if (result.promoted > 0) toast.success(`${result.promoted} entries promoted to QB`);
+      if (result.failed > 0) toast.error(`${result.failed} entries failed QB promotion`);
+      // Update local state with promotion results
+      if (result.results) {
+        const resultMap = new Map(result.results.map((r: any) => [r.id, r]));
+        setEntries(prev => prev.map(e => {
+          const r = resultMap.get(e.id) as any;
+          return r ? { ...e, qb_online_id: r.qb_online_id, promotion_status: r.status } : e;
+        }));
+      }
+    } catch (err) {
+      console.error('Promotion failed:', err);
+      toast.error('Approved but QB promotion failed — retry from action bar');
+    }
+  };
+
+  const retryPromotion = async () => {
+    const failedIds = entries
+      .filter(e => selectedEntries.has(e.id) && e.promotion_status === 'failed')
+      .map(e => e.id);
+    if (failedIds.length === 0) { toast.error('No failed entries selected'); return; }
+    const userEmail = user?.username || 'unknown';
+    await promoteEntries(failedIds, userEmail);
+  };
+
+  // ──────────────────────────────────────────────
   // Selection & approval
   // ──────────────────────────────────────────────
 
@@ -508,6 +540,9 @@ export default function TimeEntriesEnhancedPage() {
       setSelectedEntries(new Set());
       toast.success(`Approved ${entryIds.length} entries`);
 
+      // Auto-promote to QB Online
+      promoteEntries(entryIds, userEmail);
+
       setSendDialogEntryIds(entryIds);
       setSendDialogOpen(true);
     } catch (err) {
@@ -538,6 +573,10 @@ export default function TimeEntriesEnhancedPage() {
       ));
       setSelectedEntries(new Set());
       toast.success(`Approved ${entryIds.length} entries`);
+
+      // Auto-promote to QB Online
+      promoteEntries(entryIds, userEmail);
+
       setSendDialogEntryIds(entryIds);
       setSendDialogOpen(true);
     } catch (err) {
@@ -690,6 +729,9 @@ export default function TimeEntriesEnhancedPage() {
       ));
       setSelectedEntries(new Set());
       toast.success(`Approved ${entryIds.length} entries`);
+
+      // Auto-promote to QB Online
+      promoteEntries(entryIds, userEmail);
 
       // Immediately open send dialog
       setSendDialogEntryIds(entryIds);
@@ -897,6 +939,7 @@ export default function TimeEntriesEnhancedPage() {
               setClarifyDialogOpen(true);
             }}
             onBatchServiceItem={() => setBatchServiceItemOpen(true)}
+            onRetryPromotion={retryPromotion}
             onDeselectAll={() => setSelectedEntries(new Set())}
             onGenerateReport={generateReport}
             onToggleTestMode={() => setTestMode(t => !t)}

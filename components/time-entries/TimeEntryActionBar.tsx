@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, X, FileText, Mail, MessageSquare, Wrench, SendHorizonal } from 'lucide-react';
+import { CheckCircle, X, FileText, Mail, MessageSquare, Wrench, SendHorizonal, RotateCcw } from 'lucide-react';
 import type { TimeEntry } from '@/lib/types';
 
 interface TimeEntryActionBarProps {
@@ -17,6 +17,7 @@ interface TimeEntryActionBarProps {
   onGenerateReport: () => void;
   onToggleTestMode: () => void;
   onSendReport: () => void;
+  onRetryPromotion: () => void;
   selectedCustomer: string;
   calculateTotalHours: (entries: TimeEntry[]) => string;
 }
@@ -35,10 +36,12 @@ export function TimeEntryActionBar({
   onGenerateReport,
   onToggleTestMode,
   onSendReport,
+  onRetryPromotion,
   selectedCustomer,
   calculateTotalHours,
 }: TimeEntryActionBarProps) {
   const pendingCount = entries.filter(e => e.approval_status === 'pending').length;
+  const hasFailedPromotion = entries.some(e => e.promotion_status === 'failed');
 
   return (
     <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -99,6 +102,16 @@ export function TimeEntryActionBar({
                   <MessageSquare className="w-4 h-4" />
                   Clarify ({selectedEntries.size})
                 </button>
+                {hasFailedPromotion && (
+                  <button
+                    onClick={onRetryPromotion}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    title="Retry QB promotion for failed entries"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Retry QB
+                  </button>
+                )}
                 <button
                   onClick={onDeselectAll}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
