@@ -74,6 +74,7 @@ export default function TimeEntriesEnhancedPage() {
   const [editingServiceItemId, setEditingServiceItemId] = useState<number | null>(null);
   const [editingBillableId, setEditingBillableId] = useState<number | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
+  const [savingHoursMinutes, setSavingHoursMinutes] = useState(false);
 
   // Batch service item dialog
   const [batchServiceItemOpen, setBatchServiceItemOpen] = useState(false);
@@ -622,6 +623,38 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
+  const saveHoursMinutes = async (entryId: number, hours: number, minutes: number) => {
+    const userEmail = user?.username || 'unknown';
+    const entry = entries.find(e => e.id === entryId);
+    const currentEditCount = entry?.edit_count || 0;
+
+    setSavingHoursMinutes(true);
+    try {
+      const { error: updateError } = await supabase.from('time_entries')
+        .update({ hours, minutes, updated_at: new Date().toISOString(), updated_by: userEmail, manually_edited: true, edit_count: currentEditCount + 1 })
+        .eq('id', entryId);
+      if (updateError) throw updateError;
+
+      setEntries(prev => prev.map(e => e.id === entryId
+        ? { ...e, hours, minutes, manually_edited: true, edit_count: currentEditCount + 1, updated_at: new Date().toISOString(), updated_by: userEmail }
+        : e
+      ));
+
+      try {
+        const qbResult = await callEdgeFunction('update_qb_time_entry', { entry_id: entryId, hours, minutes, user_email: userEmail });
+        if (!qbResult.success) console.warn('QB Online hours sync-back failed:', qbResult.error);
+      } catch (qbErr) {
+        console.warn('Could not sync hours back to QB:', qbErr);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save hours';
+      setError(msg);
+      throw err;
+    } finally {
+      setSavingHoursMinutes(false);
+    }
+  };
+
   const saveServiceItem = async (entryId: number, newQbItemId: string) => {
     const userEmail = user?.username || 'unknown';
     const entry = entries.find(e => e.id === entryId);
@@ -826,9 +859,11 @@ export default function TimeEntriesEnhancedPage() {
     onEnhanceClick: (entry: TimeEntry) => { setEnhancingEntry(entry); setEnhanceDialogOpen(true); },
     onClarifyClick: (entries: TimeEntry[]) => { setClarifyEntries(entries); setClarifyDialogOpen(true); },
     onSaveNotes: saveNotes,
+    onSaveHoursMinutes: saveHoursMinutes,
     onSaveServiceItem: saveServiceItem,
     onSaveBillableStatus: saveBillableStatus,
     savingNotes,
+    savingHoursMinutes,
     serviceItems,
     serviceItemDescriptions,
     editingServiceItemId,

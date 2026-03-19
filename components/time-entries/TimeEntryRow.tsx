@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import type { TimeEntry, ServiceItem, ReportPeriod } from '@/lib/types';
 import { LockIcon } from './LockIcon';
 import { InlineNotesEditor } from './InlineNotesEditor';
+import { HoursMinutesEditor } from './HoursMinutesEditor';
 
 interface TimeEntryRowProps {
   entry: TimeEntry;
@@ -15,9 +16,11 @@ interface TimeEntryRowProps {
   onEnhanceClick: (entry: TimeEntry) => void;
   onClarifyClick: (entries: TimeEntry[]) => void;
   onSaveNotes: (entryId: number, notes: string) => Promise<void>;
+  onSaveHoursMinutes: (entryId: number, hours: number, minutes: number) => Promise<void>;
   onSaveServiceItem: (entryId: number, qbItemId: string) => void;
   onSaveBillableStatus: (entryId: number, status: string) => void;
   savingNotes: boolean;
+  savingHoursMinutes: boolean;
   serviceItems: ServiceItem[];
   serviceItemDescriptions: Record<string, string>;
   editingServiceItemId: number | null;
@@ -94,9 +97,11 @@ export function TimeEntryRow({
   onEnhanceClick,
   onClarifyClick,
   onSaveNotes,
+  onSaveHoursMinutes,
   onSaveServiceItem,
   onSaveBillableStatus,
   savingNotes,
+  savingHoursMinutes,
   serviceItems,
   serviceItemDescriptions,
   editingServiceItemId,
@@ -132,8 +137,15 @@ export function TimeEntryRow({
             <Clock className="w-4 h-4 text-gray-400" />
             {formatTimeRange(entry)}
           </div>
-          <div className="text-sm font-semibold text-blue-600 mt-1">
-            {formatDuration(entry.hours, entry.minutes)}
+          <div className="mt-1">
+            <HoursMinutesEditor
+              entryId={entry.id}
+              currentHours={entry.hours}
+              currentMinutes={entry.minutes}
+              isLocked={entry.is_locked}
+              isSaving={savingHoursMinutes}
+              onSave={onSaveHoursMinutes}
+            />
           </div>
         </div>
 

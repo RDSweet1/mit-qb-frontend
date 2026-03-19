@@ -58,11 +58,24 @@ export default function InvoicesPage() {
     const lastMonth = subMonths(new Date(), 1);
     return format(lastMonth, 'yyyy-MM');
   });
+  const [invoiceMode, setInvoiceMode] = useState<'standard' | 'interim'>('standard');
+  const [interimStartDate, setInterimStartDate] = useState('');
+  const [interimEndDate, setInterimEndDate] = useState('');
 
   // Parse "yyyy-MM" into a local-time Date (avoids UTC timezone shift)
   const parseMonth = (ym: string) => {
     const [y, m] = ym.split('-').map(Number);
     return new Date(y, m - 1, 1);
+  };
+
+  // Format period display text based on mode
+  const formatPeriodDisplay = () => {
+    if (invoiceMode === 'interim' && interimStartDate && interimEndDate) {
+      const start = new Date(interimStartDate + 'T12:00:00');
+      const end = new Date(interimEndDate + 'T12:00:00');
+      return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
+    }
+    return format(parseMonth(selectedMonth), 'MMMM yyyy');
   };
 
   // Preview stage
@@ -191,13 +204,24 @@ export default function InvoicesPage() {
     setPreviewError(null);
 
     try {
-      const monthStart = parseMonth(selectedMonth);
-      const monthEnd = endOfMonth(monthStart);
+      let periodStart: string;
+      let periodEnd: string;
+
+      if (invoiceMode === 'interim') {
+        periodStart = interimStartDate;
+        periodEnd = interimEndDate;
+      } else {
+        const monthStart = parseMonth(selectedMonth);
+        const monthEnd = endOfMonth(monthStart);
+        periodStart = format(monthStart, 'yyyy-MM-dd');
+        periodEnd = format(monthEnd, 'yyyy-MM-dd');
+      }
 
       const response = await callEdgeFunction('preview-invoices', {
-        periodStart: format(monthStart, 'yyyy-MM-dd'),
-        periodEnd: format(monthEnd, 'yyyy-MM-dd'),
+        periodStart,
+        periodEnd,
         createdBy: accounts[0]?.username || accounts[0]?.name || 'unknown',
+        invoiceType: invoiceMode,
       });
 
       if (!response.success) {
@@ -216,9 +240,6 @@ export default function InvoicesPage() {
       setStage('preview');
 
       // Fetch profitability margins for the invoice period from customer_profitability
-      const periodStart = format(monthStart, 'yyyy-MM-dd');
-      const periodEnd = format(monthEnd, 'yyyy-MM-dd');
-
       const { data: cpData } = await supabase
         .from('customer_profitability')
         .select('qb_customer_id, margin_percent')
@@ -342,23 +363,99 @@ export default function InvoicesPage() {
                 </ol>
               </div>
 
+              {/* Invoice Mode Toggle */}
               <div className="mb-6">
-                <label htmlFor="monthSelect" className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Billing Month
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Invoice Type
                 </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="month"
-                    id="monthSelect"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden mb-4">
+                  <button
+                    onClick={() => setInvoiceMode('standard')}
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                      invoiceMode === 'standard'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Standard (Full Month)
+                  </button>
+                  <button
+                    onClick={() => setInvoiceMode('interim')}
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                      invoiceMode === 'interim'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Interim (Date Range)
+                  </button>
                 </div>
-                <p className="mt-2 text-sm text-gray-500">
-                  Period: {format(parseMonth(selectedMonth), 'MMMM yyyy')}
-                </p>
+
+                {invoiceMode === 'standard' ? (
+                  <>
+                    <label htmlFor="monthSelect" className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Billing Month
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="month"
+                        id="monthSelect"
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Period: {format(parseMonth(selectedMonth), 'MMMM yyyy')}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="interimStart" className="block text-sm font-medium text-gray-700 mb-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          id="interimStart"
+                          value={interimStartDate}
+                          onChange={(e) => setInterimStartDate(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="interimEnd" className="block text-sm font-medium text-gray-700 mb-1">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          id="interimEnd"
+                          value={interimEndDate}
+                          onChange={(e) => setInterimEndDate(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    {interimStartDate && interimEndDate && (
+                      <p className="mt-2 text-sm text-gray-500">
+                        Period: {formatPeriodDisplay()}
+                      </p>
+                    )}
+                    {interimStartDate && interimEndDate && interimStartDate >= interimEndDate && (
+                      <p className="mt-2 text-sm text-red-600">
+                        Start date must be before end date.
+                      </p>
+                    )}
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs text-amber-800">
+                        Interim invoices bill only the selected date range. Any remaining unbilled time in the same month
+                        will automatically appear in the next standard or interim invoice.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Customer Acceptance Gate Overrides */}
@@ -552,7 +649,8 @@ export default function InvoicesPage() {
 
               <button
                 onClick={generatePreview}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-200"
+                disabled={invoiceMode === 'interim' && (!interimStartDate || !interimEndDate || interimStartDate >= interimEndDate)}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Search className="w-5 h-5" />
                 Generate Preview
@@ -620,7 +718,10 @@ export default function InvoicesPage() {
                     )}
                   </div>
                   <div className="text-sm text-gray-600">
-                    {format(parseMonth(selectedMonth), 'MMMM yyyy')}
+                    {formatPeriodDisplay()}
+                    {invoiceMode === 'interim' && (
+                      <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded">Interim</span>
+                    )}
                   </div>
                 </div>
               </div>

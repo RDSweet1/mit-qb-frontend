@@ -18,9 +18,11 @@ interface CustomerCardProps {
   onEnhanceClick: (entry: TimeEntry) => void;
   onClarifyClick: (entries: TimeEntry[]) => void;
   onSaveNotes: (entryId: number, notes: string) => Promise<void>;
+  onSaveHoursMinutes: (entryId: number, hours: number, minutes: number) => Promise<void>;
   onSaveServiceItem: (entryId: number, qbItemId: string) => void;
   onSaveBillableStatus: (entryId: number, status: string) => void;
   savingNotes: boolean;
+  savingHoursMinutes: boolean;
   serviceItems: ServiceItem[];
   serviceItemDescriptions: Record<string, string>;
   editingServiceItemId: number | null;
@@ -47,9 +49,11 @@ export function CustomerCard({
   onEnhanceClick,
   onClarifyClick,
   onSaveNotes,
+  onSaveHoursMinutes,
   onSaveServiceItem,
   onSaveBillableStatus,
   savingNotes,
+  savingHoursMinutes,
   serviceItems,
   serviceItemDescriptions,
   editingServiceItemId,
@@ -147,9 +151,11 @@ export function CustomerCard({
                 onEnhanceClick={onEnhanceClick}
                 onClarifyClick={onClarifyClick}
                 onSaveNotes={onSaveNotes}
+                onSaveHoursMinutes={onSaveHoursMinutes}
                 onSaveServiceItem={onSaveServiceItem}
                 onSaveBillableStatus={onSaveBillableStatus}
                 savingNotes={savingNotes}
+                savingHoursMinutes={savingHoursMinutes}
                 serviceItems={serviceItems}
                 serviceItemDescriptions={serviceItemDescriptions}
                 editingServiceItemId={editingServiceItemId}
