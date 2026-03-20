@@ -224,6 +224,9 @@ test.describe('Edge function deployment', () => {
     'automation-health-digest',
     'midweek-oversight',
     'sync-customer-emails',
+    'send-counsel-report',
+    'promote-time-entries',
+    'counsel-billing-summary',
   ];
 
   for (const fn of coreFunctions) {

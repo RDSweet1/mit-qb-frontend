@@ -279,6 +279,18 @@ test.describe('Counsel Billing — health check', () => {
     expect(res.status()).not.toBe(404);
   });
 
+  test('send-counsel-report function is deployed', async ({ request }) => {
+    const res = await request.post(
+      `${SUPABASE_URL}/functions/v1/send-counsel-report`,
+      {
+        headers: fnHeaders,
+        data: {},
+      }
+    );
+    // Should return 400 (missing recipients), NOT 404 (not deployed)
+    expect(res.status()).not.toBe(404);
+  });
+
   test('customers table has Tarflower entry', async ({ request }) => {
     const res = await request.get(
       `${SUPABASE_URL}/rest/v1/customers?display_name=ilike.*tarflower*&select=display_name,qb_customer_id`,

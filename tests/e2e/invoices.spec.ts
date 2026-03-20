@@ -96,6 +96,65 @@ test.describe('Invoices', () => {
     // Data-dependent — no holds in test data means no badges; valid
   });
 
+  test('invoice type toggle exists with Standard and Interim modes', async ({ page }) => {
+    const invoices = new InvoicesPage(page);
+    await invoices.goto();
+
+    const standardBtn = page.getByRole('button', { name: /standard/i });
+    const interimBtn = page.getByRole('button', { name: /interim/i });
+    await expect(standardBtn).toBeVisible();
+    await expect(interimBtn).toBeVisible();
+  });
+
+  test('switching to interim mode shows date range pickers', async ({ page }) => {
+    const invoices = new InvoicesPage(page);
+    await invoices.goto();
+
+    // Click Interim mode
+    const interimBtn = page.getByRole('button', { name: /interim/i });
+    await interimBtn.click();
+
+    // Start and End date inputs should appear
+    await expect(page.getByLabel('Start Date')).toBeVisible();
+    await expect(page.getByLabel('End Date')).toBeVisible();
+
+    // Month selector should NOT be visible in interim mode
+    await expect(page.getByLabel('Select Billing Month')).not.toBeVisible();
+  });
+
+  test('switching back to standard mode shows month picker', async ({ page }) => {
+    const invoices = new InvoicesPage(page);
+    await invoices.goto();
+
+    // Go to Interim
+    await page.getByRole('button', { name: /interim/i }).click();
+    await expect(page.getByLabel('Start Date')).toBeVisible();
+
+    // Go back to Standard
+    await page.getByRole('button', { name: /standard/i }).click();
+    await expect(page.getByLabel('Select Billing Month')).toBeVisible();
+  });
+
+  test('interim mode disables generate preview until both dates set', async ({ page }) => {
+    const invoices = new InvoicesPage(page);
+    await invoices.goto();
+
+    await page.getByRole('button', { name: /interim/i }).click();
+    const generateBtn = page.getByRole('button', { name: /generate preview/i });
+
+    // Should be disabled with no dates
+    await expect(generateBtn).toBeDisabled();
+  });
+
+  test('interim mode shows amber reminder about unbilled time', async ({ page }) => {
+    const invoices = new InvoicesPage(page);
+    await invoices.goto();
+
+    await page.getByRole('button', { name: /interim/i }).click();
+    const reminder = page.locator('text=/remaining unbilled time/i');
+    await expect(reminder).toBeVisible();
+  });
+
   test('no console errors on load', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
