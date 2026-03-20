@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Scale, Search, Printer, AlertCircle } from 'lucide-react';
+import { Scale, Search, Printer, AlertCircle, Mail } from 'lucide-react';
 import { callEdgeFunction } from '@/lib/supabaseClient';
+import { useMsal } from '@azure/msal-react';
 import { CustomerSelect } from '@/components/forms/CustomerSelect';
 import { DateRangePicker } from '@/components/DateRangePicker';
 import { EXTENDED_PRESETS, computeDateRange } from '@/lib/datePresets';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { SendCounselReportDialog } from './SendCounselReportDialog';
 
 interface InvoiceLine {
   Description: string;
@@ -112,7 +114,9 @@ function categoryBadge(cat: string) {
 }
 
 export function CounselBillingReport() {
+  const { accounts } = useMsal();
   const [customerId, setCustomerId] = useState('');
+  const [showSendDialog, setShowSendDialog] = useState(false);
   const [activePreset, setActivePreset] = useState('all_time');
   const [dateRange, setDateRange] = useState(() => computeDateRange('all_time'));
   const [loading, setLoading] = useState(false);
@@ -243,6 +247,12 @@ export function CounselBillingReport() {
           <div className="flex items-center justify-between mb-4 print:hidden">
             <h3 className="text-lg font-semibold text-gray-900">Report Preview</h3>
             <div className="flex gap-2">
+              <button
+                onClick={() => setShowSendDialog(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                <Mail className="w-4 h-4" /> Send Report
+              </button>
               <button
                 onClick={handlePrint}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
@@ -444,6 +454,16 @@ export function CounselBillingReport() {
             </div>
           </div>
         </div>
+      )}
+
+      {reportData && (
+        <SendCounselReportDialog
+          isOpen={showSendDialog}
+          reportData={reportData}
+          senderEmail={accounts[0]?.username || ''}
+          onClose={() => setShowSendDialog(false)}
+          onSent={() => setShowSendDialog(false)}
+        />
       )}
     </>
   );
