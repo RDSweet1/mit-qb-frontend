@@ -373,8 +373,16 @@ export function CounselBillingReport() {
 
               {reportData.invoices.map((inv) => {
                 const entries = getEntriesForInvoice(inv, reportData.timeEntries);
+
+                // Build rate lookup from invoice line items: ServiceItem → Rate
+                const rateMap: Record<string, number> = {};
+                for (const ln of inv.Lines) {
+                  const key = cleanService(ln.ItemName);
+                  if (ln.Rate && !rateMap[key]) rateMap[key] = ln.Rate;
+                }
+
                 return (
-                  <div key={inv.Id} className="mb-4 border border-gray-200 rounded-lg overflow-hidden">
+                  <div key={inv.Id} className="mb-4 border border-gray-200 rounded-lg overflow-hidden print:break-inside-avoid">
                     <div className={`px-4 py-2 flex justify-between items-center text-white text-sm font-bold ${inv.Balance === 0 ? 'bg-gradient-to-r from-blue-700 to-blue-500' : 'bg-gradient-to-r from-amber-700 to-amber-500'}`}>
                       <span>Invoice #{inv.DocNumber}</span>
                       <span>{fmtMoney(inv.TotalAmt)}</span>
@@ -382,65 +390,66 @@ export function CounselBillingReport() {
                     <div className="flex gap-4 px-4 py-1.5 bg-gray-50 border-b text-xs text-gray-500">
                       <span>Issued: <strong className="text-gray-700">{fmtDate(inv.TxnDate)}</strong></span>
                       <span>Status: <strong className={inv.Balance === 0 ? 'text-green-600' : 'text-amber-600'}>{inv.Balance === 0 ? 'Paid' : 'Open'}</strong></span>
+                      <span>{entries.length} entries</span>
                     </div>
 
-                    {/* QB Line Items */}
-                    <table className="w-full text-xs">
+                    {/* Unified punch list — time records with rates */}
+                    <table className="w-full text-[11px]">
                       <thead>
-                        <tr className="text-[10px] uppercase text-gray-500 tracking-wide">
+                        <tr className="text-[10px] uppercase text-gray-500 tracking-wide bg-gray-50">
+                          <th className="text-left py-1.5 px-3">Date</th>
+                          <th className="text-left py-1.5 px-3">Professional</th>
+                          <th className="text-left py-1.5 px-3">Start</th>
+                          <th className="text-left py-1.5 px-3">End</th>
                           <th className="text-left py-1.5 px-3">Category</th>
+                          <th className="text-right py-1.5 px-3">Hours</th>
                           <th className="text-right py-1.5 px-3">Rate</th>
-                          <th className="text-right py-1.5 px-3">Qty/Hrs</th>
                           <th className="text-right py-1.5 px-3">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {inv.Lines.map((ln, i) => (
-                          <tr key={i} className="border-b border-gray-50">
-                            <td className="py-1 px-3"><span className={categoryBadge(cleanService(ln.ItemName))}>{cleanService(ln.ItemName)}</span></td>
-                            <td className="py-1 px-3 text-right font-mono">{ln.Rate ? fmtMoney(ln.Rate) : '\u2014'}</td>
-                            <td className="py-1 px-3 text-right">{ln.Qty?.toFixed(2) || '\u2014'}</td>
-                            <td className="py-1 px-3 text-right font-mono">{fmtMoney(ln.Amount)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    {/* Time Records */}
-                    {entries.length > 0 && (
-                      <>
-                        <div className="bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-blue-800 uppercase tracking-wide border-t border-blue-200">
-                          Time Records ({entries.length} entries)
-                        </div>
-                        <table className="w-full text-[11px]">
-                          <thead>
-                            <tr className="text-[10px] uppercase text-gray-400 tracking-wide">
-                              <th className="text-left py-1 px-3">Date</th>
-                              <th className="text-left py-1 px-3">Professional</th>
-                              <th className="text-left py-1 px-3">Start</th>
-                              <th className="text-left py-1 px-3">End</th>
-                              <th className="text-left py-1 px-3">Category</th>
-                              <th className="text-right py-1 px-3">Hours</th>
+                        {entries.length > 0 ? entries.map((e, i) => {
+                          const hrs = e.Hours + e.Minutes / 60;
+                          const cat = cleanService(e.ServiceItem);
+                          const rate = rateMap[cat] || 0;
+                          const amount = hrs * rate;
+                          return (
+                            <tr key={i} className="border-b border-gray-50 text-gray-600">
+                              <td className="py-1 px-3">{e.TxnDate.slice(5)}</td>
+                              <td className="py-1 px-3">{shortName(e.EmployeeName)}</td>
+                              <td className="py-1 px-3 font-mono text-[10px]">{fmtTime(e.StartTime)}</td>
+                              <td className="py-1 px-3 font-mono text-[10px]">{fmtTime(e.EndTime)}</td>
+                              <td className="py-1 px-3"><span className={categoryBadge(cat)}>{cat}</span></td>
+                              <td className="py-1 px-3 text-right">{hrs.toFixed(2)}</td>
+                              <td className="py-1 px-3 text-right font-mono text-gray-500">{rate ? fmtMoney(rate) : '\u2014'}</td>
+                              <td className="py-1 px-3 text-right font-mono font-semibold">{rate ? fmtMoney(amount) : '\u2014'}</td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {entries.map((e, i) => (
-                              <tr key={i} className="border-b border-gray-50 text-gray-600">
-                                <td className="py-0.5 px-3">{e.TxnDate.slice(5)}</td>
-                                <td className="py-0.5 px-3">{shortName(e.EmployeeName)}</td>
-                                <td className="py-0.5 px-3 font-mono text-[10px]">{fmtTime(e.StartTime)}</td>
-                                <td className="py-0.5 px-3 font-mono text-[10px]">{fmtTime(e.EndTime)}</td>
-                                <td className="py-0.5 px-3"><span className={categoryBadge(cleanService(e.ServiceItem))}>{cleanService(e.ServiceItem)}</span></td>
-                                <td className="py-0.5 px-3 text-right">
-                                {(e.Hours + e.Minutes / 60).toFixed(2)}
-                                {e.DurationMatch === false && <span className="ml-1 text-red-500" title="Clock duration does not match recorded hours">⚠</span>}
-                              </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </>
-                    )}
+                          );
+                        }) : (
+                          // Fallback: show QB line items if no time entries matched
+                          inv.Lines.map((ln, i) => (
+                            <tr key={i} className="border-b border-gray-50 text-gray-600">
+                              <td className="py-1 px-3" colSpan={5}><span className={categoryBadge(cleanService(ln.ItemName))}>{cleanService(ln.ItemName)}</span></td>
+                              <td className="py-1 px-3 text-right">{ln.Qty?.toFixed(2) || '\u2014'}</td>
+                              <td className="py-1 px-3 text-right font-mono text-gray-500">{ln.Rate ? fmtMoney(ln.Rate) : '\u2014'}</td>
+                              <td className="py-1 px-3 text-right font-mono font-semibold">{fmtMoney(ln.Amount)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-blue-600 font-bold text-blue-800 text-xs">
+                          <td colSpan={5} className="py-1.5 px-3">Invoice Total</td>
+                          <td className="py-1.5 px-3 text-right">
+                            {entries.length > 0
+                              ? entries.reduce((s, e) => s + e.Hours + e.Minutes / 60, 0).toFixed(2)
+                              : inv.Lines.reduce((s, ln) => s + (ln.Qty || 0), 0).toFixed(2)}
+                          </td>
+                          <td className="py-1.5 px-3"></td>
+                          <td className="py-1.5 px-3 text-right font-mono">{fmtMoney(inv.TotalAmt)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
                 );
               })}
