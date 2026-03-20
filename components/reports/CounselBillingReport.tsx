@@ -37,6 +37,7 @@ interface TimeEntry {
   ServiceItem: string;
   BillableStatus: string;
   DurationMatch: boolean | null;
+  Rate: number;
 }
 
 interface ReportData {
@@ -374,13 +375,6 @@ export function CounselBillingReport() {
               {reportData.invoices.map((inv) => {
                 const entries = getEntriesForInvoice(inv, reportData.timeEntries);
 
-                // Build rate lookup from invoice line items: ServiceItem → Rate
-                const rateMap: Record<string, number> = {};
-                for (const ln of inv.Lines) {
-                  const key = cleanService(ln.ItemName);
-                  if (ln.Rate && !rateMap[key]) rateMap[key] = ln.Rate;
-                }
-
                 return (
                   <div key={inv.Id} className="mb-4 border border-gray-200 rounded-lg overflow-hidden print:break-inside-avoid">
                     <div className={`px-4 py-2 flex justify-between items-center text-white text-sm font-bold ${inv.Balance === 0 ? 'bg-gradient-to-r from-blue-700 to-blue-500' : 'bg-gradient-to-r from-amber-700 to-amber-500'}`}>
@@ -411,7 +405,7 @@ export function CounselBillingReport() {
                         {entries.length > 0 ? entries.map((e, i) => {
                           const hrs = e.Hours + e.Minutes / 60;
                           const cat = cleanService(e.ServiceItem);
-                          const rate = rateMap[cat] || 0;
+                          const rate = e.Rate || 0;
                           const amount = hrs * rate;
                           return (
                             <tr key={i} className="border-b border-gray-50 text-gray-600">
