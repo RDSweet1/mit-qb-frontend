@@ -2,6 +2,7 @@
 
 import React, { Component, ReactNode } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { ReportErrorButton } from '@/components/ReportErrorButton'
 
 interface Props {
   children: ReactNode
@@ -55,15 +56,18 @@ export class ErrorBoundary extends Component<Props, State> {
                 </pre>
               </details>
             )}
-            <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null })
-                window.location.reload()
-              }}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Reload Page
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null })
+                  window.location.reload()
+                }}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Reload Page
+              </button>
+              <ReportErrorButton error={this.state.error} />
+            </div>
           </div>
         </div>
       )

@@ -8,6 +8,7 @@ import { ProtectedPage } from '@/components/ProtectedPage';
 import { AppNav } from '@/components/AppNav';
 import { CommandPalette } from '@/components/CommandPalette';
 import { TalkToMe } from '@/components/TalkToMe';
+import { ReportErrorButton } from '@/components/ReportErrorButton';
 
 interface AppShellProps {
   children: ReactNode;
@@ -55,6 +56,7 @@ export function AppShell({ children }: AppShellProps) {
         </main>
         <CommandPalette />
         <TalkToMe />
+        <ReportErrorButton compact />
       </div>
     </ProtectedPage>
   );
