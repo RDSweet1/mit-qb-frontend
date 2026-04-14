@@ -43,10 +43,15 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000/mit-qb-frontend',
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  // Skip the local dev server when running API-only tests in CI
+  // (API tests call Supabase directly via absolute URLs — no local server needed).
+  // Set PLAYWRIGHT_NO_WEBSERVER=true in the workflow to enable this.
+  ...(process.env.PLAYWRIGHT_NO_WEBSERVER ? {} : {
+    webServer: {
+      command: 'npm run dev',
+      url: 'http://localhost:3000/mit-qb-frontend',
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+  }),
 });

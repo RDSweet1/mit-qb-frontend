@@ -1,0 +1,45 @@
+name: Automation Health Checks
+
+on:
+  schedule:
+    # Every 30 minutes. Self-heal fires every 15 min; 20-min test window
+    # means the last fire is always ≤14 min ago when CI runs — never a false alarm.
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # allow manual trigger from GitHub UI
+
+jobs:
+  api-health:
+    name: Run API & cron health tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright (API runner only — no browsers needed)
+        run: npx playwright install --with-deps chromium
+        # chromium listed to satisfy playwright's dep check; API tests don't open a browser
+
+      - name: Run API health checks
+        run: npx playwright test --project=api --reporter=list
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          PLAYWRIGHT_NO_WEBSERVER: 'true'
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ github.run_id }}
+          path: test-results/
+          retention-days: 7
