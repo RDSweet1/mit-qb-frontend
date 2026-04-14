@@ -120,11 +120,11 @@ test.describe('ar-sync-emails', () => {
   });
 
   test('lookbackDays defaults gracefully when omitted', async ({ request }) => {
+    test.setTimeout(120_000); // 90-day default lookback can take 60-90s — extend past global 30s
     const res = await request.post(`${SUPABASE_URL}/functions/v1/ar-sync-emails`, {
       headers: fnHeaders,
       data: {},
     });
-    // May take longer due to 90-day default — still expect success
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.success).toBe(true);
