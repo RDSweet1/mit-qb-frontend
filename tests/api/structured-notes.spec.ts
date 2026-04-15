@@ -167,15 +167,17 @@ test.describe('Phase 2: Workforce sync', () => {
 
 test.describe('Phase 3: Edge function email senders', () => {
   test('send-reminder responds and includes structured data', async ({ request }) => {
-    // Invoke with a test date range (won't actually send if no customers have email for test range)
+    // Dry-run so the 30-minute CI health check doesn't fire real weekly
+    // reports at real customers. Live delivery is covered by the daily
+    // `RUN_LIVE_EMAIL_TESTS=1` workflow.
+    const liveMode = process.env.RUN_LIVE_EMAIL_TESTS === '1';
     const res = await request.post(`${SUPABASE_URL}/functions/v1/send-reminder`, {
       headers: fnHeaders,
-      data: { startDate: '2026-03-09', endDate: '2026-03-14', manual: true },
+      data: { manual: true, dryRun: !liveMode },
     });
-    // May return success:true or an error about no entries — both are OK for this test
     expect([200, 400, 500]).toContain(res.status());
     const body = await res.json();
-    console.log(`  📧 send-reminder response: success=${body.success}, results=${body.results?.length || 0}`);
+    console.log(`  📧 send-reminder response: success=${body.success}, ${liveMode ? `results=${body.results?.length || 0}` : 'dry-run'}`);
   });
 
   test('create-internal-assignment passes structured fields', async ({ request }) => {
