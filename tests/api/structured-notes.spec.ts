@@ -193,7 +193,10 @@ test.describe('Phase 3: Edge function email senders', () => {
     const testEntryId = entries[0].id;
     console.log(`  🔍 Testing clarification on entry ${testEntryId} (${entries[0].employee_name})`);
 
-    // Create a test clarification (admin_email must exist in app_users with is_admin or can_edit_time)
+    // Create a test clarification in dry-run mode so we don't email david@
+    // every 30 minutes from CI. The live email delivery check runs in the
+    // daily `RUN_LIVE_EMAIL_TESTS=1` workflow.
+    const liveMode = process.env.RUN_LIVE_EMAIL_TESTS === '1';
     const res = await request.post(`${SUPABASE_URL}/functions/v1/create-internal-assignment`, {
       headers: fnHeaders,
       data: {
@@ -202,6 +205,7 @@ test.describe('Phase 3: Edge function email senders', () => {
         assignee_name: 'David Sweet',
         admin_email: 'david@mitigationconsulting.com',
         question: '[AUTOMATED TEST] Verifying structured notes appear in clarification email. Please ignore.',
+        dryRun: !liveMode,
       },
     });
     expect(res.ok()).toBeTruthy();
@@ -315,7 +319,11 @@ test.describe('Phase 4: Email delivery verification', () => {
 
     const totalHours = entries.reduce((sum: number, e: any) => sum + e.hours + e.minutes / 60, 0);
 
-    // Send via email_time_report (matches ReportRequest interface)
+    // Send via email_time_report in DRY RUN mode so the automated CI health
+    // check doesn't email david@ a real weekly report every 30 minutes. The
+    // full end-to-end email delivery test runs daily via a separate workflow
+    // (`RUN_LIVE_EMAIL_TESTS=1`) — see automation-health-checks.yml.
+    const liveMode = process.env.RUN_LIVE_EMAIL_TESTS === '1';
     const sendRes = await request.post(`${SUPABASE_URL}/functions/v1/email_time_report`, {
       headers: fnHeaders,
       data: {
@@ -326,14 +334,22 @@ test.describe('Phase 4: Email delivery verification', () => {
           entries: reportEntries,
           summary: { totalEntries: entries.length, totalHours: totalHours.toFixed(2) },
         },
+        dryRun: !liveMode,
       },
     });
     expect(sendRes.ok()).toBeTruthy();
     const sendBody = await sendRes.json();
     expect(sendBody.success).toBe(true);
-    console.log(`  📧 Sent test weekly report to ${TEST_RECIPIENT}`);
+    console.log(`  📧 ${liveMode ? 'Sent' : 'Dry-ran'} weekly report to ${TEST_RECIPIENT}`);
 
-    // Verify delivery via Graph API (subject is auto-generated: "Weekly Time & Activity Report — ...")
+    if (!liveMode) {
+      // In dry-run mode, just verify the response shape and skip Graph check
+      expect(sendBody.dryRun).toBe(true);
+      expect(sendBody.entryCount).toBe(entries.length);
+      return;
+    }
+
+    // Live mode only: verify delivery via Graph API (subject is auto-generated)
     const graphToken = await getGraphToken();
     const email = await findRecentEmail(graphToken, 'Weekly Time & Activity Report');
     if (email) {

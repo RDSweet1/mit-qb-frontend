@@ -102,7 +102,7 @@ test.describe('Send Counsel Report edge function', () => {
     expect(body.error).toContain('reportData');
   });
 
-  test('sends report successfully to test recipient', async ({ request }) => {
+  test('renders report for single + cc recipient (dry-run)', async ({ request }) => {
     const res = await request.post(
       `${SUPABASE_URL}/functions/v1/send-counsel-report`,
       {
@@ -113,6 +113,7 @@ test.describe('Send Counsel Report edge function', () => {
           subject: 'API Test — Counsel Billing Report',
           reportData: MOCK_REPORT_DATA,
           sentBy: 'playwright-test',
+          dryRun: true,
         },
         timeout: 30000,
       }
@@ -120,10 +121,11 @@ test.describe('Send Counsel Report edge function', () => {
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(body.dryRun).toBe(true);
     expect(body.recipientCount).toBe(2); // 1 to + 1 cc
   });
 
-  test('handles multiple to recipients', async ({ request }) => {
+  test('renders report for multiple to recipients (dry-run)', async ({ request }) => {
     const res = await request.post(
       `${SUPABASE_URL}/functions/v1/send-counsel-report`,
       {
@@ -133,6 +135,7 @@ test.describe('Send Counsel Report edge function', () => {
           subject: 'API Test — Multi-Recipient Counsel Report',
           reportData: MOCK_REPORT_DATA,
           sentBy: 'playwright-test',
+          dryRun: true,
         },
         timeout: 30000,
       }
@@ -140,10 +143,11 @@ test.describe('Send Counsel Report edge function', () => {
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(body.dryRun).toBe(true);
     expect(body.recipientCount).toBe(2);
   });
 
-  test('auto-generates subject when not provided', async ({ request }) => {
+  test('auto-generates subject when not provided (dry-run)', async ({ request }) => {
     const res = await request.post(
       `${SUPABASE_URL}/functions/v1/send-counsel-report`,
       {
@@ -152,6 +156,7 @@ test.describe('Send Counsel Report edge function', () => {
           to: ['david@mitigationconsulting.com'],
           reportData: MOCK_REPORT_DATA,
           sentBy: 'playwright-test',
+          dryRun: true,
         },
         timeout: 30000,
       }
@@ -159,5 +164,7 @@ test.describe('Send Counsel Report edge function', () => {
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(body.dryRun).toBe(true);
+    expect(body.subject).toContain('Test Customer');
   });
 });

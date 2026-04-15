@@ -126,18 +126,23 @@ test.describe('pg_cron health', () => {
     ).toBe(false);
   });
 
-  test('daily automations ran within the last 25 hours (via schedule_config)', async ({ request }) => {
-    // Daily functions may be triggered by self-heal, health-digest, or pg_cron — not just
-    // pg_cron directly. schedule_config.last_run_at is updated whenever the function runs,
-    // regardless of trigger source, so it's the right source for daily freshness checks.
-    // (cron.job_run_details only covers pg_cron-initiated runs, misses manual/self-heal retries.)
-    const dailyFunctions = [
-      'automation-health-digest',
-      'sync-customer-emails',
+  test('scheduled automations ran within their expected window (via schedule_config)', async ({ request }) => {
+    // Map each tracked function to its MAX expected gap. Functions triggered
+    // by self-heal, health-digest, or pg_cron all update schedule_config.last_run_at,
+    // so it's the source of truth for freshness regardless of trigger source.
+    //
+    // IMPORTANT: sync-customer-emails runs weekly (Monday 1 AM) per its cron
+    // schedule `0 1 * * 1`, not daily. The previous version of this test
+    // treated it as daily and failed every day except Monday, causing the
+    // automation health CI to fail 6 out of every 7 days.
+    const trackedFunctions: Array<{ name: string; maxHours: number; cadence: string }> = [
+      { name: 'automation-health-digest', maxHours: 25,  cadence: 'daily 12 PM UTC' },
+      { name: 'sync-customer-emails',     maxHours: 169, cadence: 'weekly Mon 1 AM UTC + 1h buffer' },
     ];
 
+    const names = trackedFunctions.map(f => f.name).join(',');
     const res = await request.get(
-      `${SUPABASE_URL}/rest/v1/schedule_config?function_name=in.(${dailyFunctions.join(',')})&select=function_name,last_run_at,last_run_status`,
+      `${SUPABASE_URL}/rest/v1/schedule_config?function_name=in.(${names})&select=function_name,last_run_at,last_run_status`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -148,16 +153,16 @@ test.describe('pg_cron health', () => {
     expect(res.ok()).toBeTruthy();
     const rows = await res.json() as Array<{ function_name: string; last_run_at: string; last_run_status: string }>;
 
-    for (const fn of dailyFunctions) {
-      const row = rows.find(r => r.function_name === fn);
-      expect(row, `${fn} not found in schedule_config`).toBeTruthy();
+    for (const fn of trackedFunctions) {
+      const row = rows.find(r => r.function_name === fn.name);
+      expect(row, `${fn.name} not found in schedule_config`).toBeTruthy();
       if (!row) continue;
 
       const hoursAgo = (Date.now() - new Date(row.last_run_at).getTime()) / (1000 * 60 * 60);
       expect(
         hoursAgo,
-        `${fn} last ran ${hoursAgo.toFixed(1)} hours ago (expected ≤25). Status: ${row.last_run_status}`
-      ).toBeLessThan(25);
+        `${fn.name} last ran ${hoursAgo.toFixed(1)}h ago (expected ≤${fn.maxHours}h, cadence: ${fn.cadence}). Status: ${row.last_run_status}`
+      ).toBeLessThan(fn.maxHours);
     }
   });
 
