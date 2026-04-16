@@ -374,6 +374,11 @@ test.describe('Phase 4: Email delivery verification', () => {
   });
 
   test('clarification email contains all 5 structured fields', async ({ request }) => {
+    const liveMode = process.env.RUN_LIVE_EMAIL_TESTS === '1';
+    if (!liveMode) {
+      console.log('  ⚠️ Skipping clarification inbox check (dry-run mode — set RUN_LIVE_EMAIL_TESTS=1 to enable)');
+      return;
+    }
     // Find the most recent clarification email in the inbox
     const graphToken = await getGraphToken();
     const email = await findRecentEmail(graphToken, 'Clarification', 10000);
