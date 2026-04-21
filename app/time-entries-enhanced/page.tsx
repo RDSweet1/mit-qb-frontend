@@ -329,7 +329,7 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
-  const sendApprovedEntriesToCustomerWithOverride = async (entryIds: number[], toEmail: string, ccEmails: string[]) => {
+  const sendApprovedEntriesToCustomerWithOverride = async (entryIds: number[], toEmail: string, ccEmails: string[], groupByDay = false) => {
     const { data: entriesToSend } = await supabase.from('time_entries').select('*').in('id', entryIds);
     if (!entriesToSend?.length) throw new Error('No entries found to send');
 
@@ -355,7 +355,7 @@ export default function TimeEntriesEnhancedPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email_time_report`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ report: reportData, recipient: toEmail, cc: ccEmails, entryIds: customerEntries.map(e => e.id), customerId, sentBy: user?.username || 'system' }),
+        body: JSON.stringify({ report: reportData, recipient: toEmail, cc: ccEmails, entryIds: customerEntries.map(e => e.id), customerId, sentBy: user?.username || 'system', groupByDay }),
       });
 
       if (!response.ok) {
@@ -375,7 +375,7 @@ export default function TimeEntriesEnhancedPage() {
     ));
   };
 
-  const sendApprovedEntriesToCustomer = async (entryIds: number[]) => {
+  const sendApprovedEntriesToCustomer = async (entryIds: number[], groupByDay = false) => {
     const { data: entriesToSend, error: fetchError } = await supabase.from('time_entries').select('*').in('id', entryIds);
     if (fetchError) throw fetchError;
     if (!entriesToSend?.length) return;
@@ -409,7 +409,7 @@ export default function TimeEntriesEnhancedPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/email_time_report`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ report: reportData, recipient, cc, entryIds: customerEntries.map(e => e.id), customerId, sentBy: user?.username || 'system' }),
+        body: JSON.stringify({ report: reportData, recipient, cc, entryIds: customerEntries.map(e => e.id), customerId, sentBy: user?.username || 'system', groupByDay }),
       });
 
       if (response.ok) {
@@ -424,7 +424,7 @@ export default function TimeEntriesEnhancedPage() {
     }
   };
 
-  const sendFromDialog = async (mode: 'test' | 'customer' | 'skip') => {
+  const sendFromDialog = async (mode: 'test' | 'customer' | 'skip', opts: { groupByDay: boolean }) => {
     if (mode === 'skip') {
       setSendDialogOpen(false);
       setSendDialogEntryIds([]);
@@ -433,10 +433,10 @@ export default function TimeEntriesEnhancedPage() {
     setSendingFromDialog(true);
     try {
       if (mode === 'test') {
-        await sendApprovedEntriesToCustomerWithOverride(sendDialogEntryIds, 'david@mitigationconsulting.com', ['skisner@mitigationconsulting.com']);
+        await sendApprovedEntriesToCustomerWithOverride(sendDialogEntryIds, 'david@mitigationconsulting.com', ['skisner@mitigationconsulting.com'], opts.groupByDay);
         toast.success('Test report sent to David & Sharon');
       } else {
-        await sendApprovedEntriesToCustomer(sendDialogEntryIds);
+        await sendApprovedEntriesToCustomer(sendDialogEntryIds, opts.groupByDay);
         toast.success('Report sent to customer (CC: Sharon & David)');
       }
     } catch (err) {
