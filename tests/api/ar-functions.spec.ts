@@ -120,14 +120,18 @@ test.describe('ar-sync-emails', () => {
   });
 
   test('lookbackDays defaults gracefully when omitted', async ({ request }) => {
-    test.setTimeout(120_000); // 90-day default lookback can take 60-90s — extend past global 30s
+    // Dry-run: proves the body parser applies the 7-day default without depending
+    // on Graph API latency. 22 CI failures 2026-04-19 → 2026-04-21 were live-scan
+    // timeouts on this exact path; dryRun removes Graph from the critical path.
     const res = await request.post(`${SUPABASE_URL}/functions/v1/ar-sync-emails`, {
       headers: fnHeaders,
-      data: {},
+      data: { dryRun: true },
     });
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(body.dryRun).toBe(true);
+    expect(body.lookbackDays).toBe(7); // confirms the default kicked in
   });
 });
 
