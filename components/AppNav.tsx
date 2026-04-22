@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare, ClipboardCheck, Receipt } from 'lucide-react';
+import { Home, Clock, FileText, DollarSign, TrendingUp, Settings, Users, BarChart3, MessageSquare, ClipboardCheck, Receipt, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 
 const navItems = [
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/profitability', label: 'Profitability', icon: TrendingUp, color: 'purple' },
   { href: '/analytics/unbilled-time', label: 'Unbilled', icon: BarChart3, color: 'orange' },
   { href: '/internal-review', label: 'Clarifications', icon: MessageSquare, color: 'amber' },
+  { href: '/customer-recipients', label: 'Recipients', icon: Mail, color: 'sky' },
   { href: '/settings', label: 'Settings', icon: Settings, color: 'gray' },
   { href: '/admin', label: 'Admin', icon: Users, color: 'gray' },
 ];
