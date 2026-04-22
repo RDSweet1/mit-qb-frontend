@@ -34,6 +34,10 @@ interface Customer {
   } | null;
   mit_adds_markup: boolean;
   email_framing_template: string | null;
+  default_expense_presentation: 'itemized' | 'daily_rollup' | 'lump';
+  default_comp_display_mode: 'separate' | 'netted';
+  out_of_range_multiplier: number;
+  out_of_range_min_amount: number;
 }
 
 interface Recipient {
@@ -71,7 +75,7 @@ export default function CustomerRecipientsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('customers')
-      .select('id, qb_customer_id, display_name, email, qb_parent_customer_id, bill_to_cache, mit_adds_markup, email_framing_template')
+      .select('id, qb_customer_id, display_name, email, qb_parent_customer_id, bill_to_cache, mit_adds_markup, email_framing_template, default_expense_presentation, default_comp_display_mode, out_of_range_multiplier, out_of_range_min_amount')
       .eq('is_active', true)
       .order('display_name');
     if (error) {
@@ -310,6 +314,97 @@ export default function CustomerRecipientsPage() {
                       placeholder="in care of {bill_to} on behalf of {end_client}"
                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
                     />
+                  </div>
+                </div>
+
+                {/* Epic R — Expense presentation defaults */}
+                <div className="pt-3 border-t border-gray-200 space-y-3 mt-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Default expense presentation on invoices
+                    </label>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      {(['itemized', 'daily_rollup', 'lump'] as const).map(mode => (
+                        <button
+                          key={mode}
+                          onClick={() => updateCustomerSettings({ default_expense_presentation: mode })}
+                          className={`px-3 py-2 border rounded-md text-left ${
+                            selectedCustomer.default_expense_presentation === mode
+                              ? 'bg-blue-50 border-blue-300 text-blue-900'
+                              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="font-semibold capitalize">{mode.replace('_', ' ')}</div>
+                          <div className="text-gray-500 mt-0.5 text-[11px]">
+                            {mode === 'itemized' && 'Every receipt line on the invoice'}
+                            {mode === 'daily_rollup' && 'One line per day per category'}
+                            {mode === 'lump' && 'One line per category total'}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Starting default for new receipts. Reviewer can override per-receipt at Clear time.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Comp credits (loyalty F&amp;B credits, etc.)
+                    </label>
+                    <div className="flex gap-2 text-xs">
+                      {(['separate', 'netted'] as const).map(mode => (
+                        <button
+                          key={mode}
+                          onClick={() => updateCustomerSettings({ default_comp_display_mode: mode })}
+                          className={`px-3 py-2 border rounded-md ${
+                            selectedCustomer.default_comp_display_mode === mode
+                              ? 'bg-blue-50 border-blue-300 text-blue-900'
+                              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {mode === 'separate' ? 'Separate negative line' : 'Netted into category'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm text-gray-700 mb-1">
+                        Out-of-range multiplier{' '}
+                        <span className="text-xs text-gray-400">(trigger at N× 90-day avg)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="1.0"
+                        max="10.0"
+                        step="0.1"
+                        value={selectedCustomer.out_of_range_multiplier}
+                        onChange={e => setSelectedCustomer({ ...selectedCustomer, out_of_range_multiplier: Number(e.target.value) })}
+                        onBlur={e =>
+                          updateCustomerSettings({ out_of_range_multiplier: Number(e.target.value) })
+                        }
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-700 mb-1">
+                        Minimum amount floor{' '}
+                        <span className="text-xs text-gray-400">(no warning below this)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10"
+                        value={selectedCustomer.out_of_range_min_amount}
+                        onChange={e => setSelectedCustomer({ ...selectedCustomer, out_of_range_min_amount: Number(e.target.value) })}
+                        onBlur={e =>
+                          updateCustomerSettings({ out_of_range_min_amount: Number(e.target.value) })
+                        }
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
