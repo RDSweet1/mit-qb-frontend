@@ -117,6 +117,115 @@
       <p>The parser computes <code>line_sum</code> (excluding payment lines) and compares it to the <code>stated_total</code> printed on the receipt. Within $0.50 = green "Foot check OK". Outside that = amber warning. <strong>A mismatch doesn't block you from clearing</strong>, but you should investigate before doing so — usually a missing page.</p>
     </div>
 
+    <!-- ── Review-time checks ───────────────────────────────────────────── -->
+    <h2><span class="pill">Review</span> Duplicate detection &amp; out-of-range checks</h2>
+
+    <div class="card">
+      <p>Before you clear a receipt to QuickBooks, the review page runs four automatic checks and shows them as colored banners at the top. Each banner has its own action:</p>
+    </div>
+
+    <div class="card card-amber">
+      <h3>Red &mdash; Duplicate detected (blocks Clear)</h3>
+      <p>The same folio was already posted as another QB Purchase for this customer. The Clear button is disabled until you check a box confirming it&rsquo;s not actually a duplicate. Examples: same total + same date range + same customer, OR the QB Purchase&rsquo;s private note references this receipt ID.</p>
+      <p><strong>What to do:</strong> Click the matching Purchase # link, confirm it&rsquo;s the same receipt, and either skip this upload (it&rsquo;s already done) or check the override box if you&rsquo;re intentionally re-running it.</p>
+    </div>
+
+    <div class="card card-amber">
+      <h3>Amber &mdash; Overlap with existing Purchase (doesn&rsquo;t block)</h3>
+      <p>Same customer + same day + same category on an existing un-billed QB Purchase. Two shapes:</p>
+      <ul>
+        <li><strong>Itemized vs itemized:</strong> totals match within 2% &mdash; almost certainly the same day twice.</li>
+        <li><strong>Lump vs itemized:</strong> existing estimate of roughly the same amount &mdash; you probably want to replace the estimate with actuals.</li>
+      </ul>
+      <p><strong>What to do:</strong> Review the highlighted match, decide whether to keep both or skip the overlapping day.</p>
+    </div>
+
+    <div class="card card-blue">
+      <h3>Blue &mdash; Already on a sent/paid invoice</h3>
+      <p>This customer has an invoice that was sent (or paid) with a line mentioning travel in the same period. Clearing this receipt adds billable expense <em>on top</em> of what was already invoiced. That&rsquo;s usually not what you want.</p>
+      <p><strong>What to do:</strong> Open the prior invoice, compare amounts, then either create a supplemental invoice for the delta only, or skip clearing and absorb the cost.</p>
+    </div>
+
+    <div class="card card-amber">
+      <h3>Yellow &mdash; Out-of-range amount (acknowledge to proceed)</h3>
+      <p>A day&rsquo;s category total is at least 2&times; this customer&rsquo;s trailing 90-day average AND over the $300 floor. Not a mistake necessarily &mdash; could be a downtown hotel or a work dinner &mdash; just worth a second look before the bill goes out.</p>
+      <p><strong>What to do:</strong> Tick the acknowledgement checkbox next to each flagged item. The Clear button stays disabled until all are acked.</p>
+      <p>Both the 2&times; threshold and the $300 floor are per-customer on the Recipients page if a specific customer needs tighter or looser tripwires.</p>
+    </div>
+
+    <!-- ── Presentation modes ───────────────────────────────────────────── -->
+    <h2><span class="pill">Invoice</span> Three presentation modes</h2>
+
+    <div class="card">
+      <p>Each customer has a default for how their travel expenses print on their invoice, and you can override it per-receipt at Clear time. Here&rsquo;s what the Hilton folio (30 lines, $1,806.03) looks like in each mode:</p>
+    </div>
+
+    <table>
+      <tr>
+        <th>Mode</th>
+        <th>Line count</th>
+        <th>What the customer sees</th>
+        <th>When to use</th>
+      </tr>
+      <tr>
+        <td><strong>Itemized</strong></td>
+        <td>29 lines</td>
+        <td>Every room, every tax, every tip, every coffee</td>
+        <td>Clients who require full transparency &mdash; accountants, legal matters, government contracts</td>
+      </tr>
+      <tr>
+        <td><strong>Daily rollup</strong></td>
+        <td>14 lines</td>
+        <td>One line per (date, category): <code>2026-04-18 lodging $292.90</code>, <code>2026-04-18 parking $40.00</code>, etc.</td>
+        <td>Default for most customers &mdash; readable without being overwhelming</td>
+      </tr>
+      <tr>
+        <td><strong>Lump</strong></td>
+        <td>5 lines</td>
+        <td>One line per category: <code>Lodging $1,661.96</code>, <code>Meals $67.20</code>, <code>Parking $80.00</code>, <code>Tips $11.87</code>, <code>Credit -$15.00</code></td>
+        <td>Flat-fee or clean-look contracts</td>
+      </tr>
+    </table>
+
+    <div class="card">
+      <p><strong>No matter the mode, the underlying detail is preserved.</strong> If a client asks for the breakdown of a lump line, you can produce the full folio. The mode only controls what prints on the invoice.</p>
+    </div>
+
+    <h3>Comp display</h3>
+    <div class="card">
+      <p>Loyalty comps (Hilton Honors F&amp;B credit, etc.) default to &ldquo;separate negative line&rdquo; for transparency &mdash; the comp shows as its own line with a negative amount. Flip to &ldquo;netted into category&rdquo; if you&rsquo;d rather silently reduce the meals total without the comp appearing.</p>
+      <p>Accessible from the receipt review page (only when comp lines exist) and as a per-customer default on the Recipients page.</p>
+    </div>
+
+    <!-- ── Ready to Bill ────────────────────────────────────────────────── -->
+    <h2><span class="pill">Essentials</span> Ready to Bill (manual-add workflow)</h2>
+
+    <div class="card">
+      <p>Our current QuickBooks plan (Essentials) doesn&rsquo;t support auto-flowing billable expenses from Purchases onto customer invoices &mdash; that&rsquo;s a Plus-tier feature. Until we upgrade, the <strong>Ready to Bill</strong> page is the manual companion: it shows cleared receipts grouped by customer so you can copy the totals into QB invoices yourself.</p>
+    </div>
+
+    <h3>Where to find it</h3>
+    <div class="card card-green">
+      <p>On the <strong>Travel Expenses</strong> page in MIT Document Platform, click the green <strong>Ready to Bill</strong> button in the top-right. Direct URL: <a href="https://mit-document-platform.vercel.app/travel-expenses/ready-to-bill" style="color: #1e40af;">mit-document-platform.vercel.app/travel-expenses/ready-to-bill</a></p>
+    </div>
+
+    <h3>Sharon&rsquo;s step-by-step</h3>
+    <div class="card">
+      <ol>
+        <li>Open <strong>Ready to Bill</strong>. You&rsquo;ll see one card per customer with outstanding receipts.</li>
+        <li>Click a receipt to expand it. Pick the presentation mode you want for this customer&rsquo;s invoice (itemized / daily rollup / lump).</li>
+        <li>Click <strong>Copy lines to clipboard</strong> &mdash; the lines copy in tab-separated format that pastes directly into QB&rsquo;s invoice grid.</li>
+        <li>In QuickBooks, open (or create) the customer&rsquo;s invoice. Paste into the Product/Service column area. Each line has a description and amount ready to go.</li>
+        <li>Back in MIT Document Platform, enter the QB invoice number (e.g. <code>2026-0047</code>) and hit <strong>Mark as billed</strong>.</li>
+        <li>The receipt drops out of the Ready to Bill view. You can always open the full receipt via the link to see the original PDF and audit trail.</li>
+      </ol>
+    </div>
+
+    <h3>If you click &ldquo;Mark as billed&rdquo; by mistake</h3>
+    <div class="card card-amber">
+      <p>Open the receipt in the review page and tell David &mdash; there&rsquo;s a one-line API call to reverse it (<code>POST /api/receipts/[id]/mark-billed?undo=1</code>). We can add a button for this later if it happens often.</p>
+    </div>
+
     <!-- ── For reference ────────────────────────────────────────────────── -->
     <h2>Under the hood (reference)</h2>
 
@@ -132,6 +241,10 @@
       <ul>
         <li><code>POST /api/receipts/upload</code> — FormData with 1..N files, returns receipt ID.</li>
         <li><code>POST /api/receipts/parse</code> — re-parse an existing receipt.</li>
+        <li><code>GET  /api/receipts/[id]/duplicate-check</code> — four-signal check payload.</li>
+        <li><code>GET  /api/receipts/ready-to-bill</code> — Essentials-tier billing queue grouped by customer.</li>
+        <li><code>POST /api/receipts/[id]/mark-billed</code> — record QB invoice # after manual paste.</li>
+        <li><code>GET  /api/receipts/customers/search?q=</code> — QB customer typeahead.</li>
         <li><code>GET  /api/receipts/[id]</code> — detail view with lines + pages + amendments.</li>
         <li><code>PATCH /api/receipts/[id]</code> — update markup decision or linkage.</li>
         <li><code>POST /api/receipts/clear</code> — post to QB (or amend if already cleared).</li>
