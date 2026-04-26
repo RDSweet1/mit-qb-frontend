@@ -9,6 +9,7 @@ import { AppNav } from '@/components/AppNav';
 import { CommandPalette } from '@/components/CommandPalette';
 import { TalkToMe } from '@/components/TalkToMe';
 import { ReportErrorButton } from '@/components/ReportErrorButton';
+import { BounceTrackerPopup } from '@/components/BounceTrackerPopup';
 
 interface AppShellProps {
   children: ReactNode;
@@ -57,6 +58,7 @@ export function AppShell({ children }: AppShellProps) {
         <CommandPalette />
         <TalkToMe />
         <ReportErrorButton compact />
+        <BounceTrackerPopup />
       </div>
     </ProtectedPage>
   );
