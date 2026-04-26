@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIT Consulting — Email Bounce Tracker Guide</title>
+  <style>
+    :root {
+      --mit-blue: #1e40af;
+      --mit-blue-light: #3b82f6;
+      --mit-blue-bg: #eff6ff;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --green-600: #059669;
+      --amber-600: #d97706;
+      --red-600: #dc2626;
+      --red-700: #b91c1c;
+      --red-bg: #fef2f2;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--gray-800);
+      line-height: 1.6;
+      background: var(--gray-50);
+    }
+    .header {
+      background: linear-gradient(135deg, var(--red-700), var(--red-600));
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .header p { opacity: 0.9; font-size: 0.95rem; }
+    .container { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+
+    .toc {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .toc h2 {
+      font-size: 1.1rem;
+      color: var(--red-600);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--red-bg);
+    }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: 0.4rem; }
+    .toc a { color: var(--mit-blue-light); text-decoration: none; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; }
+
+    .section {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      background: var(--red-bg);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .section-header .num {
+      width: 32px; height: 32px; border-radius: 999px;
+      background: var(--red-600); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    .section-header h2 {
+      font-size: 1.15rem;
+      color: var(--gray-900);
+      margin: 0;
+    }
+    .section-body { padding: 1.25rem; }
+    .section-body p { margin-bottom: 0.75rem; }
+    .section-body p:last-child { margin-bottom: 0; }
+    .section-body ul, .section-body ol { padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .section-body li { margin-bottom: 0.4rem; }
+    .section-body code {
+      background: var(--gray-100);
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.85rem;
+      color: var(--red-700);
+    }
+
+    .callout {
+      padding: 0.85rem 1rem;
+      border-radius: 6px;
+      margin: 0.75rem 0;
+      font-size: 0.9rem;
+    }
+    .callout.info { background: var(--mit-blue-bg); border-left: 3px solid var(--mit-blue-light); }
+    .callout.warn { background: #fef3c7; border-left: 3px solid var(--amber-600); }
+    .callout.danger { background: var(--red-bg); border-left: 3px solid var(--red-600); }
+    .callout.success { background: #ecfdf5; border-left: 3px solid var(--green-600); }
+    .callout strong { display: block; margin-bottom: 0.2rem; }
+
+    table.steps {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0;
+      font-size: 0.9rem;
+    }
+    table.steps th, table.steps td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+      vertical-align: top;
+    }
+    table.steps th {
+      background: var(--gray-50);
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    table.steps tr:last-child td { border-bottom: none; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 0.25rem;
+    }
+    .badge.invoice { background: var(--red-bg); color: var(--red-700); }
+    .badge.share { background: #fef3c7; color: var(--amber-600); }
+    .badge.invite { background: var(--mit-blue-bg); color: var(--mit-blue); }
+    .badge.report { background: #f3e8ff; color: #7e22ce; }
+    .badge.unknown { background: var(--gray-100); color: var(--gray-700); }
+
+    .checklist {
+      background: linear-gradient(135deg, #022c22, #064e3b);
+      color: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    .checklist h3 { font-size: 1.05rem; margin-bottom: 0.75rem; }
+    .checklist ol { padding-left: 1.5rem; }
+    .checklist li { margin-bottom: 0.4rem; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Email Bounce Tracker</h1>
+  <p>How to clear failed-delivery emails so clients always get their documents</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h2>What's in this guide</h2>
+    <ol>
+      <li><a href="#why">Why this exists</a></li>
+      <li><a href="#notif">How you'll know there's a bounce to clear</a></li>
+      <li><a href="#screen">The Bounces screen</a></li>
+      <li><a href="#resend">Resending to a corrected address</a></li>
+      <li><a href="#manual">Marking a bounce resolved without resending</a></li>
+      <li><a href="#history">Looking up resolved bounces</a></li>
+      <li><a href="#walkthrough">Walkthrough — first time you use this</a></li>
+    </ol>
+  </div>
+
+  <div class="section" id="why">
+    <div class="section-header"><div class="num">1</div><h2>Why this exists</h2></div>
+    <div class="section-body">
+      <p>Every time the platform sends a client an invoice, a document share, a project invite, or a delta-comparison report, there's a chance the email <em>doesn't deliver</em>. The address might be wrong, their mailbox might be full, the domain might have changed, etc. Microsoft Outlook sends back an "Undeliverable:" notification (called an NDR — non-delivery report) when this happens.</p>
+      <p>Until 2026-04-26 those NDRs piled up in <code>accounting@</code>'s inbox unread. The result: a client would say <em>"we never got your invoice"</em> and we'd have no way to know that — let alone fix it.</p>
+      <div class="callout danger">
+        <strong>The bottom line</strong>
+        Every undelivered email is a client who didn't get their document. We need every single one tracked and cleared. That's what this screen is for.
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="notif">
+    <div class="section-header"><div class="num">2</div><h2>How you'll know there's a bounce to clear</h2></div>
+    <div class="section-body">
+      <p>Two places will alert you:</p>
+      <table class="steps">
+        <thead><tr><th>Where</th><th>What you see</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Home dashboard card</strong></td>
+            <td>The <strong>Email Bounces</strong> tile (alongside Time Entries, Clarifications, Weekly Reports, etc.) will show a red "<em>N open</em>" badge in the top-right when there's something to clear. Click the tile to go to the management screen.</td>
+          </tr>
+          <tr>
+            <td><strong>Floating chip — every page</strong></td>
+            <td>A small red banner appears in the bottom-right corner that says "<em>N email bounces need follow-up · Click to review &amp; clear</em>". It animate-pulses gently to catch your eye. Click it to go to the management screen. The chip hides itself once the queue is empty (or when you're already on the Bounces screen).</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout info">
+        <strong>The bot scans every 15 minutes</strong>
+        New bounces will appear automatically without you doing anything. There's no "refresh inbox" button to push.
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="screen">
+    <div class="section-header"><div class="num">3</div><h2>The Bounces screen</h2></div>
+    <div class="section-body">
+      <p>The screen lives at <code>/bounces</code>. It has three tabs at the top:</p>
+      <ul>
+        <li><strong>Open</strong> — the queue of bounces that still need your attention. This is where you spend your time.</li>
+        <li><strong>All</strong> — every bounce ever recorded, regardless of status.</li>
+        <li><strong>Resolved</strong> — history of bounces you've already cleared. Useful if a client asks "did you actually resend that invoice?" — you can look it up.</li>
+      </ul>
+      <p>Each bounce shows a category badge (which kind of email failed):</p>
+      <p>
+        <span class="badge invoice">Invoice</span>
+        <span class="badge share">Document Share</span>
+        <span class="badge invite">Project Invite</span>
+        <span class="badge report">Report</span>
+        <span class="badge unknown">Other</span>
+      </p>
+      <p>…plus the original subject, the address that bounced, an invoice number (if we could detect one), the SMTP error code, the plain-English reason, and an expandable view of the raw bounce body for context.</p>
+      <p>Each open bounce gives you two buttons on the right:</p>
+      <ul>
+        <li><strong>Resolve…</strong> — opens the action panel below the row. Use this when you actually want to do something about the bounce.</li>
+        <li><strong>Mark seen</strong> — quick acknowledgement that you've looked at it. Stays in the queue but stops being "new." Useful if you want to come back to it later.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" id="resend">
+    <div class="section-header"><div class="num">4</div><h2>Resending to a corrected address</h2></div>
+    <div class="section-body">
+      <p>This is the main path. The original recipient was wrong; you have the right one.</p>
+      <table class="steps">
+        <thead><tr><th>Step</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Click <strong>Resolve…</strong> on the bounce row.</td></tr>
+          <tr><td>2</td><td>Confirm the <strong>Resend to corrected address</strong> tab is selected (default).</td></tr>
+          <tr><td>3</td><td>In <strong>Send to</strong>, type the corrected email address. This is required.</td></tr>
+          <tr><td>4</td><td>The <strong>Subject</strong> field is pre-filled with the original. Edit it only if you need to.</td></tr>
+          <tr><td>5</td><td>The <strong>Body</strong> field is optional. Leave it blank and we'll send a clean generic message that says <em>"we previously tried to send you [original subject] regarding invoice #X but the delivery failed; we're resending now"</em>. Or write your own.</td></tr>
+          <tr><td>6</td><td>Click <strong>Send &amp; Resolve</strong> (green button). The email goes out from <code>accounting@mitigationconsulting.com</code> via Outlook. The bounce row is automatically marked resolved with a record of where it went.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        <strong>Where the email comes from</strong>
+        Resends always send from <code>accounting@mitigationconsulting.com</code>. The recipient sees a normal email from accounting; they don't see the bounce-tracker UI or know the original failed.
+      </div>
+      <div class="callout info">
+        <strong>What if you also need to update the customer's email in QuickBooks?</strong>
+        Resend first to get the document delivered. Then go to <strong>Customer Recipients</strong> (in the main nav) and update the saved address so future invoices go to the right place automatically. Or use the "I handled this manually" path below if you'd rather do it all in one motion.
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="manual">
+    <div class="section-header"><div class="num">5</div><h2>Marking a bounce resolved without resending</h2></div>
+    <div class="section-body">
+      <p>Sometimes the right action isn't "resend from this screen" — maybe you already called the client, already updated their email in QB, or the bounce is for a stale test that doesn't need any follow-up. Use this path for those.</p>
+      <table class="steps">
+        <thead><tr><th>Step</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Click <strong>Resolve…</strong> on the bounce row.</td></tr>
+          <tr><td>2</td><td>Click the <strong>I handled this manually</strong> tab.</td></tr>
+          <tr><td>3</td><td>Pick what you actually did from the dropdown:
+            <ul style="margin-top:0.4rem;">
+              <li><em>Updated customer email in QuickBooks / Customer Recipients</em> — you fixed the saved address; future emails will be correct.</li>
+              <li><em>Called client directly</em> — out-of-band resolution, document delivered another way.</li>
+              <li><em>No action needed</em> — intentional bounce, stale test, or otherwise not worth chasing.</li>
+              <li><em>Other</em> — explain what you did in the notes field.</li>
+            </ul>
+          </td></tr>
+          <tr><td>4</td><td>(Optional) Add a one-line note in <strong>Notes</strong>. Anything memorable — e.g., "Used Premier-Omnisense backup contact, will email Sue Monday."</td></tr>
+          <tr><td>5</td><td>Click <strong>Mark resolved</strong>. The row leaves the open queue and shows up under Resolved with your notes attached.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section" id="history">
+    <div class="section-header"><div class="num">6</div><h2>Looking up resolved bounces</h2></div>
+    <div class="section-body">
+      <p>Click the <strong>Resolved</strong> tab to see every bounce you've cleared. Each row shows:</p>
+      <ul>
+        <li>The action you picked (Resent / Updated email / Called / etc.)</li>
+        <li>Who resolved it (your email)</li>
+        <li>When it was resolved</li>
+        <li>Notes you added</li>
+        <li>For resends: which address it went to and the Outlook message id (proof the email actually sent)</li>
+      </ul>
+      <div class="callout success">
+        <strong>Audit trail</strong>
+        Anything resolved here is logged forever in the database. If a client says "you never sent that invoice," you can pull up the resolved row and prove you did, with the Outlook message id from when you sent it.
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="walkthrough">
+    <div class="section-header"><div class="num">7</div><h2>Walkthrough — first time you use this</h2></div>
+    <div class="section-body">
+      <p>Recommended path the first time you sit down with the screen:</p>
+      <ol>
+        <li>Open the timesheet app like normal.</li>
+        <li>If there are open bounces, the red <strong>Email Bounces</strong> card on the home dashboard will have a count. Click it.</li>
+        <li>Pick a bounce that looks easy — a <strong>Test Project</strong> or a clearly-bad email address — and click <strong>Resolve…</strong> → <strong>I handled this manually</strong> → <strong>No action needed</strong> → <strong>Mark resolved</strong>. Watch it leave the queue.</li>
+        <li>Pick a real one. Click <strong>Resolve…</strong> → <strong>Send to</strong> the corrected address → <strong>Send &amp; Resolve</strong>. Watch the success toast.</li>
+        <li>Switch to the <strong>Resolved</strong> tab. Confirm both rows are there with your name + the action you picked.</li>
+        <li>Switch back to <strong>Open</strong>. The count drops. The floating red chip in the bottom-right disappears once the queue is empty.</li>
+      </ol>
+
+      <div class="checklist">
+        <h3>You should now be able to</h3>
+        <ol>
+          <li>Spot a new bounce within 15 minutes of it arriving (dashboard card + floating chip).</li>
+          <li>Resend a bounced email to a corrected address from the Bounces screen.</li>
+          <li>Mark a bounce resolved without resending, with a note explaining what you actually did.</li>
+          <li>Look up a previously-resolved bounce to prove a document was delivered.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
